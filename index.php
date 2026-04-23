@@ -1,3 +1,7 @@
+<?php
+$mensagem = $_GET['msg'] ?? '';
+$tipo = $_GET['tipo'] ?? '';
+?>
 <!doctype html>
 <html lang="pt-br">
 
@@ -6,24 +10,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Login - Sistema de Controle de Salas</title>
 
-  <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
 
-  <!-- CSS do projeto (style.css) -->
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 
 <body>
-  <!-- Header -->
   <div id="app-header"></div>
 
-  <!-- Corpo -->
   <main class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-4">
     <div class="col-12 col-sm-10 col-md-7 col-lg-4">
       <div class="app-card p-4">
-        <!-- Título -->
+        
         <div class="text-center mb-4">
           <div class="app-icon-badge mx-auto mb-2">
             <i class="bi bi-door-open"></i>
@@ -34,34 +33,47 @@
           </div>
         </div>
 
-        <!-- Erro padrão -->
-        <div id="loginError" class="alert alert-danger d-none" role="alert">
-          <i class="bi bi-exclamation-triangle"></i>
-          E-mail ou senha inválidos.
-        </div>
+        <?php if (!empty($mensagem)) : ?>
+          <div class="alert <?= $tipo === 'sucesso' ? 'alert-success' : 'alert-danger' ?>" role="alert">
+            <i class="bi <?= $tipo === 'sucesso' ? 'bi-check-circle' : 'bi-exclamation-triangle' ?>"></i>
+            <?= htmlspecialchars($mensagem) ?>
+          </div>
+        <?php endif; ?>
 
-        <form id="loginForm" novalidate>
-          <!-- Email -->
+        <form id="loginForm" action="processa_login.php" method="POST" novalidate>
           <div class="mb-3">
             <label for="email" class="form-label">E-mail</label>
             <div class="input-group">
               <span class="input-group-text app-input-icon">
                 <i class="bi bi-envelope-fill"></i>
               </span>
-              <input type="email" class="form-control" id="email" placeholder="seuemail@exemplo.com" required />
+              <input 
+                type="email" 
+                class="form-control" 
+                id="email" 
+                name="email"
+                placeholder="seuemail@exemplo.com" 
+                required
+              />
               <div class="invalid-feedback">Informe um e-mail válido.</div>
             </div>
           </div>
 
-          <!-- Senha -->
           <div class="mb-3">
             <label for="password" class="form-label">Senha</label>
             <div class="input-group">
               <span class="input-group-text app-input-icon">
                 <i class="bi bi-lock-fill"></i>
               </span>
-              <input type="password" class="form-control" id="password" placeholder="Digite sua senha" minlength="4"
-                required />
+              <input 
+                type="password" 
+                class="form-control" 
+                id="password" 
+                name="senha"
+                placeholder="Digite sua senha" 
+                minlength="4"
+                required
+              />
               <button class="btn btn-outline-secondary" type="button" id="btnTogglePass"
                 aria-label="Mostrar/ocultar senha">
                 <i class="bi bi-eye"></i>
@@ -72,46 +84,38 @@
             </div>
           </div>
 
-          <!-- Lembrar-me / Esqueci -->
           <div class="d-flex align-items-center justify-content-between mb-3">
             <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="rememberMe" />
+              <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe" />
               <label class="form-check-label" for="rememberMe">Lembrar-me</label>
             </div>
 
             <a href="#" class="small text-decoration-none">Esqueci minha senha</a>
           </div>
 
-          <!-- Botão -->
           <div class="d-grid mb-3">
             <button type="submit" class="btn app-btn-primary">
               <i class="bi bi-box-arrow-in-right"></i> Entrar
             </button>
           </div>
 
-          <!-- Cadastro -->
           <div class="text-center">
             <span class="small text-muted">Não possui conta?</span>
-            <a href="cadastro.html" class="small fw-semibold text-decoration-none">
+            <a href="cadastro.php" class="small fw-semibold text-decoration-none">
               <i class="bi bi-person-plus"></i> Cadastre-se
             </a>
           </div>
         </form>
       </div>
-
     </div>
   </main>
 
-  <!-- Footer (componente padrão) -->
   <div id="app-footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!--Carregar Componets-->
-  <script src="assets/js/comonents.js"></script>
-  <!--Mostrar Senha-->
+  <script src="assets/js/components.js"></script>
   <script src="assets/js/mostrar_senha.js"></script>
-
 </body>
 
 </html>
