@@ -1,0 +1,390 @@
+/* ==================================================
+   VARIÁVEIS GLOBAIS DO SISTEMA
+================================================== */
+:root {
+  /* AZUL SENAC */
+  --senac-azul: #004a8d;
+  --senac-azul-escuro: #033a6d;
+  --senac-azul-profundo: #002e5c;
+
+  /* LARANJA SENAC */
+  --senac-laranja: #f7941d;
+  --senac-laranja-hover: #e6830f;
+
+  /* STATUS */
+  --status-livre: #198754;
+  --status-uso: #dc3545;
+
+  /* LAYOUT */
+  --bg-principal: #f5f7fb;
+  --card: #ffffff;
+  --border: #e6eaf2;
+  --text: #0f172a;
+  --muted: #64748b;
+
+  --radius: 18px;
+  --shadow: 0 10px 25px rgba(2, 6, 23, 0.08);
+
+  /* Fundo padrão (para manter 1 fonte de verdade) */
+  --bg-gradient: linear-gradient(180deg, #f7f9fd 0%, var(--bg-principal) 100%);
+}
+
+/* ==================================================
+   BASE DO SISTEMA
+================================================== */
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-gradient);
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* ==================================================
+   HEADER PADRÃO
+================================================== */
+.app-header {
+  background: linear-gradient(
+    135deg,
+    var(--senac-azul) 0%,
+    var(--senac-azul-escuro) 60%,
+    var(--senac-azul-profundo) 100%
+  );
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* ==================================================
+   CARD PADRÃO DO SISTEMA
+================================================== */
+.app-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* ==================================================
+   ÍCONE (BADGE)
+================================================== */
+.app-icon-badge {
+  width: 60px;
+  height: 60px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  background: rgba(0, 74, 141, 0.1);
+  border: 1px solid rgba(0, 74, 141, 0.15);
+  color: var(--senac-azul);
+}
+
+/* Variante menor (para KPIs do dashboard) */
+.app-icon-badge--sm {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  font-size: 1.2rem;
+}
+
+/* ==================================================
+   BOTÃO PRINCIPAL
+================================================== */
+.app-btn-primary {
+  background: var(--senac-laranja);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 14px;
+  transition: all 0.2s ease;
+}
+.app-btn-primary:hover {
+  background: var(--senac-laranja-hover);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* ==================================================
+   INPUTS CUSTOM
+================================================== */
+.app-input-icon {
+  background: #fff;
+  border-right: 0;
+  color: var(--senac-azul);
+}
+
+.form-control {
+  border-radius: 12px;
+}
+
+.form-control:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 74, 141, 0.15);
+  border-color: var(--senac-azul);
+}
+
+/* ==================================================
+   LINKS
+================================================== */
+a {
+  color: var(--senac-azul);
+}
+a:hover {
+  color: var(--senac-azul-escuro);
+}
+
+/* ==================================================
+   FOOTER PADRÃO
+================================================== */
+.app-footer {
+  background-color: var(--senac-azul);
+  color: #fff;
+  text-align: center;
+  padding: 0.6rem 0;
+  margin-top: auto;
+  font-size: 0.85rem;
+  letter-spacing: 0.3px;
+}
+
+/* ==================================================
+   SIDEBAR (MENU LATERAL)
+================================================== */
+.app-sidebar {
+  background: var(--bg-gradient);
+  border-right: 1px solid var(--border);
+  min-height: calc(100vh - 60px);
+  padding: 1rem 0.75rem;
+}
+
+/* Conteúdo principal (evita “faixa branca”) */
+.app-content {
+  background: var(--bg-gradient);
+  min-height: calc(100vh - 60px);
+}
+
+/* Container interno */
+.app-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* ==================================================
+   LINKS DO MENU
+================================================== */
+.app-side-link {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.18s ease;
+}
+
+/* Ícones */
+.app-side-link i {
+  font-size: 1.1rem;
+  color: var(--senac-azul);
+}
+
+/* Hover */
+.app-side-link:hover {
+  background: rgba(0, 74, 141, 0.06);
+  transform: translateX(3px);
+  color: var(--senac-azul);
+}
+
+/* Item ativo */
+.app-side-link.active {
+  background: rgba(247, 148, 29, 0.15);
+  border: 1px solid rgba(247, 148, 29, 0.25);
+  color: #7a4300;
+  font-weight: 600;
+}
+.app-side-link.active i {
+  color: var(--senac-laranja);
+}
+/* ==================================================
+   DASHBOARD - COMPONENTES (SEM INLINE)
+================================================== */
+
+.kpi-icon--livre {
+  color: var(--status-livre);
+  border-color: rgba(25, 135, 84, 0.18);
+  background: rgba(25, 135, 84, 0.1);
+}
+
+.kpi-icon--uso {
+  color: var(--status-uso);
+  border-color: rgba(220, 53, 69, 0.16);
+  background: rgba(220, 53, 69, 0.08);
+}
+
+.kpi-icon--manut {
+  color: var(--senac-laranja);
+  border-color: rgba(247, 148, 29, 0.22);
+  background: rgba(247, 148, 29, 0.12);
+}
+/* ==================================================
+   DASHBOARD - AGENDA POR PERÍODO
+================================================== */
+
+.app-date-select {
+  min-width: 92px;
+}
+
+.app-tab {
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: var(--text);
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.app-tab:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 74, 141, 0.22);
+}
+
+.app-tab.active {
+  background: rgba(0, 74, 141, 0.1);
+  border-color: rgba(0, 74, 141, 0.22);
+  color: var(--senac-azul);
+}
+
+.agenda-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  font-weight: 600;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.agenda-badge--ocupado {
+  background: rgba(220, 53, 69, 0.08);
+  color: var(--status-uso);
+  border-color: rgba(220, 53, 69, 0.16);
+}
+
+.agenda-badge--livre {
+  background: rgba(25, 135, 84, 0.1);
+  color: var(--status-livre);
+  border-color: rgba(25, 135, 84, 0.18);
+}
+
+/* ==================================================
+   RESPONSIVIDADE
+================================================== */
+@media (max-width: 767px) {
+  .app-sidebar {
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .app-sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+
+  .app-side-link {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+ 
+/* ==================================================
+   🌙 DARK MODE (ORGANIZADO)
+================================================== */
+ 
+/* TRANSIÇÃO */
+body {
+  transition: background 0.3s, color 0.3s;
+}
+ 
+/* FUNDO GLOBAL */
+[data-bs-theme="dark"] body {
+  background: #121212 !important;
+  color: #ffffff;
+}
+ 
+/* CONTEÚDO */
+[data-bs-theme="dark"] main,
+[data-bs-theme="dark"] .app-content {
+  background: #121212;
+}
+ 
+/* SIDEBAR */
+[data-bs-theme="dark"] .app-sidebar {
+  background: #181818;
+  border-right: 1px solid #2a2a2a;
+}
+ 
+/* CARDS */
+[data-bs-theme="dark"] .app-card {
+  background: #1e1e1e;
+  color: #fff;
+  border: 1px solid #2c2c2c;
+}
+ 
+/* MENU */
+[data-bs-theme="dark"] .app-side-link {
+  color: #ccc;
+}
+ 
+[data-bs-theme="dark"] .app-side-link:hover {
+  background: #2a2a2a;
+}
+ 
+[data-bs-theme="dark"] .app-side-link.active {
+  background: #004A8D;
+  color: #fff;
+}
+ 
+/* INPUTS */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+  background: #2a2a2a;
+  color: #fff;
+  border-color: #444;
+}
+ 
+[data-bs-theme="dark"] .form-control::placeholder {
+  color: #aaa;
+}
+ 
+/* INPUT ICON */
+[data-bs-theme="dark"] .app-input-icon {
+  background: #004A8D;
+  color: #fff;
+}
+ 
+/* BOTÕES */
+[data-bs-theme="dark"] .btn-outline-secondary {
+  color: #ccc;
+  border-color: #555;
+}
+ 
+[data-bs-theme="dark"] .btn-outline-secondary:hover {
+  background: #333;
+}
+ 
+/* TABELAS */
+[data-bs-theme="dark"] .table {
+  color: #fff;
+}
+ 
+[data-bs-theme="dark"] .table thead {
+  color: #aaa;
+}
+ 
+[data-bs-theme="dark"] .table tbody tr {
+  border-color: #2a2a2a;
+}
+ 
