@@ -1,0 +1,40 @@
+<?php
+
+class Database
+{
+    private string $host;
+    private string $dbname;
+    private string $user;
+    private string $pass;
+    private ?PDO $connection = null;
+
+    public function __construct()
+    {
+        require __DIR__ . '/../config/config.php';
+
+        $this->host = DB_HOST;
+        $this->dbname = DB_NAME;
+        $this->user = DB_USER;
+        $this->pass = DB_PASS;
+    }
+
+    public function connect(): PDO
+    {
+        if ($this->connection === null) {
+            try {
+                $this->connection = new PDO(
+                    "mysql:host={$this->host};dbname={$this->dbname};charset=utf8mb4",
+                    $this->user,
+                    $this->pass
+                );
+
+                $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $this->connection->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            } catch (PDOException $e) {
+                die('Erro ao conectar com o banco de dados.');
+            }
+        }
+
+        return $this->connection;
+    }
+}
