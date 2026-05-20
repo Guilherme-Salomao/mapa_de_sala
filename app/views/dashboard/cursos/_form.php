@@ -1,0 +1,114 @@
+<form id="formCurso" method="POST" action="<?php echo $formAction; ?>" novalidate>
+  <?php if ($modoEdicao): ?>
+  <input type="hidden" name="id" value="<?php echo (int) ($cursoForm['id'] ?? 0); ?>">
+  <?php endif; ?>
+
+  <div class="row g-3">
+    <div class="col-12 col-md-6">
+      <label for="curso_modelo_id" class="form-label">Curso</label>
+      <select class="form-select" id="curso_modelo_id" name="curso_modelo_id" required>
+        <option value="" <?php echo empty($cursoForm['curso_modelo_id']) ? 'selected' : ''; ?> disabled>
+          Selecione...
+        </option>
+        <?php foreach (($cursoModelos ?? []) as $cursoModelo): ?>
+        <option value="<?php echo (int) $cursoModelo['id']; ?>"
+          <?php echo((int) ($cursoForm['curso_modelo_id'] ?? 0) === (int) $cursoModelo['id']) ? 'selected' : ''; ?>>
+          <?php echo htmlspecialchars($cursoModelo['nome']); ?>
+        </option>
+        <?php endforeach; ?>
+      </select>
+      <div class="invalid-feedback">Selecione o curso.</div>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label for="nome" class="form-label">Nome da turma</label>
+      <input type="text" class="form-control" id="nome" name="nome" placeholder="Ex.: Tecnico em Informatica - Tarde"
+        value="<?php echo htmlspecialchars($cursoForm['nome'] ?? ''); ?>" required>
+      <div class="invalid-feedback">Informe o nome da turma.</div>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label for="codigo_oferta" class="form-label">Codigo da oferta</label>
+      <input type="text" class="form-control" id="codigo_oferta" name="codigo_oferta" placeholder="Ex.: TI-2026-01"
+        value="<?php echo htmlspecialchars($cursoForm['codigo_oferta'] ?? ''); ?>" required>
+      <div class="invalid-feedback">Informe o codigo da oferta.</div>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label for="periodo" class="form-label">Periodo</label>
+      <select class="form-select" id="periodo" name="periodo" required>
+        <option value="" <?php echo empty($cursoForm['periodo']) ? 'selected' : ''; ?> disabled>Selecione...</option>
+        <?php
+            $periodosCurso = ['Manhã', 'Tarde', 'Noite', 'Integral'];
+        ?>
+        <?php foreach ($periodosCurso as $periodoCurso): ?>
+        <option value="<?php echo htmlspecialchars($periodoCurso); ?>"
+          <?php echo(($cursoForm['periodo'] ?? '') === $periodoCurso) ? 'selected' : ''; ?>>
+          <?php echo htmlspecialchars($periodoCurso); ?>
+        </option>
+        <?php endforeach; ?>
+      </select>
+      <div class="invalid-feedback">Selecione o periodo.</div>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label for="status" class="form-label">Status</label>
+      <select class="form-select" id="status" name="status" required>
+        <option value="Em andamento"
+          <?php echo(($cursoForm['status'] ?? 'Em andamento') === 'Em andamento') ? 'selected' : ''; ?>>
+          Em andamento
+        </option>
+        <option value="Finalizada" <?php echo(($cursoForm['status'] ?? '') === 'Finalizada') ? 'selected' : ''; ?>>
+          Finalizada
+        </option>
+      </select>
+      <div class="invalid-feedback">Selecione o status.</div>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label for="carga_horaria_total" class="form-label">Carga horaria total</label>
+      <div class="input-group">
+        <span class="input-group-text app-input-icon">
+          <i class="bi bi-hourglass-split"></i>
+        </span>
+        <input type="number" class="form-control" id="carga_horaria_total" name="carga_horaria_total" min="1"
+          placeholder="Ex.: 1200" value="<?php echo htmlspecialchars($cursoForm['carga_horaria_total'] ?? ''); ?>"
+          required>
+        <span class="input-group-text">h</span>
+        <div class="invalid-feedback">Informe a carga horaria total.</div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label for="hora_aula" class="form-label">Hora-aula</label>
+      <div class="input-group">
+        <span class="input-group-text app-input-icon">
+          <i class="bi bi-clock"></i>
+        </span>
+        <input type="number" class="form-control" id="hora_aula" name="hora_aula" min="1" step="1" placeholder="Ex.: 4"
+          value="<?php echo htmlspecialchars($cursoForm['hora_aula'] ?? ''); ?>" required>
+        <span class="input-group-text">h</span>
+        <div class="invalid-feedback">Informe a hora-aula em horas inteiras.</div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <label for="descricao" class="form-label">Descricao</label>
+      <textarea class="form-control" id="descricao" name="descricao" rows="4"
+        placeholder="Informacoes adicionais sobre o curso..."><?php echo htmlspecialchars($cursoForm['descricao'] ?? ''); ?></textarea>
+    </div>
+  </div>
+
+  <hr class="my-4" />
+
+  <div class="d-flex flex-wrap gap-2 justify-content-end">
+    <a href="/mapa_de_sala/public/?page=turmas" class="btn btn-outline-secondary">
+      <i class="bi bi-x-circle"></i> Cancelar
+    </a>
+
+    <button type="submit" class="btn app-btn-primary">
+      <i class="bi bi-save"></i> <?php echo $botaoTexto; ?>
+    </button>
+  </div>
+</form>
+

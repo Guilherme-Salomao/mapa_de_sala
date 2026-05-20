@@ -18,6 +18,30 @@
       <span>Usuários</span>
     </a>
 
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'docentes' ? 'active' : '' ?>"
+      href="/mapa_de_sala/public/?page=docentes">
+      <i class="bi bi-person-badge"></i>
+      <span>Docentes</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'cursos' ? 'active' : '' ?>"
+      href="/mapa_de_sala/public/?page=cursos">
+      <i class="bi bi-journal-bookmark"></i>
+      <span>Cursos</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'turmas' ? 'active' : '' ?>"
+      href="/mapa_de_sala/public/?page=turmas">
+      <i class="bi bi-calendar3"></i>
+      <span>Turmas</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'ucs' ? 'active' : '' ?>"
+      href="/mapa_de_sala/public/?page=ucs">
+      <i class="bi bi-list-check"></i>
+      <span>UCs</span>
+    </a>
+
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorios' ? 'active' : '' ?>" href="#">
       <i class="bi bi-clipboard-data"></i>
       <span>Relatórios</span>

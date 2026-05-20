@@ -92,7 +92,9 @@ body {
 ================================================== */
 .app-btn-primary {
   background: var(--senac-laranja);
+  background-color: var(--senac-laranja);
   border: none;
+  border-color: var(--senac-laranja);
   color: #fff;
   font-weight: 600;
   border-radius: 14px;
@@ -100,8 +102,18 @@ body {
 }
 .app-btn-primary:hover {
   background: var(--senac-laranja-hover);
+  background-color: var(--senac-laranja-hover);
+  border-color: var(--senac-laranja-hover);
   color: #fff;
   transform: translateY(-1px);
+}
+
+.btn.app-btn-primary:disabled,
+.btn.app-btn-primary.disabled {
+  background-color: var(--senac-laranja);
+  border-color: var(--senac-laranja);
+  color: #fff;
+  opacity: 0.65;
 }
 
 /* ==================================================
