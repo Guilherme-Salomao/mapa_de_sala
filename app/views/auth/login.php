@@ -1,6 +1,6 @@
 <?php
-$mensagem = $_GET['msg'] ?? '';
-$tipo = $_GET['tipo'] ?? '';
+    $mensagem = $_GET['msg'] ?? '';
+    $tipo     = $_GET['tipo'] ?? '';
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -33,12 +33,7 @@ $tipo = $_GET['tipo'] ?? '';
           </div>
         </div>
 
-        <?php if (!empty($mensagem)) : ?>
-        <div class="alert <?= $tipo === 'sucesso' ? 'alert-success' : 'alert-danger' ?>" role="alert">
-          <i class="bi <?= $tipo === 'sucesso' ? 'bi-check-circle' : 'bi-exclamation-triangle' ?>"></i>
-          <?= htmlspecialchars($mensagem) ?>
-        </div>
-        <?php endif; ?>
+        <?php require_once __DIR__ . '/../components/alert.php'; ?>
 
         <form id="loginForm" action="" method="POST" novalidate>
           <div class="mb-3">

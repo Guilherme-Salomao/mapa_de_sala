@@ -8,37 +8,42 @@
     exit;
     }
 
+    require_once __DIR__ . '/../../models/Sala.php';
+
     $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuário';
     $mensagem      = $_GET['msg'] ?? '';
     $tipo          = $_GET['tipo'] ?? '';
 
-    $formAction = '/mapa_de_sala/public/?page=usuarios&action=salvar';
-    $botaoTexto = 'Salvar Usuário';
+    $salaModel           = new Sala();
+    $recursosDisponiveis = $salaModel->listarRecursos();
+
+    $formAction = '/mapa_de_sala/public/?page=salas&action=salvar';
+    $botaoTexto = 'Salvar Sala';
     $modoEdicao = false;
 
-    $usuarioForm = [
-    'id'           => '',
-    'nome'         => '',
-    'email'        => '',
-    'nivel_acesso' => '',
-    'status'       => 'Ativo',
+    $salaForm = [
+    'nome'       => $_GET['nome'] ?? '',
+    'tipo'       => $_GET['tipo_sala'] ?? '',
+    'capacidade' => $_GET['capacidade'] ?? '',
+    'status'     => $_GET['status'] ?? 'Ativo',
+    'descricao'  => $_GET['descricao'] ?? '',
     ];
 
-    $tituloPagina    = 'Cadastrar Usuário';
-    $subtituloPagina = 'Preencha os dados para criar um novo usuário';
+    $tituloPagina    = 'Cadastrar Sala';
+    $subtituloPagina = 'Preencha os dados para criar uma nova sala';
     $botaoTopoTexto  = 'Voltar';
-    $botaoTopoLink   = '/mapa_de_sala/public/?page=usuarios';
+    $botaoTopoLink   = '/mapa_de_sala/public/?page=salas';
     $botaoTopoClasse = 'btn-outline-secondary';
     $botaoTopoIcone  = 'bi-arrow-left';
-    $botaoTexto      = 'Salvar Usuário';
 ?>
+
 <!doctype html>
 <html lang="pt-br">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cadastrar Usuário - Sistema de Controle de Salas</title>
+  <title>Cadastrar Sala - Sistema de Controle de Salas</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -59,11 +64,13 @@
     <div class="container-fluid">
       <div class="row g-0">
         <?php
-            $paginaAtiva = 'usuarios';
+            $paginaAtiva = 'salas';
             require_once __DIR__ . '/../layouts/sidebar.php';
         ?>
+
         <section class="col-12 col-md-9 col-lg-10 p-3 p-md-4 app-content">
           <?php require_once __DIR__ . '/../components/page_header.php'; ?>
+
           <div class="app-card p-4">
             <?php if (! empty($mensagem)): ?>
             <div class="alert <?php echo $tipo === 'sucesso' ? 'alert-success' : 'alert-danger' ?>" role="alert">
@@ -71,52 +78,32 @@
               <?php echo htmlspecialchars($mensagem) ?>
             </div>
             <?php endif; ?>
-            <?php require_once __DIR__ . '/usuarios/_form.php'; ?>
+
+            <?php require_once __DIR__ . '/salas/_form.php'; ?>
           </div>
         </section>
       </div>
     </div>
   </main>
+
   <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/salas.js"></script>
 
   <script>
   const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = "Cadastrar Usuário";
+  if (pageTitle) pageTitle.textContent = "Cadastrar Sala";
 
   const userName = document.getElementById("userName");
   if (userName) userName.textContent = <?php echo json_encode($usuarioLogado) ?>;
 
-  const btnToggleSenha = document.getElementById("btnToggleSenha");
-  const senha = document.getElementById("senha");
-
-  if (btnToggleSenha && senha) {
-    btnToggleSenha.addEventListener("click", function() {
-      const isPassword = senha.type === "password";
-      senha.type = isPassword ? "text" : "password";
-      btnToggleSenha.innerHTML = isPassword ?
-        '<i class="bi bi-eye-slash"></i>' :
-        '<i class="bi bi-eye"></i>';
-    });
-  }
-
-  const form = document.getElementById("formUsuario");
+  const form = document.getElementById("formSala");
   if (form) {
     form.addEventListener("submit", function(e) {
       if (!form.checkValidity()) {
         e.preventDefault();
         form.classList.add("was-validated");
-        return;
-      }
-
-      const senhaValor = document.getElementById("senha").value;
-      const confSenhaValor = document.getElementById("confSenha").value;
-
-      if (senhaValor !== confSenhaValor) {
-        e.preventDefault();
-        form.classList.add("was-validated");
-        alert("As senhas não conferem.");
       }
     });
   }

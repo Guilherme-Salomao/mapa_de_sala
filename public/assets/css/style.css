@@ -298,55 +298,57 @@ a:hover {
     flex-shrink: 0;
   }
 }
- 
+
 /* ==================================================
    🌙 DARK MODE (ORGANIZADO)
 ================================================== */
- 
+
 /* TRANSIÇÃO */
 body {
-  transition: background 0.3s, color 0.3s;
+  transition:
+    background 0.3s,
+    color 0.3s;
 }
- 
+
 /* FUNDO GLOBAL */
 [data-bs-theme="dark"] body {
   background: #121212 !important;
   color: #ffffff;
 }
- 
+
 /* CONTEÚDO */
 [data-bs-theme="dark"] main,
 [data-bs-theme="dark"] .app-content {
   background: #121212;
 }
- 
+
 /* SIDEBAR */
 [data-bs-theme="dark"] .app-sidebar {
   background: #181818;
   border-right: 1px solid #2a2a2a;
 }
- 
+
 /* CARDS */
 [data-bs-theme="dark"] .app-card {
   background: #1e1e1e;
   color: #fff;
   border: 1px solid #2c2c2c;
 }
- 
+
 /* MENU */
 [data-bs-theme="dark"] .app-side-link {
   color: #ccc;
 }
- 
+
 [data-bs-theme="dark"] .app-side-link:hover {
   background: #2a2a2a;
 }
- 
+
 [data-bs-theme="dark"] .app-side-link.active {
-  background: #004A8D;
+  background: #004a8d;
   color: #fff;
 }
- 
+
 /* INPUTS */
 [data-bs-theme="dark"] .form-control,
 [data-bs-theme="dark"] .form-select {
@@ -354,37 +356,92 @@ body {
   color: #fff;
   border-color: #444;
 }
- 
+
 [data-bs-theme="dark"] .form-control::placeholder {
   color: #aaa;
 }
- 
+
 /* INPUT ICON */
 [data-bs-theme="dark"] .app-input-icon {
-  background: #004A8D;
+  background: #004a8d;
   color: #fff;
 }
- 
+
 /* BOTÕES */
 [data-bs-theme="dark"] .btn-outline-secondary {
   color: #ccc;
   border-color: #555;
 }
- 
+
 [data-bs-theme="dark"] .btn-outline-secondary:hover {
   background: #333;
 }
- 
+
 /* TABELAS */
 [data-bs-theme="dark"] .table {
   color: #fff;
 }
- 
+
 [data-bs-theme="dark"] .table thead {
   color: #aaa;
 }
- 
+
 [data-bs-theme="dark"] .table tbody tr {
   border-color: #2a2a2a;
 }
- 
+/* ==================================================
+   SALAS - STATUS
+================================================== */
+.sala-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sala-status--livre {
+  background: rgba(25, 135, 84, 0.1);
+  border: 1px solid rgba(25, 135, 84, 0.18);
+  color: var(--status-livre);
+}
+.sala-status--uso {
+  background: rgba(220, 53, 69, 0.08);
+  border: 1px solid rgba(220, 53, 69, 0.16);
+  color: var(--status-uso);
+}
+.sala-status--manutencao {
+  background: rgba(247, 148, 29, 0.12);
+  border: 1px solid rgba(247, 148, 29, 0.22);
+  color: var(--senac-laranja);
+}
+.sala-status--inativa {
+  background: rgba(100, 116, 139, 0.1);
+  border: 1px solid rgba(100, 116, 139, 0.18);
+  color: var(--muted);
+}
+/* ==================================================
+   SALAS - RECURSOS
+================================================== */
+.sala-recursos-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.sala-recurso {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.28rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(0, 74, 141, 0.08);
+  border: 1px solid rgba(0, 74, 141, 0.14);
+  color: var(--senac-azul);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.sala-recurso strong {
+  font-weight: 700;
+}

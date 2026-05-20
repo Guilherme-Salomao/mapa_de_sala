@@ -1,14 +1,14 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
+    if (session_status() === PHP_SESSION_NONE) {
     session_start();
-}
+    }
 
-if (!isset($_SESSION['usuario'])) {
+    if (! isset($_SESSION['usuario'])) {
     header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
     exit;
-}
+    }
 
-$usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuário';
+    $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuário';
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -37,9 +37,9 @@ $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuário';
   <main class="flex-grow-1">
     <div class="container-fluid">
       <div class="row g-0">
-        <?php 
-          $paginaAtiva = 'home'; 
-          require_once __DIR__ . '/../layouts/sidebar.php'; 
+        <?php
+            $paginaAtiva = 'home';
+            require_once __DIR__ . '/../layouts/sidebar.php';
         ?>
 
         <section class="col-12 col-md-9 col-lg-10 p-3 p-md-4 app-content">
@@ -185,13 +185,10 @@ $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuário';
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-  const usuarioLogado = <?= json_encode($usuarioLogado) ?>;
+  const usuarioLogado = <?php echo json_encode($usuarioLogado) ?>;
 
   const pageTitle = document.getElementById("pageTitle");
   if (pageTitle) pageTitle.textContent = "Dashboard";
-
-  const userName = document.getElementById("userName");
-  if (userName) userName.textContent = usuarioLogado;
 
   const salasPadrao = [{
       id: 1,
