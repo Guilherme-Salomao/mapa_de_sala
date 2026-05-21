@@ -23,7 +23,9 @@
         'area_atuacao'   => '',
         'status'         => 'Ativo',
         'observacoes'    => '',
+        'unidades_curriculares' => [],
     ];
+    $unidadesCurriculares = $unidadesCurriculares ?? [];
 
     $tituloPagina    = 'Editar Docente';
     $subtituloPagina = 'Atualize os dados do docente selecionado';

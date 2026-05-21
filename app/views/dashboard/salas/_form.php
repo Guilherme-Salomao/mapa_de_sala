@@ -66,12 +66,8 @@
     <div class="col-12 col-md-6">
       <label for="status" class="form-label">Status</label>
       <select class="form-select" id="status" name="status" required>
-        <option value="livre" <?php echo(($salaForm['status'] ?? 'livre') === 'livre') ? 'selected' : ''; ?>>
-          Livre
-        </option>
-
-        <option value="uso" <?php echo(($salaForm['status'] ?? '') === 'uso') ? 'selected' : ''; ?>>
-          Em uso
+        <option value="ativa" <?php echo(in_array(($salaForm['status'] ?? 'ativa'), ['ativa', 'livre', 'uso'], true)) ? 'selected' : ''; ?>>
+          Ativa
         </option>
 
         <option value="manutencao" <?php echo(($salaForm['status'] ?? '') === 'manutencao') ? 'selected' : ''; ?>>

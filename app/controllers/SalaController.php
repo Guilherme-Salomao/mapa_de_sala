@@ -65,7 +65,7 @@ class SalaController
             'descricao'  => $descricao,
         ]);
 
-        if (empty($nome) || empty($tipo) || $capacidade <= 0 || empty($status)) {
+        if (empty($nome) || empty($tipo) || $capacidade <= 0 || ! $this->statusValido($status)) {
             header('Location: /mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
             exit;
         }
@@ -160,7 +160,7 @@ class SalaController
             'nome'                => trim($_POST['nome'] ?? ''),
             'tipo'                => trim($_POST['tipo'] ?? ''),
             'capacidade'          => (int) ($_POST['capacidade'] ?? 0),
-            'status'              => trim($_POST['status'] ?? 'livre'),
+            'status'              => trim($_POST['status'] ?? 'ativa'),
             'descricao'           => trim($_POST['descricao'] ?? ''),
             'recursos'            => $_POST['recursos'] ?? [],
             'quantidade_recursos' => $_POST['quantidade_recursos'] ?? [],
@@ -171,7 +171,7 @@ class SalaController
             empty($dados['nome']) ||
             empty($dados['tipo']) ||
             $dados['capacidade'] <= 0 ||
-            empty($dados['status'])
+            ! $this->statusValido($dados['status'])
         ) {
             header('Location: /mapa_de_sala/public/?page=salas&tipo=erro&msg=' . urlencode('Dados inválidos para atualização.'));
             exit;
@@ -215,5 +215,10 @@ class SalaController
 
         header('Location: /mapa_de_sala/public/?page=salas&tipo=erro&msg=' . urlencode('Erro ao excluir sala.'));
         exit;
+    }
+
+    private function statusValido(string $status): bool
+    {
+        return in_array($status, ['ativa', 'manutencao', 'inativa'], true);
     }
 }

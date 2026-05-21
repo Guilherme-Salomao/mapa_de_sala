@@ -21,6 +21,8 @@
         'nome'                => $_GET['nome'] ?? '',
         'codigo_oferta'       => $_GET['codigo_oferta'] ?? '',
         'periodo'             => $_GET['periodo'] ?? '',
+        'hora_inicio'         => $_GET['hora_inicio'] ?? '',
+        'hora_fim'            => $_GET['hora_fim'] ?? '',
         'carga_horaria_total' => $_GET['carga_horaria_total'] ?? '',
         'hora_aula'           => $_GET['hora_aula'] ?? '',
         'status'              => $_GET['status'] ?? 'Em andamento',

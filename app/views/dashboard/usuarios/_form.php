@@ -35,9 +35,9 @@
         <option value="Admin" <?php echo(($usuarioForm['nivel_acesso'] ?? '') === 'Admin') ? 'selected' : ''; ?>>Admin
         </option>
         <option value="Gestor" <?php echo(($usuarioForm['nivel_acesso'] ?? '') === 'Gestor') ? 'selected' : ''; ?>>
-          Gestor</option>
+          Gestor(a)</option>
         <option value="Professor"
-          <?php echo(($usuarioForm['nivel_acesso'] ?? '') === 'Professor') ? 'selected' : ''; ?>>Professor</option>
+          <?php echo(($usuarioForm['nivel_acesso'] ?? '') === 'Professor') ? 'selected' : ''; ?>>Professor(a)</option>
         <option value="Apoio" <?php echo(($usuarioForm['nivel_acesso'] ?? '') === 'Apoio') ? 'selected' : ''; ?>>Apoio
         </option>
       </select>
@@ -57,6 +57,23 @@
       <div class="invalid-feedback">
         Selecione o status.
       </div>
+    </div>
+
+    <div class="col-12" id="areasUsuarioWrap">
+      <label class="form-label">Areas de acesso</label>
+      <div class="row g-2">
+        <?php foreach (($areas ?? []) as $area): ?>
+        <?php $areaId = (int) ($area['id'] ?? 0); ?>
+        <div class="col-12 col-md-4 col-lg-3">
+          <label class="form-check border rounded p-2 d-flex align-items-center gap-2">
+            <input class="form-check-input m-0" type="checkbox" name="areas[]" value="<?php echo $areaId; ?>"
+              <?php echo in_array($areaId, $areasUsuario ?? [], true) ? 'checked' : ''; ?>>
+            <span><?php echo htmlspecialchars($area['nome'] ?? ''); ?></span>
+          </label>
+        </div>
+        <?php endforeach; ?>
+      </div>
+      <div class="form-text">Usado para limitar o acesso de Gestor(a) e Apoio por area.</div>
     </div>
 
     <div class="col-12 col-md-6">
@@ -117,3 +134,23 @@
     </button>
   </div>
 </form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const nivel = document.getElementById("nivel_acesso");
+  const areasWrap = document.getElementById("areasUsuarioWrap");
+
+  function alternarAreas() {
+    if (!nivel || !areasWrap) return;
+
+    const mostrar = nivel.value === "Gestor" || nivel.value === "Apoio";
+    areasWrap.classList.toggle("d-none", !mostrar);
+  }
+
+  if (nivel) {
+    nivel.addEventListener("change", alternarAreas);
+  }
+
+  alternarAreas();
+});
+</script>

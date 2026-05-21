@@ -52,6 +52,20 @@
     </div>
 
     <div class="col-12 col-md-6">
+      <label for="hora_inicio" class="form-label">Hora de inicio</label>
+      <input type="time" class="form-control" id="hora_inicio" name="hora_inicio"
+        value="<?php echo htmlspecialchars(substr($cursoForm['hora_inicio'] ?? '', 0, 5)); ?>">
+      <div class="form-text">Opcional.</div>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label for="hora_fim" class="form-label">Hora de fim</label>
+      <input type="time" class="form-control" id="hora_fim" name="hora_fim"
+        value="<?php echo htmlspecialchars(substr($cursoForm['hora_fim'] ?? '', 0, 5)); ?>">
+      <div class="form-text">Opcional.</div>
+    </div>
+
+    <div class="col-12 col-md-6">
       <label for="status" class="form-label">Status</label>
       <select class="form-select" id="status" name="status" required>
         <option value="Em andamento"
@@ -81,14 +95,35 @@
 
     <div class="col-12 col-md-6">
       <label for="hora_aula" class="form-label">Hora-aula</label>
-      <div class="input-group">
-        <span class="input-group-text app-input-icon">
-          <i class="bi bi-clock"></i>
-        </span>
-        <input type="number" class="form-control" id="hora_aula" name="hora_aula" min="1" step="1" placeholder="Ex.: 4"
-          value="<?php echo htmlspecialchars($cursoForm['hora_aula'] ?? ''); ?>" required>
-        <span class="input-group-text">h</span>
-        <div class="invalid-feedback">Informe a hora-aula em horas inteiras.</div>
+      <?php
+          $horaAulaValor = (float) ($cursoForm['hora_aula'] ?? 0);
+          $horaAulaHoras = (int) floor($horaAulaValor);
+          $horaAulaMinutos = (int) round(($horaAulaValor - $horaAulaHoras) * 60);
+
+          if ($horaAulaMinutos === 60) {
+              $horaAulaHoras++;
+              $horaAulaMinutos = 0;
+          }
+      ?>
+      <div class="row g-2">
+        <div class="col-6">
+          <div class="input-group">
+            <span class="input-group-text app-input-icon">
+              <i class="bi bi-clock"></i>
+            </span>
+            <input type="number" class="form-control" id="hora_aula_horas" name="hora_aula_horas" min="0" step="1"
+              placeholder="Ex.: 3" value="<?php echo htmlspecialchars($horaAulaHoras ?: ''); ?>" required>
+            <span class="input-group-text">h</span>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="input-group">
+            <input type="number" class="form-control" id="hora_aula_minutos" name="hora_aula_minutos" min="0" max="59"
+              step="1" placeholder="Ex.: 30" value="<?php echo htmlspecialchars($horaAulaMinutos ?: ''); ?>">
+            <span class="input-group-text">min</span>
+            <div class="invalid-feedback">Informe a hora-aula.</div>
+          </div>
+        </div>
       </div>
     </div>
 

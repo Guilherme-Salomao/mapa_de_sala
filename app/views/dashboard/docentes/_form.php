@@ -96,6 +96,32 @@
     </div>
 
     <div class="col-12">
+      <label class="form-label">UCs que o docente pode atuar</label>
+      <div class="border rounded p-3" style="max-height: 260px; overflow:auto;">
+        <?php if (empty($unidadesCurriculares ?? [])): ?>
+        <div class="text-muted small">Nenhuma UC ativa cadastrada.</div>
+        <?php endif; ?>
+        <?php foreach (($unidadesCurriculares ?? []) as $uc): ?>
+        <?php
+            $ucId = (int) ($uc['id'] ?? 0);
+            $ucsSelecionadas = $docenteForm['unidades_curriculares'] ?? [];
+        ?>
+        <label class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" name="unidades_curriculares[]"
+            value="<?php echo $ucId; ?>" <?php echo in_array($ucId, $ucsSelecionadas, true) ? 'checked' : ''; ?>>
+          <span class="form-check-label">
+            <span class="fw-semibold"><?php echo htmlspecialchars(($uc['codigo'] ?? '') . ' - ' . ($uc['nome'] ?? '')); ?></span>
+            <span class="text-muted">
+              <?php echo htmlspecialchars(' · ' . ($uc['curso_nome'] ?? '') . (! empty($uc['area_nome']) ? ' · ' . $uc['area_nome'] : '')); ?>
+            </span>
+          </span>
+        </label>
+        <?php endforeach; ?>
+      </div>
+      <div class="form-text">No quadro horario, o professor so aparece para as UCs selecionadas aqui.</div>
+    </div>
+
+    <div class="col-12">
       <hr class="my-2" />
 
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">

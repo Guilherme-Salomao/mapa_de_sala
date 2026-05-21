@@ -106,6 +106,7 @@ class Docente
         }
 
         $docente['escala'] = $this->listarEscalaPorDocente($id);
+        $docente['unidades_curriculares'] = $this->listarUcsPorDocente($id);
 
         return $docente;
     }
@@ -198,6 +199,7 @@ class Docente
 
             $docenteId = (int) $this->conn->lastInsertId();
             $this->salvarEscala($docenteId, $dados['escala'] ?? []);
+            $this->salvarUcsDocente($docenteId, $dados['unidades_curriculares'] ?? []);
 
             $this->conn->commit();
 
@@ -239,6 +241,7 @@ class Docente
 
             $this->removerEscala((int) $dados['id']);
             $this->salvarEscala((int) $dados['id'], $dados['escala'] ?? []);
+            $this->salvarUcsDocente((int) $dados['id'], $dados['unidades_curriculares'] ?? []);
 
             $this->conn->commit();
 
@@ -279,6 +282,73 @@ class Docente
         $stmt->execute([':docente_id' => $docenteId]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function listarUnidadesCurriculares(): array
+    {
+        $sql = "
+            SELECT
+                uc.id,
+                uc.codigo,
+                uc.nome,
+                cm.nome AS curso_nome,
+                a.nome AS area_nome
+            FROM unidades_curriculares uc
+            INNER JOIN curso_modelos cm ON cm.id = uc.curso_modelo_id
+            LEFT JOIN areas a ON a.id = cm.area_id
+            WHERE uc.status = 'Ativa'
+            ORDER BY a.nome ASC, cm.nome ASC, uc.ordem ASC, uc.nome ASC
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function listarUcsPorDocente(int $docenteId): array
+    {
+        $sql = "
+            SELECT unidade_curricular_id
+            FROM docente_unidades_curriculares
+            WHERE docente_id = :docente_id
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':docente_id' => $docenteId]);
+
+        return array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'unidade_curricular_id'));
+    }
+
+    private function salvarUcsDocente(int $docenteId, array $ucs): void
+    {
+        $stmt = $this->conn->prepare("DELETE FROM docente_unidades_curriculares WHERE docente_id = :docente_id");
+        $stmt->execute([':docente_id' => $docenteId]);
+
+        $ucs = array_values(array_unique(array_filter(array_map('intval', $ucs))));
+
+        if (empty($ucs)) {
+            return;
+        }
+
+        $sql = "
+            INSERT INTO docente_unidades_curriculares (
+                docente_id,
+                unidade_curricular_id
+            ) VALUES (
+                :docente_id,
+                :unidade_curricular_id
+            )
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+
+        foreach ($ucs as $ucId) {
+            $stmt->execute([
+                ':docente_id' => $docenteId,
+                ':unidade_curricular_id' => $ucId,
+            ]);
+        }
     }
 
     private function salvarEscala(int $docenteId, array $escala): void

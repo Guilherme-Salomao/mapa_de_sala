@@ -22,6 +22,8 @@
         'nome'                => '',
         'codigo_oferta'       => '',
         'periodo'             => '',
+        'hora_inicio'         => '',
+        'hora_fim'            => '',
         'carga_horaria_total' => '',
         'hora_aula'           => '',
         'status'              => 'Em andamento',

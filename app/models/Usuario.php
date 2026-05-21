@@ -113,6 +113,88 @@ class Usuario
         ]);
     }
 
+    public function listarAreas(): array
+    {
+        $sql = "
+            SELECT id, nome, status
+            FROM areas
+            WHERE status = 'Ativa'
+            ORDER BY nome ASC
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    public function listarAreasUsuario(int $usuarioId): array
+    {
+        $sql = "
+            SELECT area_id
+            FROM usuario_areas
+            WHERE usuario_id = :usuario_id
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':usuario_id' => $usuarioId]);
+
+        return array_map('intval', array_column($stmt->fetchAll(), 'area_id'));
+    }
+
+    public function salvarAreasUsuario(int $usuarioId, array $areas): bool
+    {
+        try {
+            $this->conn->beginTransaction();
+
+            $stmt = $this->conn->prepare("DELETE FROM usuario_areas WHERE usuario_id = :usuario_id");
+            $stmt->execute([':usuario_id' => $usuarioId]);
+
+            $areas = array_values(array_unique(array_filter(array_map('intval', $areas))));
+
+            if (! empty($areas)) {
+                $sql = "
+                    INSERT INTO usuario_areas (usuario_id, area_id)
+                    VALUES (:usuario_id, :area_id)
+                ";
+                $stmt = $this->conn->prepare($sql);
+
+                foreach ($areas as $areaId) {
+                    $stmt->execute([
+                        ':usuario_id' => $usuarioId,
+                        ':area_id' => $areaId,
+                    ]);
+                }
+            }
+
+            $this->conn->commit();
+
+            return true;
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+
+            return false;
+        }
+    }
+
+    public function atualizarSenhaEStatus(int $id, string $novaSenha, string $status): bool
+    {
+        $sql = "UPDATE {$this->table}
+                SET senha = :senha,
+                    status = :status
+                WHERE id = :id";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute([
+            ':id'     => $id,
+            ':senha'  => $novaSenha,
+            ':status' => $status,
+        ]);
+    }
+
     public function excluir(int $id): bool
     {
         $sql = "DELETE FROM {$this->table}

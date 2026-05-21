@@ -15,8 +15,8 @@
     <select id="filtroNivel" name="nivel" class="form-select">
       <option value="todos" <?php echo $nivel === 'todos' ? 'selected' : ''; ?>>Todos os níveis</option>
       <option value="Admin" <?php echo $nivel === 'Admin' ? 'selected' : ''; ?>>Admin</option>
-      <option value="Gestor" <?php echo $nivel === 'Gestor' ? 'selected' : ''; ?>>Gestor</option>
-      <option value="Professor" <?php echo $nivel === 'Professor' ? 'selected' : ''; ?>>Professor</option>
+      <option value="Gestor" <?php echo $nivel === 'Gestor' ? 'selected' : ''; ?>>Gestor(a)</option>
+      <option value="Professor" <?php echo $nivel === 'Professor' ? 'selected' : ''; ?>>Professor(a)</option>
       <option value="Apoio" <?php echo $nivel === 'Apoio' ? 'selected' : ''; ?>>Apoio</option>
     </select>
   </div>

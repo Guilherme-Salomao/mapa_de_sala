@@ -4,11 +4,25 @@
   <?php endif; ?>
 
   <div class="row g-3">
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-5">
       <label for="nome" class="form-label">Nome do curso</label>
       <input type="text" class="form-control" id="nome" name="nome" placeholder="Ex.: Tecnico em Informatica"
         value="<?php echo htmlspecialchars($cursoForm['nome'] ?? ''); ?>" required>
       <div class="invalid-feedback">Informe o nome do curso.</div>
+    </div>
+
+    <div class="col-12 col-md-4">
+      <label for="area_id" class="form-label">Area</label>
+      <select class="form-select" id="area_id" name="area_id" required>
+        <option value="" <?php echo empty($cursoForm['area_id']) ? 'selected' : ''; ?> disabled>Selecione...</option>
+        <?php foreach (($areas ?? []) as $area): ?>
+        <option value="<?php echo (int) $area['id']; ?>"
+          <?php echo((int) ($cursoForm['area_id'] ?? ($_GET['area_id'] ?? 0)) === (int) $area['id']) ? 'selected' : ''; ?>>
+          <?php echo htmlspecialchars($area['nome'] ?? ''); ?>
+        </option>
+        <?php endforeach; ?>
+      </select>
+      <div class="invalid-feedback">Selecione a area do curso.</div>
     </div>
 
     <div class="col-12 col-md-3">

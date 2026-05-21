@@ -48,12 +48,8 @@
         Todos
       </option>
 
-      <option value="livre" <?php echo(($status ?? '') === 'livre') ? 'selected' : ''; ?>>
-        Livre
-      </option>
-
-      <option value="uso" <?php echo(($status ?? '') === 'uso') ? 'selected' : ''; ?>>
-        Em uso
+      <option value="ativa" <?php echo(($status ?? '') === 'ativa') ? 'selected' : ''; ?>>
+        Ativa
       </option>
 
       <option value="manutencao" <?php echo(($status ?? '') === 'manutencao') ? 'selected' : ''; ?>>

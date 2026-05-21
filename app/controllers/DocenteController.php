@@ -29,6 +29,7 @@ class DocenteController
         $this->exigirLogin();
 
         $usuariosDisponiveis = $this->docenteModel->listarUsuariosDisponiveis();
+        $unidadesCurriculares = $this->docenteModel->listarUnidadesCurriculares();
 
         require_once __DIR__ . '/../views/dashboard/cadastrar_docente.php';
     }
@@ -84,6 +85,7 @@ class DocenteController
         }
 
         $usuariosDisponiveis = $this->docenteModel->listarUsuariosDisponiveis((int) $docenteForm['usuario_id']);
+        $unidadesCurriculares = $this->docenteModel->listarUnidadesCurriculares();
 
         require_once __DIR__ . '/../views/dashboard/editar_docente.php';
     }
@@ -163,6 +165,7 @@ class DocenteController
             'status'         => trim($_POST['status'] ?? 'Ativo'),
             'observacoes'    => trim($_POST['observacoes'] ?? ''),
             'escala'         => $this->obterEscalaPost(),
+            'unidades_curriculares' => $this->obterUcsPost(),
         ];
     }
 
@@ -210,6 +213,17 @@ class DocenteController
         }
 
         return $escala;
+    }
+
+    private function obterUcsPost(): array
+    {
+        $ucs = $_POST['unidades_curriculares'] ?? [];
+
+        if (! is_array($ucs)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map('intval', $ucs))));
     }
 
     private function totalHorasEscala(array $escala): int

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/CursoModelo.php';
+require_once __DIR__ . '/../core/AccessControl.php';
 
 class CursoModeloController
 {
@@ -17,9 +18,10 @@ class CursoModeloController
 
         $busca = trim($_GET['busca'] ?? '');
         $status = trim($_GET['status'] ?? 'todos');
+        $escopo = (new AccessControl())->escopo();
 
-        $cursos = $this->cursoModel->listar($busca, $status);
-        $totalCursos = $this->cursoModel->contar($busca, $status);
+        $cursos = $this->cursoModel->listar($busca, $status, $escopo);
+        $totalCursos = $this->cursoModel->contar($busca, $status, $escopo);
 
         require_once __DIR__ . '/../views/dashboard/curso_modelos.php';
     }
@@ -27,6 +29,8 @@ class CursoModeloController
     public function cadastrar(): void
     {
         $this->exigirLogin();
+
+        $areas = $this->cursoModel->listarAreas();
 
         require_once __DIR__ . '/../views/dashboard/cadastrar_curso_modelo.php';
     }
@@ -47,6 +51,8 @@ class CursoModeloController
             $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Curso nao encontrado.'));
         }
 
+        $areas = $this->cursoModel->listarAreas();
+
         require_once __DIR__ . '/../views/dashboard/editar_curso_modelo.php';
     }
 
@@ -59,6 +65,10 @@ class CursoModeloController
 
         if (! $this->validarDados($dados)) {
             $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
+        }
+
+        if (! $this->cursoModel->areaExiste($dados['area_id'])) {
+            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Area selecionada nao foi encontrada.'));
         }
 
         if ($this->cursoModel->nomeExiste($dados['nome'])) {
@@ -81,6 +91,10 @@ class CursoModeloController
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
             $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
+        }
+
+        if (! $this->cursoModel->areaExiste($dados['area_id'])) {
+            $this->redirecionar('/mapa_de_sala/public/?page=cursos&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Area selecionada nao foi encontrada.'));
         }
 
         if (! $this->cursoModel->buscarPorId($dados['id'])) {
@@ -129,6 +143,7 @@ class CursoModeloController
     private function obterDadosPost(): array
     {
         return [
+            'area_id'             => (int) ($_POST['area_id'] ?? 0),
             'nome'                => trim($_POST['nome'] ?? ''),
             'carga_horaria_total' => (int) ($_POST['carga_horaria_total'] ?? 0),
             'status'              => trim($_POST['status'] ?? 'Ativo'),
@@ -138,6 +153,7 @@ class CursoModeloController
     private function validarDados(array $dados): bool
     {
         return $dados['nome'] !== ''
+            && $dados['area_id'] > 0
             && $dados['carga_horaria_total'] > 0
             && in_array($dados['status'], ['Ativo', 'Inativo'], true);
     }
@@ -147,6 +163,7 @@ class CursoModeloController
         return http_build_query([
             'page'                => 'cursos',
             'action'              => 'cadastrar',
+            'area_id'             => $dados['area_id'] > 0 ? $dados['area_id'] : '',
             'nome'                => $dados['nome'],
             'carga_horaria_total' => $dados['carga_horaria_total'] > 0 ? $dados['carga_horaria_total'] : '',
             'status'              => $dados['status'],

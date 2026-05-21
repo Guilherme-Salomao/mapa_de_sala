@@ -22,7 +22,9 @@
         'area_atuacao'   => $_GET['area_atuacao'] ?? '',
         'status'         => $_GET['status'] ?? 'Ativo',
         'observacoes'    => $_GET['observacoes'] ?? '',
+        'unidades_curriculares' => [],
     ];
+    $unidadesCurriculares = $unidadesCurriculares ?? [];
 
     $tituloPagina    = 'Cadastrar Docente';
     $subtituloPagina = 'Vincule um usuário professor ao cadastro docente';

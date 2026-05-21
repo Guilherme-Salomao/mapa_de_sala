@@ -13,7 +13,7 @@ class Curso
         $this->conn = $database->connect();
     }
 
-    public function listar(string $busca = '', string $status = 'todos'): array
+    public function listar(string $busca = '', string $status = 'todos', array $escopo = ['tipo' => 'todos', 'ids' => []]): array
     {
         $sql = "
             SELECT
@@ -22,6 +22,8 @@ class Curso
                 co.nome,
                 co.codigo_oferta,
                 co.periodo,
+                co.hora_inicio,
+                co.hora_fim,
                 co.carga_horaria_total,
                 co.hora_aula,
                 co.status,
@@ -46,6 +48,8 @@ class Curso
             $params[':status'] = $status;
         }
 
+        $this->aplicarEscopo($sql, $params, $escopo);
+
         $sql .= " ORDER BY co.nome ASC";
 
         $stmt = $this->conn->prepare($sql);
@@ -54,7 +58,7 @@ class Curso
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function contar(string $busca = '', string $status = 'todos'): int
+    public function contar(string $busca = '', string $status = 'todos', array $escopo = ['tipo' => 'todos', 'ids' => []]): int
     {
         $sql = "
             SELECT COUNT(*) AS total
@@ -74,6 +78,8 @@ class Curso
             $params[':status'] = $status;
         }
 
+        $this->aplicarEscopo($sql, $params, $escopo);
+
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
         $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -90,6 +96,8 @@ class Curso
                 nome,
                 codigo_oferta,
                 periodo,
+                hora_inicio,
+                hora_fim,
                 carga_horaria_total,
                 hora_aula,
                 status,
@@ -156,6 +164,8 @@ class Curso
                     nome,
                     codigo_oferta,
                     periodo,
+                    hora_inicio,
+                    hora_fim,
                     carga_horaria_total,
                     hora_aula,
                     status,
@@ -165,6 +175,8 @@ class Curso
                     :nome,
                     :codigo_oferta,
                     :periodo,
+                    :hora_inicio,
+                    :hora_fim,
                     :carga_horaria_total,
                     :hora_aula,
                     :status,
@@ -179,6 +191,8 @@ class Curso
                 ':nome'                => $dados['nome'],
                 ':codigo_oferta'       => $dados['codigo_oferta'],
                 ':periodo'             => $dados['periodo'],
+                ':hora_inicio'         => $dados['hora_inicio'] ?: null,
+                ':hora_fim'            => $dados['hora_fim'] ?: null,
                 ':carga_horaria_total' => $dados['carga_horaria_total'],
                 ':hora_aula'           => $dados['hora_aula'],
                 ':status'              => $dados['status'],
@@ -198,6 +212,8 @@ class Curso
                     nome = :nome,
                     codigo_oferta = :codigo_oferta,
                     periodo = :periodo,
+                    hora_inicio = :hora_inicio,
+                    hora_fim = :hora_fim,
                     carga_horaria_total = :carga_horaria_total,
                     hora_aula = :hora_aula,
                     status = :status,
@@ -213,6 +229,8 @@ class Curso
                 ':nome'                => $dados['nome'],
                 ':codigo_oferta'       => $dados['codigo_oferta'],
                 ':periodo'             => $dados['periodo'],
+                ':hora_inicio'         => $dados['hora_inicio'] ?: null,
+                ':hora_fim'            => $dados['hora_fim'] ?: null,
                 ':carga_horaria_total' => $dados['carga_horaria_total'],
                 ':hora_aula'           => $dados['hora_aula'],
                 ':status'              => $dados['status'],
@@ -232,6 +250,43 @@ class Curso
             return $stmt->execute([':id' => $id]);
         } catch (Throwable $e) {
             return false;
+        }
+    }
+
+    private function aplicarEscopo(string &$sql, array &$params, array $escopo): void
+    {
+        $tipo = $escopo['tipo'] ?? 'todos';
+        $ids = array_values(array_filter(array_map('intval', $escopo['ids'] ?? [])));
+
+        if ($tipo === 'todos') {
+            return;
+        }
+
+        if (empty($ids)) {
+            $sql .= " AND 1 = 0";
+            return;
+        }
+
+        $placeholders = [];
+
+        foreach ($ids as $index => $id) {
+            $placeholder = ':escopo_' . $tipo . '_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $id;
+        }
+
+        if ($tipo === 'areas') {
+            $sql .= " AND cm.area_id IN (" . implode(',', $placeholders) . ")";
+            return;
+        }
+
+        if ($tipo === 'ucs') {
+            $sql .= " AND EXISTS (
+                SELECT 1
+                FROM unidades_curriculares uc_escopo
+                WHERE uc_escopo.curso_modelo_id = co.curso_modelo_id
+                  AND uc_escopo.id IN (" . implode(',', $placeholders) . ")
+            )";
         }
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/UnidadeCurricular.php';
+require_once __DIR__ . '/../core/AccessControl.php';
 
 class UnidadeCurricularController
 {
@@ -18,10 +19,11 @@ class UnidadeCurricularController
         $busca = trim($_GET['busca'] ?? '');
         $status = trim($_GET['status'] ?? 'todos');
         $cursoModeloId = (int) ($_GET['curso_modelo_id'] ?? 0);
+        $escopo = (new AccessControl())->escopo();
 
-        $ucs = $this->ucModel->listar($busca, $status, $cursoModeloId);
-        $totalUcs = $this->ucModel->contar($busca, $status, $cursoModeloId);
-        $cursoModelos = $this->ucModel->listarCursoModelos();
+        $ucs = $this->ucModel->listar($busca, $status, $cursoModeloId, $escopo);
+        $totalUcs = $this->ucModel->contar($busca, $status, $cursoModeloId, $escopo);
+        $cursoModelos = $this->ucModel->listarCursoModelosPorEscopo($escopo);
 
         require_once __DIR__ . '/../views/dashboard/ucs.php';
     }
@@ -30,7 +32,7 @@ class UnidadeCurricularController
     {
         $this->exigirLogin();
 
-        $cursoModelos = $this->ucModel->listarCursoModelos();
+        $cursoModelos = $this->ucModel->listarCursoModelosPorEscopo((new AccessControl())->escopo());
 
         require_once __DIR__ . '/../views/dashboard/cadastrar_uc.php';
     }
@@ -51,7 +53,7 @@ class UnidadeCurricularController
             $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
         }
 
-        $cursoModelos = $this->ucModel->listarCursoModelos();
+        $cursoModelos = $this->ucModel->listarCursoModelosPorEscopo((new AccessControl())->escopo());
 
         require_once __DIR__ . '/../views/dashboard/editar_uc.php';
     }

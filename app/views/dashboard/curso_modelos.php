@@ -80,6 +80,7 @@
                 <thead class="small text-muted">
                   <tr>
                     <th>Curso</th>
+                    <th>Area</th>
                     <th>Carga horaria total</th>
                     <th>Status</th>
                     <th class="text-end">Acoes</th>
@@ -91,6 +92,7 @@
                   <?php foreach ($cursos as $curso): ?>
                   <tr>
                     <td class="fw-semibold"><?php echo htmlspecialchars($curso['nome'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($curso['area_nome'] ?? 'Nao informada'); ?></td>
                     <td><?php echo (int) ($curso['carga_horaria_total'] ?? 0); ?>h</td>
                     <td>
                       <?php
@@ -108,7 +110,7 @@
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="4" class="text-center text-muted py-4">
+                    <td colspan="5" class="text-center text-muted py-4">
                       Nenhum curso encontrado.
                     </td>
                   </tr>

@@ -82,6 +82,7 @@
                     <th>Turma</th>
                     <th>Codigo da oferta</th>
                     <th>Periodo</th>
+                    <th>Horario</th>
                     <th>Carga horaria</th>
                     <th>Hora-aula</th>
                     <th>Status</th>
@@ -101,8 +102,30 @@
                     </td>
                     <td><?php echo htmlspecialchars($curso['codigo_oferta'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($curso['periodo'] ?? ''); ?></td>
+                    <td>
+                      <?php if (! empty($curso['hora_inicio']) && ! empty($curso['hora_fim'])): ?>
+                      <?php echo htmlspecialchars(substr($curso['hora_inicio'], 0, 5) . ' - ' . substr($curso['hora_fim'], 0, 5)); ?>
+                      <?php else: ?>
+                      <span class="text-muted">Nao informado</span>
+                      <?php endif; ?>
+                    </td>
                     <td><?php echo (int) ($curso['carga_horaria_total'] ?? 0); ?>h</td>
-                    <td><?php echo (int) ($curso['hora_aula'] ?? 0); ?>h</td>
+                    <td>
+                      <?php
+                          $horaAula = (float) ($curso['hora_aula'] ?? 0);
+                          $horaAulaHoras = (int) floor($horaAula);
+                          $horaAulaMinutos = (int) round(($horaAula - $horaAulaHoras) * 60);
+
+                          if ($horaAulaMinutos === 60) {
+                              $horaAulaHoras++;
+                              $horaAulaMinutos = 0;
+                          }
+
+                          echo $horaAulaMinutos > 0
+                              ? htmlspecialchars($horaAulaHoras . 'h' . str_pad((string) $horaAulaMinutos, 2, '0', STR_PAD_LEFT))
+                              : htmlspecialchars($horaAulaHoras . 'h');
+                      ?>
+                    </td>
                     <td>
                       <?php
                           $statusCurso = $curso['status'] ?? 'Em andamento';
@@ -119,7 +142,7 @@
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
+                    <td colspan="8" class="text-center text-muted py-4">
                       Nenhuma turma encontrada.
                     </td>
                   </tr>

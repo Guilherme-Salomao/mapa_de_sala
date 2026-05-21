@@ -21,6 +21,8 @@
     $botaoTexto  = 'Atualizar Usuário';
     $modoEdicao  = true;
     $usuarioForm = $usuario;
+    $areas = $areas ?? [];
+    $areasUsuario = $areasUsuario ?? [];
 
     $tituloPagina    = 'Editar Usuário';
     $subtituloPagina = 'Atualize os dados do usuário selecionado (Obs.: Caso a senha não seja preenchida, a senha atual será mantida)';

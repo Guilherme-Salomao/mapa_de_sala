@@ -1,0 +1,237 @@
+<?php
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    if (! isset($_SESSION['usuario'])) {
+        header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+        exit;
+    }
+
+    $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuario';
+    $turmas = $turmas ?? [];
+    $turmaId = (int) ($turmaId ?? 0);
+    $linhas = $linhas ?? [];
+    $datasTurma = $datasTurma ?? ['data_inicial' => null, 'data_final' => null];
+
+    $tituloPagina = 'Relatorio da Turma';
+    $subtituloPagina = 'Acompanhamento de carga horaria por unidade curricular';
+    $botaoTopoTexto = '';
+    $botaoTopoLink = '';
+
+    $totalCarga = 0;
+    $totalLancadas = 0;
+    $totalDadas = 0;
+
+    foreach ($linhas as $linhaResumo) {
+        $totalCarga += (float) ($linhaResumo['carga_horaria'] ?? 0);
+        $totalLancadas += round((float) ($linhaResumo['horas_lancadas'] ?? 0), 2);
+    }
+
+    $turmaConcluida = $totalCarga > 0 && $totalLancadas >= $totalCarga;
+    $corDataFinal = $turmaConcluida ? '#198754' : '#f97316';
+    $totalDadas = $totalLancadas;
+?>
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Relatorio da Turma - Sistema de Controle de Salas</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+
+  <style>
+  .relatorio-turma-table th {
+    background: #0d6efd;
+    color: #fff;
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .relatorio-turma-table td {
+    font-size: 1rem;
+    vertical-align: middle;
+  }
+
+  .relatorio-turma-table .col-numero {
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .horas-ok {
+    background: #86ef8b !important;
+  }
+
+  .horas-acima {
+    background: #35c43b !important;
+  }
+
+  .horas-pendente {
+    background: #fff3cd !important;
+  }
+  </style>
+
+  <script>
+  (function() {
+    const tema = localStorage.getItem("tema") || "light";
+    document.documentElement.setAttribute("data-bs-theme", tema);
+  })();
+  </script>
+</head>
+
+<body>
+  <?php require_once __DIR__ . '/../layouts/header.php'; ?>
+
+  <main class="flex-grow-1">
+    <div class="container-fluid">
+      <div class="row g-0">
+        <?php
+            $paginaAtiva = 'relatorio_turma';
+            require_once __DIR__ . '/../layouts/sidebar.php';
+        ?>
+
+        <section class="col-12 col-md-9 col-lg-10 p-3 p-md-4 app-content">
+          <?php require_once __DIR__ . '/../components/page_header.php'; ?>
+
+          <div class="app-card p-3 mb-3">
+            <form method="GET" action="/mapa_de_sala/public/" class="row g-2 align-items-end">
+              <input type="hidden" name="page" value="relatorio_turma">
+
+              <div class="col-12 col-lg-8">
+                <label for="turma_id" class="form-label">Turma</label>
+                <select class="form-select" id="turma_id" name="turma_id" required>
+                  <option value="">Selecione a turma...</option>
+                  <?php foreach ($turmas as $turma): ?>
+                  <option value="<?php echo (int) $turma['id']; ?>"
+                    <?php echo $turmaId === (int) $turma['id'] ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars(($turma['nome'] ?? '') . ' - ' . ($turma['codigo_oferta'] ?? '')); ?>
+                  </option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+
+              <div class="col-12 col-lg-4">
+                <button type="submit" class="btn app-btn-primary w-100">
+                  <i class="bi bi-funnel"></i> Filtrar
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <?php if (! empty($turmaSelecionada)): ?>
+          <div class="app-card p-3 mb-3">
+            <div class="d-flex flex-nowrap align-items-center gap-3 overflow-auto">
+              <div class="fw-bold flex-shrink-0"><?php echo htmlspecialchars($turmaSelecionada['nome'] ?? ''); ?></div>
+              <div class="small text-muted flex-shrink-0">
+                Oferta <?php echo htmlspecialchars($turmaSelecionada['codigo_oferta'] ?? ''); ?>
+                <?php if (! empty($turmaSelecionada['curso_nome'])): ?>
+                · <?php echo htmlspecialchars($turmaSelecionada['curso_nome']); ?>
+                <?php endif; ?>
+              </div>
+              <div class="small flex-shrink-0">
+                Data inicial:
+                <strong>
+                  <?php echo ! empty($datasTurma['data_inicial']) ? htmlspecialchars(date('d/m/Y', strtotime($datasTurma['data_inicial']))) : '-'; ?>
+                </strong>
+              </div>
+              <div class="small flex-shrink-0">
+                Data prevista para termino:
+                <strong style="color: <?php echo $corDataFinal; ?>;">
+                  <?php echo ! empty($datasTurma['data_final']) ? htmlspecialchars(date('d/m/Y', strtotime($datasTurma['data_final']))) : '-'; ?>
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="app-card p-3">
+            <div class="table-responsive">
+              <table class="table table-bordered relatorio-turma-table mb-0">
+                <thead>
+                  <tr>
+                    <th>Unidade Curricular</th>
+                    <th class="text-center">Carga Horaria</th>
+                    <th class="text-center">A Lancar</th>
+                    <th class="text-center">Horas Lancadas</th>
+                    <th class="text-center">Horas Dadas</th>
+                    <th class="text-center">Data Inicial</th>
+                    <th class="text-center">Data Final</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php if (! empty($linhas)): ?>
+                  <?php foreach ($linhas as $linha): ?>
+                  <?php
+                      $cargaHoraria = (float) ($linha['carga_horaria'] ?? 0);
+                      $horasLancadas = round((float) ($linha['horas_lancadas'] ?? 0), 2);
+                      $horasDadas = $horasLancadas;
+                      $aLancar = $cargaHoraria - $horasLancadas;
+                      $classeHoras = abs($horasLancadas - $cargaHoraria) < 0.01
+                          ? 'horas-ok'
+                          : ($horasLancadas > $cargaHoraria ? 'horas-acima' : 'horas-pendente');
+                  ?>
+                  <tr>
+                    <td><?php echo htmlspecialchars(($linha['codigo'] ?? '') . '-' . ($linha['nome'] ?? '')); ?></td>
+                    <td class="col-numero"><?php echo number_format($cargaHoraria, 0, ',', '.'); ?></td>
+                    <td class="col-numero"><?php echo number_format($aLancar, 0, ',', '.'); ?></td>
+                    <td class="col-numero <?php echo $classeHoras; ?>"><?php echo number_format($horasLancadas, 0, ',', '.'); ?></td>
+                    <td class="col-numero"><?php echo number_format($horasDadas, 0, ',', '.'); ?></td>
+                    <td class="col-numero">
+                      <?php echo ! empty($linha['data_inicial']) ? htmlspecialchars(date('d/m/y', strtotime($linha['data_inicial']))) : '-'; ?>
+                    </td>
+                    <td class="col-numero">
+                      <?php echo ! empty($linha['data_final']) ? htmlspecialchars(date('d/m/y', strtotime($linha['data_final']))) : '-'; ?>
+                    </td>
+                  </tr>
+                  <?php endforeach; ?>
+                  <tr class="fw-bold">
+                    <td>Total</td>
+                    <td class="col-numero"><?php echo number_format($totalCarga, 0, ',', '.'); ?></td>
+                    <td class="col-numero"><?php echo number_format($totalCarga - $totalLancadas, 0, ',', '.'); ?></td>
+                    <td class="col-numero"><?php echo number_format($totalLancadas, 0, ',', '.'); ?></td>
+                    <td class="col-numero"><?php echo number_format($totalDadas, 0, ',', '.'); ?></td>
+                    <td colspan="2"></td>
+                  </tr>
+                  <?php else: ?>
+                  <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                      Nenhuma unidade curricular encontrada para esta turma.
+                    </td>
+                  </tr>
+                  <?php endif; ?>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <?php else: ?>
+          <div class="app-card p-4 text-center text-muted">
+            Selecione uma turma para visualizar o relatorio.
+          </div>
+          <?php endif; ?>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  const pageTitle = document.getElementById("pageTitle");
+  if (pageTitle) pageTitle.textContent = "Relatorio da Turma";
+
+  const userName = document.getElementById("userName");
+  if (userName) userName.textContent = <?php echo json_encode($usuarioLogado); ?>;
+
+  document.addEventListener("click", function(e) {
+    if (e.target.closest("#btnLogout")) {
+      window.location.href = "/mapa_de_sala/public/?page=logout";
+    }
+  });
+  </script>
+</body>
+
+</html>

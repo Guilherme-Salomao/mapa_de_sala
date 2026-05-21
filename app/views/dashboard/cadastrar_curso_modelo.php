@@ -17,6 +17,7 @@
     $modoEdicao = false;
 
     $cursoForm = [
+        'area_id'             => $_GET['area_id'] ?? '',
         'nome'                => $_GET['nome'] ?? '',
         'carga_horaria_total' => $_GET['carga_horaria_total'] ?? '',
         'status'              => $_GET['status'] ?? 'Ativo',

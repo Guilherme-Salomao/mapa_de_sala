@@ -23,6 +23,8 @@
     'nivel_acesso' => '',
     'status'       => 'Ativo',
     ];
+    $areas = $areas ?? [];
+    $areasUsuario = [];
 
     $tituloPagina    = 'Cadastrar Usuário';
     $subtituloPagina = 'Preencha os dados para criar um novo usuário';

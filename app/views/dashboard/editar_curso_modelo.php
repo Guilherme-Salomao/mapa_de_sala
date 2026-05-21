@@ -17,6 +17,7 @@
 
     $cursoForm = $cursoForm ?? [
         'id'                  => '',
+        'area_id'             => '',
         'nome'                => '',
         'carga_horaria_total' => '',
         'status'              => 'Ativo',

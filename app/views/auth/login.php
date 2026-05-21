@@ -66,13 +66,8 @@
             </div>
           </div>
 
-          <div class="d-flex align-items-center justify-content-between mb-3">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe" />
-              <label class="form-check-label" for="rememberMe">Lembrar-me</label>
-            </div>
-
-            <a href="#" class="small text-decoration-none">Esqueci minha senha</a>
+          <div class="text-end mb-3">
+            <a href="/mapa_de_sala/public/?page=esqueci_senha" class="small text-decoration-none">Esqueci minha senha</a>
           </div>
 
           <div class="d-grid mb-3">
@@ -83,7 +78,7 @@
 
           <div class="text-center">
             <span class="small text-muted">Não possui conta?</span>
-            <a href="#" class="small fw-semibold text-decoration-none">
+            <a href="/mapa_de_sala/public/?page=cadastro" class="small fw-semibold text-decoration-none">
               <i class="bi bi-person-plus"></i> Cadastre-se
             </a>
           </div>

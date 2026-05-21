@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/Curso.php';
+require_once __DIR__ . '/../core/AccessControl.php';
 
 class CursoController
 {
@@ -17,9 +18,10 @@ class CursoController
 
         $busca  = trim($_GET['busca'] ?? '');
         $status = trim($_GET['status'] ?? 'todos');
+        $escopo = (new AccessControl())->escopo();
 
-        $cursos      = $this->cursoModel->listar($busca, $status);
-        $totalCursos = $this->cursoModel->contar($busca, $status);
+        $cursos      = $this->cursoModel->listar($busca, $status, $escopo);
+        $totalCursos = $this->cursoModel->contar($busca, $status, $escopo);
 
         require_once __DIR__ . '/../views/dashboard/cursos.php';
     }
@@ -153,8 +155,10 @@ class CursoController
             'nome'                => trim($_POST['nome'] ?? ''),
             'codigo_oferta'       => trim($_POST['codigo_oferta'] ?? ''),
             'periodo'             => trim($_POST['periodo'] ?? ''),
+            'hora_inicio'         => trim($_POST['hora_inicio'] ?? ''),
+            'hora_fim'            => trim($_POST['hora_fim'] ?? ''),
             'carga_horaria_total' => (int) ($_POST['carga_horaria_total'] ?? 0),
-            'hora_aula'           => (int) ($_POST['hora_aula'] ?? 0),
+            'hora_aula'           => $this->obterHoraAulaPost(),
             'status'              => trim($_POST['status'] ?? 'Em andamento'),
             'descricao'           => trim($_POST['descricao'] ?? ''),
         ];
@@ -166,6 +170,7 @@ class CursoController
             && $dados['curso_modelo_id'] > 0
             && $dados['codigo_oferta'] !== ''
             && $dados['periodo'] !== ''
+            && $this->validarHorario($dados)
             && $dados['carga_horaria_total'] > 0
             && $dados['hora_aula'] > 0
             && in_array($dados['status'], ['Em andamento', 'Finalizada'], true);
@@ -180,6 +185,8 @@ class CursoController
             'nome'                => $dados['nome'],
             'codigo_oferta'       => $dados['codigo_oferta'],
             'periodo'             => $dados['periodo'],
+            'hora_inicio'         => $dados['hora_inicio'],
+            'hora_fim'            => $dados['hora_fim'],
             'carga_horaria_total' => $dados['carga_horaria_total'] > 0 ? $dados['carga_horaria_total'] : '',
             'hora_aula'           => $dados['hora_aula'] > 0 ? $dados['hora_aula'] : '',
             'status'              => $dados['status'],
@@ -191,6 +198,38 @@ class CursoController
     {
         header('Location: ' . $url);
         exit;
+    }
+
+    private function validarHorario(array $dados): bool
+    {
+        $inicio = $dados['hora_inicio'];
+        $fim = $dados['hora_fim'];
+
+        if ($inicio === '' && $fim === '') {
+            return true;
+        }
+
+        return $inicio !== '' && $fim !== '';
+    }
+
+    private function obterHoraAulaPost(): float
+    {
+        $horas = (int) ($_POST['hora_aula_horas'] ?? 0);
+        $minutos = (int) ($_POST['hora_aula_minutos'] ?? 0);
+
+        if ($horas < 0) {
+            $horas = 0;
+        }
+
+        if ($minutos < 0) {
+            $minutos = 0;
+        }
+
+        if ($minutos > 59) {
+            $minutos = 59;
+        }
+
+        return round($horas + ($minutos / 60), 2);
     }
 }
 

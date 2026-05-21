@@ -1,17 +1,21 @@
 <?php
 
 require_once __DIR__ . '/../app/controllers/LoginController.php';
+require_once __DIR__ . '/../app/controllers/HomeController.php';
 require_once __DIR__ . '/../app/controllers/UsuarioController.php';
 require_once __DIR__ . '/../app/controllers/SalaController.php';
 require_once __DIR__ . '/../app/controllers/DocenteController.php';
 require_once __DIR__ . '/../app/controllers/CursoController.php';
 require_once __DIR__ . '/../app/controllers/CursoModeloController.php';
 require_once __DIR__ . '/../app/controllers/UnidadeCurricularController.php';
+require_once __DIR__ . '/../app/controllers/QuadroHorarioController.php';
+require_once __DIR__ . '/../app/controllers/RelatorioDocenteController.php';
+require_once __DIR__ . '/../app/controllers/RelatorioTurmaController.php';
 
 $page   = $_GET['page'] ?? 'login';
 $action = $_GET['action'] ?? '';
 
-$rotasPermitidas = ['login', 'home', 'usuarios', 'salas', 'docentes', 'cursos', 'turmas', 'ucs', 'logout'];
+$rotasPermitidas = ['login', 'cadastro', 'esqueci_senha', 'home', 'usuarios', 'salas', 'docentes', 'cursos', 'turmas', 'ucs', 'quadro_horario', 'relatorio_docente', 'relatorio_turma', 'logout'];
 
 if (! in_array($page, $rotasPermitidas, true)) {
     $page = 'login';
@@ -126,19 +130,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($page === 'quadro_horario' && $action === 'salvar') {
+        $controller = new QuadroHorarioController();
+        $controller->salvar();
+        exit;
+    }
+
+    if ($page === 'quadro_horario' && $action === 'atualizar') {
+        $controller = new QuadroHorarioController();
+        $controller->atualizar();
+        exit;
+    }
+
+    if ($page === 'quadro_horario' && $action === 'excluir') {
+        $controller = new QuadroHorarioController();
+        $controller->excluir();
+        exit;
+    }
+
     $controller = new LoginController();
+    if ($page === 'cadastro') {
+        $controller->cadastrar();
+        exit;
+    }
+
+    if ($page === 'esqueci_senha' && $action === 'solicitar') {
+        $controller->solicitarRedefinicao();
+        exit;
+    }
+
+    if ($page === 'esqueci_senha' && $action === 'redefinir') {
+        $controller->redefinirSenha();
+        exit;
+    }
+
     $controller->autenticar();
     exit;
 }
 
 switch ($page) {
     case 'home':
-        require_once __DIR__ . '/../app/views/dashboard/home.php';
+        $controller = new HomeController();
+        $controller->index();
         break;
 
     case 'usuarios':
         if ($action === 'cadastrar') {
-            require_once __DIR__ . '/../app/views/dashboard/cadastrar_usuario.php';
+            $controller = new UsuarioController();
+            $controller->cadastrar();
             break;
         }
 
@@ -236,9 +275,34 @@ switch ($page) {
         $controller->index();
         break;
 
+    case 'quadro_horario':
+        $controller = new QuadroHorarioController();
+        $controller->index();
+        break;
+
+    case 'relatorio_docente':
+        $controller = new RelatorioDocenteController();
+        $controller->index();
+        break;
+
+    case 'relatorio_turma':
+        $controller = new RelatorioTurmaController();
+        $controller->index();
+        break;
+
     case 'logout':
         $controller = new LoginController();
         $controller->logout();
+        break;
+
+    case 'cadastro':
+        $controller = new LoginController();
+        $controller->cadastro();
+        break;
+
+    case 'esqueci_senha':
+        $controller = new LoginController();
+        $controller->esqueciSenha();
         break;
 
     case 'login':

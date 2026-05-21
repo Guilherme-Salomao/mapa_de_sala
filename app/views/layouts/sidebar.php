@@ -6,22 +6,22 @@
       <span>Dashboard</span>
     </a>
 
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'salas' ? 'active' : '' ?>"
-      href="/mapa_de_sala/public/?page=salas">
-      <i class="bi bi-door-closed"></i>
-      <span>Salas</span>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'quadro_horario' ? 'active' : '' ?>"
+      href="/mapa_de_sala/public/?page=quadro_horario">
+      <i class="bi bi-calendar-week"></i>
+      <span>Quadro Horario</span>
     </a>
 
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'usuarios' ? 'active' : '' ?>"
-      href="/mapa_de_sala/public/?page=usuarios">
-      <i class="bi bi-people"></i>
-      <span>Usuários</span>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_turma' ? 'active' : '' ?>"
+      href="/mapa_de_sala/public/?page=relatorio_turma">
+      <i class="bi bi-table"></i>
+      <span>Relatorio Turma</span>
     </a>
 
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'docentes' ? 'active' : '' ?>"
-      href="/mapa_de_sala/public/?page=docentes">
-      <i class="bi bi-person-badge"></i>
-      <span>Docentes</span>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_docente' ? 'active' : '' ?>"
+      href="/mapa_de_sala/public/?page=relatorio_docente">
+      <i class="bi bi-clipboard-data"></i>
+      <span>Relatorio Docente</span>
     </a>
 
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'cursos' ? 'active' : '' ?>"
@@ -42,14 +42,22 @@
       <span>UCs</span>
     </a>
 
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorios' ? 'active' : '' ?>" href="#">
-      <i class="bi bi-clipboard-data"></i>
-      <span>Relatórios</span>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'docentes' ? 'active' : '' ?>"
+      href="/mapa_de_sala/public/?page=docentes">
+      <i class="bi bi-person-badge"></i>
+      <span>Docentes</span>
     </a>
 
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'configuracoes' ? 'active' : '' ?>" href="#">
-      <i class="bi bi-gear"></i>
-      <span>Configurações</span>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'salas' ? 'active' : '' ?>"
+      href="/mapa_de_sala/public/?page=salas">
+      <i class="bi bi-door-closed"></i>
+      <span>Salas</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'usuarios' ? 'active' : '' ?>"
+      href="/mapa_de_sala/public/?page=usuarios">
+      <i class="bi bi-people"></i>
+      <span>Usuarios</span>
     </a>
   </nav>
 </aside>

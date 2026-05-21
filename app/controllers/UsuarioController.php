@@ -31,6 +31,22 @@ class UsuarioController
         require __DIR__ . '/../views/dashboard/usuarios.php';
     }
 
+    public function cadastrar(): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (! isset($_SESSION['usuario'])) {
+            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            exit;
+        }
+
+        $areas = $this->usuarioModel->listarAreas();
+
+        require __DIR__ . '/../views/dashboard/cadastrar_usuario.php';
+    }
+
     public function salvar(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
@@ -53,6 +69,7 @@ class UsuarioController
         $status      = trim($_POST['status'] ?? 'Ativo');
         $senha       = trim($_POST['senha'] ?? '');
         $confSenha   = trim($_POST['confSenha'] ?? '');
+        $areasUsuario = $this->obterAreasPost();
 
         if (
             empty($nome) ||
@@ -92,6 +109,12 @@ class UsuarioController
         );
 
         if ($salvou) {
+            $usuarioCriado = $this->usuarioModel->buscarPorEmail($email);
+
+            if ($usuarioCriado && in_array($nivelAcesso, ['Gestor', 'Apoio'], true)) {
+                $this->usuarioModel->salvarAreasUsuario((int) $usuarioCriado['id'], $areasUsuario);
+            }
+
             header('Location: /mapa_de_sala/public/?page=usuarios&tipo=sucesso&msg=' . urlencode('Usuário cadastrado com sucesso.'));
             exit;
         }
@@ -125,6 +148,9 @@ class UsuarioController
             exit;
         }
 
+        $areas = $this->usuarioModel->listarAreas();
+        $areasUsuario = $this->usuarioModel->listarAreasUsuario($id);
+
         require __DIR__ . '/../views/dashboard/editar_usuario.php';
     }
 
@@ -151,6 +177,7 @@ class UsuarioController
         $status      = trim($_POST['status'] ?? '');
         $senha       = trim($_POST['senha'] ?? '');
         $confSenha   = trim($_POST['confSenha'] ?? '');
+        $areasUsuario = $this->obterAreasPost();
 
         if (
             $id <= 0 ||
@@ -191,6 +218,12 @@ class UsuarioController
         if (! $atualizou) {
             header('Location: /mapa_de_sala/public/?page=usuarios&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('Não foi possível atualizar o usuário.'));
             exit;
+        }
+
+        if (in_array($nivelAcesso, ['Gestor', 'Apoio'], true)) {
+            $this->usuarioModel->salvarAreasUsuario($id, $areasUsuario);
+        } else {
+            $this->usuarioModel->salvarAreasUsuario($id, []);
         }
 
         if (! empty($senha) || ! empty($confSenha)) {
@@ -256,5 +289,16 @@ class UsuarioController
 
         header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Não foi possível excluir o usuário.'));
         exit;
+    }
+
+    private function obterAreasPost(): array
+    {
+        $areas = $_POST['areas'] ?? [];
+
+        if (! is_array($areas)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map('intval', $areas))));
     }
 }

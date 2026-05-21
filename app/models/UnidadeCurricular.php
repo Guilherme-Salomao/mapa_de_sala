@@ -13,7 +13,7 @@ class UnidadeCurricular
         $this->conn = $database->connect();
     }
 
-    public function listar(string $busca = '', string $status = 'todos', int $cursoModeloId = 0): array
+    public function listar(string $busca = '', string $status = 'todos', int $cursoModeloId = 0, array $escopo = ['tipo' => 'todos', 'ids' => []]): array
     {
         $sql = "
             SELECT
@@ -47,6 +47,8 @@ class UnidadeCurricular
             $params[':curso_modelo_id'] = $cursoModeloId;
         }
 
+        $this->aplicarEscopo($sql, $params, $escopo);
+
         $sql .= " ORDER BY cm.nome ASC, uc.ordem ASC, uc.nome ASC";
 
         $stmt = $this->conn->prepare($sql);
@@ -55,7 +57,7 @@ class UnidadeCurricular
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function contar(string $busca = '', string $status = 'todos', int $cursoModeloId = 0): int
+    public function contar(string $busca = '', string $status = 'todos', int $cursoModeloId = 0, array $escopo = ['tipo' => 'todos', 'ids' => []]): int
     {
         $sql = "
             SELECT COUNT(*) AS total
@@ -80,6 +82,8 @@ class UnidadeCurricular
             $sql .= " AND uc.curso_modelo_id = :curso_modelo_id";
             $params[':curso_modelo_id'] = $cursoModeloId;
         }
+
+        $this->aplicarEscopo($sql, $params, $escopo);
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
@@ -114,6 +118,25 @@ class UnidadeCurricular
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function listarCursoModelosPorEscopo(array $escopo): array
+    {
+        $sql = "
+            SELECT id, nome, carga_horaria_total, status
+            FROM curso_modelos cm
+            WHERE 1 = 1
+        ";
+
+        $params = [];
+        $this->aplicarEscopoCursoModelo($sql, $params, $escopo);
+
+        $sql .= " ORDER BY nome ASC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -229,6 +252,75 @@ class UnidadeCurricular
             return $stmt->execute([':id' => $id]);
         } catch (Throwable $e) {
             return false;
+        }
+    }
+
+    private function aplicarEscopo(string &$sql, array &$params, array $escopo): void
+    {
+        $tipo = $escopo['tipo'] ?? 'todos';
+        $ids = array_values(array_filter(array_map('intval', $escopo['ids'] ?? [])));
+
+        if ($tipo === 'todos') {
+            return;
+        }
+
+        if (empty($ids)) {
+            $sql .= " AND 1 = 0";
+            return;
+        }
+
+        $placeholders = [];
+
+        foreach ($ids as $index => $id) {
+            $placeholder = ':escopo_' . $tipo . '_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $id;
+        }
+
+        if ($tipo === 'areas') {
+            $sql .= " AND cm.area_id IN (" . implode(',', $placeholders) . ")";
+            return;
+        }
+
+        if ($tipo === 'ucs') {
+            $sql .= " AND uc.id IN (" . implode(',', $placeholders) . ")";
+        }
+    }
+
+    private function aplicarEscopoCursoModelo(string &$sql, array &$params, array $escopo): void
+    {
+        $tipo = $escopo['tipo'] ?? 'todos';
+        $ids = array_values(array_filter(array_map('intval', $escopo['ids'] ?? [])));
+
+        if ($tipo === 'todos') {
+            return;
+        }
+
+        if (empty($ids)) {
+            $sql .= " AND 1 = 0";
+            return;
+        }
+
+        $placeholders = [];
+
+        foreach ($ids as $index => $id) {
+            $placeholder = ':curso_escopo_' . $tipo . '_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $id;
+        }
+
+        if ($tipo === 'areas') {
+            $sql .= " AND cm.area_id IN (" . implode(',', $placeholders) . ")";
+            return;
+        }
+
+        if ($tipo === 'ucs') {
+            $sql .= " AND EXISTS (
+                SELECT 1
+                FROM unidades_curriculares uc_escopo
+                WHERE uc_escopo.curso_modelo_id = cm.id
+                  AND uc_escopo.id IN (" . implode(',', $placeholders) . ")
+            )";
         }
     }
 }

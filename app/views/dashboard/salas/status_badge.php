@@ -1,18 +1,16 @@
 <?php
 
-    $statusSala = $statusSala ?? 'livre';
+    $statusSala = $statusSala ?? 'ativa';
+
+    if (in_array($statusSala, ['livre', 'uso'], true)) {
+        $statusSala = 'ativa';
+    }
 
     $statusConfig = [
-    'livre'      => [
+    'ativa'      => [
         'classe' => 'sala-status sala-status--livre',
         'icone'  => 'bi-check-circle',
-        'texto'  => 'Livre',
-    ],
-
-    'uso'        => [
-        'classe' => 'sala-status sala-status--uso',
-        'icone'  => 'bi-x-circle',
-        'texto'  => 'Em uso',
+        'texto'  => 'Ativa',
     ],
 
     'manutencao' => [
@@ -28,7 +26,7 @@
     ],
     ];
 
-    $config = $statusConfig[$statusSala] ?? $statusConfig['livre'];
+    $config = $statusConfig[$statusSala] ?? $statusConfig['ativa'];
 
 ?>
 

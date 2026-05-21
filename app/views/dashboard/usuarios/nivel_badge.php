@@ -12,8 +12,13 @@
     } elseif ($nivelAcesso === 'Apoio') {
     $classeNivel = 'text-bg-dark';
     }
+
+    $textoNivel = [
+        'Gestor' => 'Gestor(a)',
+        'Professor' => 'Professor(a)',
+    ][$nivelAcesso] ?? $nivelAcesso;
 ?>
 
 <span class="badge <?php echo $classeNivel; ?>">
-  <?php echo htmlspecialchars($nivelAcesso); ?>
+  <?php echo htmlspecialchars($textoNivel); ?>
 </span>
