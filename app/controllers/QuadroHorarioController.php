@@ -1,15 +1,21 @@
 <?php
 
 require_once __DIR__ . '/../models/QuadroHorario.php';
+require_once __DIR__ . '/../models/CalendarioBloqueio.php';
+require_once __DIR__ . '/../models/EducacaoCorporativa.php';
 require_once __DIR__ . '/../core/AccessControl.php';
 
 class QuadroHorarioController
 {
     private QuadroHorario $quadroModel;
+    private CalendarioBloqueio $bloqueioModel;
+    private EducacaoCorporativa $educacaoModel;
 
     public function __construct()
     {
         $this->quadroModel = new QuadroHorario();
+        $this->bloqueioModel = new CalendarioBloqueio();
+        $this->educacaoModel = new EducacaoCorporativa();
     }
 
     public function index(): void
@@ -31,10 +37,12 @@ class QuadroHorarioController
 
         $ofertas = $this->quadroModel->listarOfertas($escopo);
         $ofertaSelecionada = $cursoOfertaId > 0 ? $this->quadroModel->buscarOferta($cursoOfertaId) : null;
+
         $aulas = $ofertaSelecionada ? $this->quadroModel->listarAulasMensais($cursoOfertaId, $mes, $ano) : [];
         $unidadesCurriculares = $ofertaSelecionada ? $this->quadroModel->listarUnidadesCurriculares($cursoOfertaId, $escopo) : [];
         $salas = $ofertaSelecionada ? $this->quadroModel->listarSalas() : [];
         $docentes = $ofertaSelecionada ? $this->quadroModel->listarDocentes() : [];
+        $bloqueiosPorData = $ofertaSelecionada ? $this->montarBloqueiosPorData($mes, $ano) : [];
         $disponibilidadeMensal = $this->montarDisponibilidadeMensal($salas, $docentes, $ofertaSelecionada, $mes, $ano);
         $salasDisponiveisPorData = $disponibilidadeMensal['salas'];
         $docentesDisponiveisPorData = $disponibilidadeMensal['docentes'];
@@ -206,6 +214,8 @@ class QuadroHorarioController
             'hora_fim'              => trim($_POST['hora_fim'] ?? ''),
             'divisao_por_hora'      => isset($_POST['divisao_por_hora']) ? 1 : 0,
             'dupla_docencia'        => $duplaDocencia,
+            'visita_tecnica'        => isset($_POST['visita_tecnica']) ? 1 : 0,
+            'ead_assincrona'        => isset($_POST['ead_assincrona']) ? 1 : 0,
             'docente_principal_id'  => $docentePrincipalId,
             'docente_2_id'          => $docente2Id,
             'docentes'              => $docentes,
@@ -222,7 +232,6 @@ class QuadroHorarioController
     {
         if (
             $dados['curso_oferta_id'] <= 0 ||
-            $dados['sala_id'] <= 0 ||
             $dados['data_aula'] === '' ||
             $dados['hora_inicio'] === '' ||
             $dados['hora_fim'] === '' ||
@@ -231,7 +240,11 @@ class QuadroHorarioController
             return false;
         }
 
-        if ($dados['divisao_por_hora'] !== 1 && ($dados['unidade_curricular_id'] <= 0 || $dados['docente_principal_id'] <= 0)) {
+        if ($dados['sala_id'] <= 0 && $dados['ead_assincrona'] !== 1) {
+            return false;
+        }
+
+        if ($dados['divisao_por_hora'] !== 1 && $dados['unidade_curricular_id'] <= 0) {
             return false;
         }
 
@@ -273,13 +286,93 @@ class QuadroHorarioController
             return 'Domingo nao permite lancamento de aula.';
         }
 
-        $periodo = strtolower((string) ($oferta['periodo'] ?? ''));
+        if (! $this->turmaTemAulaNoDia($oferta, $diaSemana)) {
+            return 'Esta turma nao possui aula configurada para este dia da semana.';
+        }
+
+        $periodo = strtolower($this->periodoPorHorario(
+            (string) ($oferta['hora_inicio'] ?? ''),
+            (string) ($oferta['hora_fim'] ?? '')
+        ));
 
         if ($diaSemana === 6 && in_array($periodo, ['tarde', 'noite'], true)) {
             return 'Turmas dos periodos Tarde e Noite nao permitem lancamento no sabado.';
         }
 
+        $bloqueio = $this->bloqueioModel->buscarAtivoPorData($dataAula);
+
+        if ($bloqueio) {
+            return 'Data bloqueada: ' . ($bloqueio['titulo'] ?? 'calendario da unidade') . '.';
+        }
+
         return null;
+    }
+
+    private function turmaTemAulaNoDia(?array $oferta, int $diaSemana): bool
+    {
+        if (! $oferta) {
+            return false;
+        }
+
+        $campos = [
+            1 => 'aula_segunda',
+            2 => 'aula_terca',
+            3 => 'aula_quarta',
+            4 => 'aula_quinta',
+            5 => 'aula_sexta',
+            6 => 'aula_sabado',
+        ];
+
+        $campo = $campos[$diaSemana] ?? '';
+
+        return $campo !== '' && (int) ($oferta[$campo] ?? 0) === 1;
+    }
+
+    private function montarBloqueiosPorData(int $mes, int $ano): array
+    {
+        $inicio = sprintf('%04d-%02d-01', $ano, $mes);
+        $fim = date('Y-m-t', strtotime($inicio));
+        $bloqueios = $this->bloqueioModel->listarPorPeriodo($inicio, $fim);
+        $porData = [];
+
+        foreach ($bloqueios as $bloqueio) {
+            $data = (string) ($bloqueio['data'] ?? '');
+
+            if ($data !== '') {
+                $porData[$data][] = $bloqueio;
+            }
+        }
+
+        return $porData;
+    }
+
+    private function periodoPorHorario(string $horaInicio, string $horaFim): string
+    {
+        $inicio = strtotime($horaInicio);
+        $fim = strtotime($horaFim);
+
+        if ($inicio === false || $fim === false || $fim <= $inicio) {
+            return '';
+        }
+
+        $periodos = [];
+        $faixas = [
+            'manha' => ['00:00', '12:00'],
+            'tarde' => ['12:00', '18:00'],
+            'noite' => ['18:00', '23:59'],
+        ];
+
+        foreach ($faixas as $periodo => [$inicioFaixa, $fimFaixa]) {
+            $base = date('Y-m-d ', $inicio);
+            $faixaInicio = strtotime($base . $inicioFaixa);
+            $faixaFim = strtotime($base . $fimFaixa);
+
+            if ($faixaInicio !== false && $faixaFim !== false && $inicio < $faixaFim && $fim > $faixaInicio) {
+                $periodos[] = $periodo;
+            }
+        }
+
+        return count($periodos) > 1 ? 'integral' : ($periodos[0] ?? '');
     }
 
     private function montarDisponibilidadeMensal(array $salas, array $docentes, ?array $oferta, int $mes, int $ano): array
@@ -319,13 +412,13 @@ class QuadroHorarioController
             }));
 
             $docentesPorData[$data] = array_values(array_filter($docentes, function (array $docente) use ($data, $horaInicio, $horaFim): bool {
-                return ! $this->quadroModel->encontrarConflitoDocente((int) $docente['id'], $data, $horaInicio, $horaFim);
+                return $this->docenteDisponivel((int) $docente['id'], $data, $horaInicio, $horaFim);
             }));
 
             foreach ($blocos as $bloco) {
                 $chaveBloco = $this->chaveBloco($bloco);
                 $docentesPorBloco[$data][$chaveBloco] = array_values(array_filter($docentes, function (array $docente) use ($data, $bloco): bool {
-                    return ! $this->quadroModel->encontrarConflitoDocente((int) $docente['id'], $data, $bloco['inicio'], $bloco['fim']);
+                    return $this->docenteDisponivel((int) $docente['id'], $data, $bloco['inicio'], $bloco['fim']);
                 }));
             }
         }
@@ -354,7 +447,7 @@ class QuadroHorarioController
             }));
 
             $docentesPorAula[$aulaId] = array_values(array_filter($docentes, function (array $docente) use ($data, $horaInicio, $horaFim, $aulaId): bool {
-                return ! $this->quadroModel->encontrarConflitoDocente((int) $docente['id'], $data, $horaInicio, $horaFim, $aulaId);
+                return $this->docenteDisponivel((int) $docente['id'], $data, $horaInicio, $horaFim, $aulaId);
             }));
         }
 
@@ -420,21 +513,21 @@ class QuadroHorarioController
             }
 
             foreach (($bloco['docentes'] ?? $dados['docentes']) as $docenteId) {
-                $conflitoDocente = $this->quadroModel->encontrarConflitoDocente(
-                    (int) $docenteId,
-                    $dados['data_aula'],
-                    $bloco['inicio'],
-                    $bloco['fim'],
-                    $ignorarId
-                );
-
-                if ($conflitoDocente) {
-                    return 'Um dos docentes ja possui aula neste dia e horario.';
+                if (! $this->docenteDisponivel((int) $docenteId, $dados['data_aula'], $bloco['inicio'], $bloco['fim'], $ignorarId)) {
+                    return 'Um dos docentes nao esta disponivel neste dia ou periodo.';
                 }
             }
         }
 
         return null;
+    }
+
+    private function docenteDisponivel(int $docenteId, string $data, string $horaInicio, string $horaFim, ?int $ignorarId = null): bool
+    {
+        return $this->quadroModel->docenteTemEscala($docenteId, $data, $horaInicio, $horaFim)
+            && ! $this->educacaoModel->docenteEmCurso($docenteId, $data)
+            && ! $this->quadroModel->encontrarAulaDocenteNoDia($docenteId, $data, $ignorarId)
+            && ! $this->quadroModel->encontrarConflitoDocente($docenteId, $data, $horaInicio, $horaFim, $ignorarId);
     }
 
     private function validarDocentesPorUc(array $dados, array $blocos): ?string
@@ -469,23 +562,24 @@ class QuadroHorarioController
                 return 'Informe a UC de cada horario da divisao por hora.';
             }
 
-            if ($docenteId <= 0) {
-                return 'Informe o professor de cada horario da divisao por hora.';
-            }
-
             if (! $this->quadroModel->unidadePertenceOferta($unidadeCurricularId, $dados['curso_oferta_id'])) {
                 return 'Uma das UCs selecionadas nao pertence ao curso da turma.';
             }
 
             $bloco['unidade_curricular_id'] = $unidadeCurricularId;
-            $bloco['docentes'] = [$docenteId];
-            $docentesSelecionados[] = $docenteId;
+            $bloco['docentes'] = $docenteId > 0 ? [$docenteId] : [];
+
+            if ($docenteId > 0) {
+                $docentesSelecionados[] = $docenteId;
+            }
         }
 
         unset($bloco);
 
         $dados['docentes'] = array_values(array_unique($docentesSelecionados));
         $dados['dupla_docencia'] = 0;
+        $dados['visita_tecnica'] = (int) ($dados['visita_tecnica'] ?? 0);
+        $dados['ead_assincrona'] = (int) ($dados['ead_assincrona'] ?? 0);
         $dados['docente_principal_id'] = $dados['docentes'][0] ?? 0;
         $dados['docente_2_id'] = 0;
 

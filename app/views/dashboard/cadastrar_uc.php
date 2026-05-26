@@ -21,7 +21,6 @@
         'codigo'          => $_GET['codigo'] ?? '',
         'nome'            => $_GET['nome'] ?? '',
         'carga_horaria'   => $_GET['carga_horaria'] ?? '',
-        'ordem'           => $_GET['ordem'] ?? '',
         'status'          => $_GET['status'] ?? 'Ativa',
     ];
 

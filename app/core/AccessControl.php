@@ -29,6 +29,33 @@ class AccessControl
         return $this->nivel() === 'Admin';
     }
 
+    public function podeAcessarPagina(string $pagina): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if (in_array($pagina, ['login', 'cadastro', 'esqueci_senha', 'perfil', 'logout'], true)) {
+            return true;
+        }
+
+        $nivel = $this->nivel();
+
+        if ($nivel === 'Gestor') {
+            return ! in_array($pagina, ['salas', 'usuarios', 'logs'], true);
+        }
+
+        if ($nivel === 'Apoio') {
+            return ! in_array($pagina, ['usuarios', 'logs'], true);
+        }
+
+        if ($nivel === 'Professor') {
+            return in_array($pagina, ['home', 'quadro_horario', 'relatorio_docente', 'docentes', 'cursos', 'turmas', 'ucs', 'aprendizagem', 'aceleracao'], true);
+        }
+
+        return false;
+    }
+
     public function usaFiltroArea(): bool
     {
         return in_array($this->nivel(), ['Gestor', 'Apoio'], true);
@@ -105,5 +132,39 @@ class AccessControl
         }
 
         return ['tipo' => 'todos', 'ids' => []];
+    }
+
+    public function escopoAreaAtuacao(): array
+    {
+        if ($this->isAdmin()) {
+            return ['tipo' => 'todos', 'ids' => []];
+        }
+
+        if ($this->usaFiltroArea()) {
+            return ['tipo' => 'areas', 'ids' => $this->areasUsuario()];
+        }
+
+        if ($this->nivel() === 'Professor') {
+            return ['tipo' => 'areas', 'ids' => $this->areasDocente()];
+        }
+
+        return ['tipo' => 'todos', 'ids' => []];
+    }
+
+    public function areasDocente(): array
+    {
+        $sql = "
+            SELECT a.id
+            FROM docentes d
+            INNER JOIN areas a ON a.nome = d.area_atuacao
+            WHERE d.usuario_id = :usuario_id
+              AND d.status = 'Ativo'
+              AND a.status = 'Ativa'
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':usuario_id' => $this->usuarioId()]);
+
+        return array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'id'));
     }
 }

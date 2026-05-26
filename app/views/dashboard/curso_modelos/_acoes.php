@@ -1,5 +1,6 @@
 <?php
     $cursoId = (int) ($cursoId ?? 0);
+    $nivelUsuario = $_SESSION['usuario']['nivel_acesso'] ?? '';
 ?>
 
 <div class="d-flex justify-content-end gap-2">
@@ -9,6 +10,7 @@
     Editar
   </a>
 
+  <?php if ($nivelUsuario !== 'Professor'): ?>
   <form method="POST" action="/mapa_de_sala/public/?page=cursos&action=excluir" class="d-inline"
     onsubmit="return confirm('Deseja realmente excluir este curso?');">
     <input type="hidden" name="id" value="<?php echo $cursoId; ?>">
@@ -17,4 +19,5 @@
       Excluir
     </button>
   </form>
+  <?php endif; ?>
 </div>

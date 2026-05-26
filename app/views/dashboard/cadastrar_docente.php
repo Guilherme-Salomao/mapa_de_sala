@@ -18,12 +18,13 @@
 
     $docenteForm = [
         'usuario_id'      => $_GET['usuario_id'] ?? '',
-        'horas_semanais' => $_GET['horas_semanais'] ?? '',
         'area_atuacao'   => $_GET['area_atuacao'] ?? '',
         'status'         => $_GET['status'] ?? 'Ativo',
         'observacoes'    => $_GET['observacoes'] ?? '',
         'unidades_curriculares' => [],
     ];
+    $areas = $areas ?? [];
+    $cursoModelos = $cursoModelos ?? [];
     $unidadesCurriculares = $unidadesCurriculares ?? [];
 
     $tituloPagina    = 'Cadastrar Docente';

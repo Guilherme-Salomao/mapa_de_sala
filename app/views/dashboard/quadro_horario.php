@@ -16,6 +16,40 @@
     $mes = (int) ($mes ?? date('n'));
     $ano = (int) ($ano ?? date('Y'));
     $cursoOfertaId = (int) ($cursoOfertaId ?? 0);
+    $bloqueiosPorData = $bloqueiosPorData ?? [];
+
+    function periodoQuadroPorHorario(?string $horaInicio, ?string $horaFim): string
+    {
+        if (empty($horaInicio) || empty($horaFim)) {
+            return 'Nao informado';
+        }
+
+        $inicio = strtotime($horaInicio);
+        $fim = strtotime($horaFim);
+
+        if ($inicio === false || $fim === false || $fim <= $inicio) {
+            return 'Nao informado';
+        }
+
+        $periodos = [];
+        $faixas = [
+            'Manha' => ['00:00', '12:00'],
+            'Tarde' => ['12:00', '18:00'],
+            'Noite' => ['18:00', '23:59'],
+        ];
+
+        foreach ($faixas as $periodo => [$inicioFaixa, $fimFaixa]) {
+            $base = date('Y-m-d ', $inicio);
+            $faixaInicio = strtotime($base . $inicioFaixa);
+            $faixaFim = strtotime($base . $fimFaixa);
+
+            if ($faixaInicio !== false && $faixaFim !== false && $inicio < $faixaFim && $fim > $faixaInicio) {
+                $periodos[] = $periodo;
+            }
+        }
+
+        return count($periodos) > 1 ? 'Integral' : ($periodos[0] ?? 'Nao informado');
+    }
 
     $tituloPagina = 'Quadro Horario';
     $subtituloPagina = 'Monte e acompanhe o quadro mensal da turma';
@@ -85,7 +119,7 @@
                 <div class="fw-bold"><?php echo htmlspecialchars($ofertaSelecionada['nome']); ?></div>
                 <div class="small text-muted">
                   Oferta <?php echo htmlspecialchars($ofertaSelecionada['codigo_oferta']); ?>
-                  · Período <?php echo htmlspecialchars($ofertaSelecionada['periodo']); ?>
+                  · Período <?php echo htmlspecialchars(periodoQuadroPorHorario($ofertaSelecionada['hora_inicio'] ?? null, $ofertaSelecionada['hora_fim'] ?? null)); ?>
                   <?php if (! empty($ofertaSelecionada['hora_inicio']) && ! empty($ofertaSelecionada['hora_fim'])): ?>
                   · <?php echo htmlspecialchars(substr($ofertaSelecionada['hora_inicio'], 0, 5) . ' - ' . substr($ofertaSelecionada['hora_fim'], 0, 5)); ?>
                   <?php endif; ?>
@@ -120,10 +154,21 @@
                         $celulas++;
                         $mostrarDia = ! ($celulas <= $inicioSemana || $diaAtual > $diasNoMes);
                         $dataIso = $mostrarDia ? sprintf('%04d-%02d-%02d', $ano, $mes, $diaAtual) : '';
-                        $periodoOferta = strtolower((string) ($ofertaSelecionada['periodo'] ?? ''));
+                        $periodoOferta = strtolower(periodoQuadroPorHorario($ofertaSelecionada['hora_inicio'] ?? null, $ofertaSelecionada['hora_fim'] ?? null));
                         $bloquearSabado = in_array($periodoOferta, ['tarde', 'noite'], true);
+                        $campoDiaOferta = [
+                            1 => 'aula_segunda',
+                            2 => 'aula_terca',
+                            3 => 'aula_quarta',
+                            4 => 'aula_quinta',
+                            5 => 'aula_sexta',
+                            6 => 'aula_sabado',
+                        ][$coluna] ?? '';
+                        $turmaTemAulaDia = $campoDiaOferta !== '' && (int) ($ofertaSelecionada[$campoDiaOferta] ?? 0) === 1;
+                        $bloqueiosDia = $bloqueiosPorData[$dataIso] ?? [];
+                        $diaBloqueado = ! empty($bloqueiosDia);
                         $diaComLancamento = ! empty($aulasPorData[$dataIso] ?? []);
-                        $permiteLancamento = $mostrarDia && ! $diaComLancamento && $coluna !== 0 && ! ($coluna === 6 && $bloquearSabado);
+                        $permiteLancamento = $mostrarDia && $turmaTemAulaDia && ! $diaComLancamento && ! $diaBloqueado && $coluna !== 0 && ! ($coluna === 6 && $bloquearSabado);
                         $salasDisponiveisDia = $salasDisponiveisPorData[$dataIso] ?? [];
                         $docentesDisponiveisDia = $docentesDisponiveisPorData[$dataIso] ?? [];
                         $docentesBlocosDia = $docentesDisponiveisPorBloco[$dataIso] ?? [];
@@ -143,6 +188,19 @@
                         <?php endif; ?>
                       </div>
 
+                      <?php if ($diaBloqueado): ?>
+                      <?php foreach ($bloqueiosDia as $bloqueioDia): ?>
+                      <div class="border rounded p-2 mb-2 small bg-warning-subtle border-warning">
+                        <div class="fw-semibold text-center">
+                          <?php echo htmlspecialchars($bloqueioDia['tipo'] ?? 'Evento'); ?>
+                        </div>
+                        <div class="text-center">
+                          <?php echo htmlspecialchars($bloqueioDia['titulo'] ?? 'Data bloqueada'); ?>
+                        </div>
+                      </div>
+                      <?php endforeach; ?>
+                      <?php endif; ?>
+
                       <?php if ($permiteLancamento): ?>
                       <div class="collapse mb-2" id="quickAdd_<?php echo $dataId; ?>">
                         <form method="POST" action="/mapa_de_sala/public/?page=quadro_horario&action=salvar"
@@ -158,7 +216,7 @@
                           <input type="hidden" name="status" value="Ativa">
 
                           <div class="mb-2">
-                            <select class="form-select form-select-sm" name="sala_id" required>
+                            <select class="form-select form-select-sm" name="sala_id">
                               <option value="">
                                 <?php echo empty($salasDisponiveisDia) ? 'Nenhuma sala disponivel' : 'Sala...'; ?>
                               </option>
@@ -182,7 +240,7 @@
                           </div>
 
                           <div class="mb-2" id="professorPrincipal_<?php echo $dataId; ?>">
-                            <select class="form-select form-select-sm" name="docente_principal_id" required>
+                            <select class="form-select form-select-sm" name="docente_principal_id">
                               <option value="">
                                 <?php echo empty($docentesDisponiveisDia) ? 'Nenhum professor disponivel' : 'Professor...'; ?>
                               </option>
@@ -208,6 +266,14 @@
                               <input class="form-check-input quick-dupla" type="checkbox" name="dupla_docencia"
                                 data-target="docente2_<?php echo $dataId; ?>">
                               Dupla docência
+                            </label>
+                            <label class="form-check small mb-0">
+                              <input class="form-check-input" type="checkbox" name="visita_tecnica">
+                              Visita Técnica
+                            </label>
+                            <label class="form-check small mb-0">
+                              <input class="form-check-input quick-ead" type="checkbox" name="ead_assincrona">
+                              EAD/Assíncrona
                             </label>
                           </div>
 
@@ -283,7 +349,24 @@
                           <?php echo htmlspecialchars(substr($aula['hora_inicio'], 0, 5) . ' - ' . substr($aula['hora_fim'], 0, 5)); ?>
                         </div>
                         <div><?php echo htmlspecialchars(($aula['uc_codigo'] ?? '') . ' - ' . ($aula['uc_nome'] ?? '')); ?></div>
-                        <div class="text-muted">Sala <?php echo htmlspecialchars($aula['sala_nome'] ?? ''); ?></div>
+                        <?php if ((int) ($aula['visita_tecnica'] ?? 0) === 1): ?>
+                        <div class="my-1">
+                          <span class="badge text-bg-info">Visita Técnica</span>
+                        </div>
+                        <?php endif; ?>
+                        <?php if ((int) ($aula['ead_assincrona'] ?? 0) === 1): ?>
+                        <div class="my-1">
+                          <span class="badge text-bg-secondary">EAD/Assíncrona</span>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (! empty($aula['aprendizagem_quadro_id'])): ?>
+                        <div class="my-1">
+                          <span class="badge text-bg-warning">Aceleração</span>
+                        </div>
+                        <?php endif; ?>
+                        <div class="text-muted">
+                          <?php echo ! empty($aula['sala_nome']) ? 'Sala ' . htmlspecialchars($aula['sala_nome']) : 'Sala em aberto'; ?>
+                        </div>
                         <?php if (! empty($aula['docentes'])): ?>
                         <div class="text-muted">
                           <?php echo htmlspecialchars(implode(', ', array_map(fn($docente) => $docente['nome'], $aula['docentes']))); ?>
@@ -317,8 +400,8 @@
                             <input type="hidden" name="observacoes" value="<?php echo htmlspecialchars($aula['observacoes'] ?? ''); ?>">
 
                             <div class="mb-2">
-                              <select class="form-select form-select-sm" name="sala_id" required>
-                                <option value="">Sala...</option>
+                              <select class="form-select form-select-sm" name="sala_id">
+                                <option value="" <?php echo empty($aula['sala_id']) ? 'selected' : ''; ?>>Sala...</option>
                                 <?php foreach ($salasEdicao as $sala): ?>
                                 <option value="<?php echo (int) $sala['id']; ?>"
                                   <?php echo (int) $aula['sala_id'] === (int) $sala['id'] ? 'selected' : ''; ?>>
@@ -341,8 +424,8 @@
                             </div>
 
                             <div class="mb-2">
-                              <select class="form-select form-select-sm" name="docente_principal_id" required>
-                                <option value="">Professor...</option>
+                              <select class="form-select form-select-sm" name="docente_principal_id">
+                                <option value="" <?php echo $docentePrincipalId <= 0 ? 'selected' : ''; ?>>Professor...</option>
                                 <?php foreach ($docentesEdicao as $docente): ?>
                                 <option value="<?php echo (int) $docente['id']; ?>"
                                   data-uc-ids="<?php echo htmlspecialchars((string) ($docente['uc_ids'] ?? '')); ?>"
@@ -368,6 +451,18 @@
                               <input class="form-check-input quick-dupla" type="checkbox" name="dupla_docencia"
                                 data-target="<?php echo $editDocente2Id; ?>" <?php echo $temDupla ? 'checked' : ''; ?>>
                               Dupla docÃªncia
+                            </label>
+
+                            <label class="form-check small mb-2">
+                              <input class="form-check-input" type="checkbox" name="visita_tecnica"
+                                <?php echo ((int) ($aula['visita_tecnica'] ?? 0) === 1) ? 'checked' : ''; ?>>
+                              Visita Técnica
+                            </label>
+
+                            <label class="form-check small mb-2">
+                              <input class="form-check-input quick-ead" type="checkbox" name="ead_assincrona"
+                                <?php echo ((int) ($aula['ead_assincrona'] ?? 0) === 1) ? 'checked' : ''; ?>>
+                              EAD/Assíncrona
                             </label>
 
                             <div class="mb-2 <?php echo $temDupla ? '' : 'd-none'; ?>" id="<?php echo $editDocente2Id; ?>">
@@ -428,6 +523,11 @@
   });
 
   document.addEventListener("change", function(e) {
+    if (e.target.matches('select[name="docente_principal_id"]')) {
+      atualizarProfessor2(e.target.closest("form"));
+      return;
+    }
+
     if (e.target.matches('select[name="unidade_curricular_id"], .quick-bloco-uc')) {
       const form = e.target.closest("form");
       const ucId = e.target.value;
@@ -461,6 +561,8 @@
             select.value = "";
           }
         });
+
+        atualizarProfessor2(form);
       }
     }
 
@@ -473,7 +575,7 @@
       if (blocos) {
         blocos.classList.toggle("d-none", !e.target.checked);
         blocos.querySelectorAll(".quick-bloco-uc, .quick-bloco-docente").forEach(function(select) {
-          select.required = e.target.checked;
+          select.required = e.target.classList.contains("quick-bloco-uc") && e.target.checked;
           if (!e.target.checked) {
             select.value = "";
           }
@@ -493,7 +595,7 @@
       if (professor) {
         professor.classList.toggle("d-none", e.target.checked);
         professor.querySelectorAll("select").forEach(function(select) {
-          select.required = !e.target.checked;
+          select.required = false;
           if (e.target.checked) {
             select.value = "";
           }
@@ -530,13 +632,71 @@
         select.value = "";
       }
     }
+
+    atualizarProfessor2(e.target.closest("form"));
   });
 
   document.addEventListener("DOMContentLoaded", function() {
     document.querySelectorAll('select[name="unidade_curricular_id"], .quick-bloco-uc').forEach(function(select) {
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
+
+    document.querySelectorAll('select[name="docente_principal_id"]').forEach(function(select) {
+      atualizarProfessor2(select.closest("form"));
+    });
+
+    document.querySelectorAll(".quick-ead").forEach(function(checkbox) {
+      atualizarObrigatoriedadeSala(checkbox.closest("form"));
+    });
   });
+
+  document.addEventListener("change", function(e) {
+    if (e.target.classList.contains("quick-ead")) {
+      atualizarObrigatoriedadeSala(e.target.closest("form"));
+    }
+  });
+
+  function atualizarObrigatoriedadeSala(form) {
+    if (!form) return;
+
+    const sala = form.querySelector('select[name="sala_id"]');
+    const ead = form.querySelector('.quick-ead');
+
+    if (sala && ead) {
+      sala.required = !ead.checked;
+    }
+  }
+
+  function atualizarProfessor2(form) {
+    if (!form) return;
+
+    const principal = form.querySelector('select[name="docente_principal_id"]');
+    const professor2 = form.querySelector('select[name="docente_2_id"]');
+    const uc = form.querySelector('select[name="unidade_curricular_id"]');
+
+    if (!principal || !professor2) return;
+
+    const principalId = principal.value;
+    const ucId = uc ? uc.value : "";
+    let selecionadoValido = true;
+
+    professor2.querySelectorAll("option").forEach(function(option) {
+      if (!option.value) return;
+
+      const esconderPorPrincipal = principalId && option.value === principalId;
+      const ucs = (option.dataset.ucIds || "").split(",").filter(Boolean);
+      const esconderPorUc = !ucId || !ucs.includes(ucId);
+      option.hidden = esconderPorPrincipal || esconderPorUc;
+
+      if (option.selected && option.hidden) {
+        selecionadoValido = false;
+      }
+    });
+
+    if (!selecionadoValido) {
+      professor2.value = "";
+    }
+  }
   </script>
 </body>
 

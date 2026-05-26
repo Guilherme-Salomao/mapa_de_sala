@@ -36,6 +36,14 @@
         Sala Teatro
       </option>
 
+      <option value="Sala Experimental" <?php echo(($tipo ?? '') === 'Sala Experimental') ? 'selected' : ''; ?>>
+        Sala Experimental
+      </option>
+
+      <option value="Laboratório de Enfermagem" <?php echo(($tipo ?? '') === 'Laboratório de Enfermagem') ? 'selected' : ''; ?>>
+        Laboratório de Enfermagem
+      </option>
+
       <option value="Laboratório de Beleza" <?php echo(($tipo ?? '') === 'Laboratório de Beleza') ? 'selected' : ''; ?>>
         Laboratório de Beleza
       </option>
@@ -50,10 +58,6 @@
 
       <option value="ativa" <?php echo(($status ?? '') === 'ativa') ? 'selected' : ''; ?>>
         Ativa
-      </option>
-
-      <option value="manutencao" <?php echo(($status ?? '') === 'manutencao') ? 'selected' : ''; ?>>
-        Manutenção
       </option>
 
       <option value="inativa" <?php echo(($status ?? '') === 'inativa') ? 'selected' : ''; ?>>

@@ -80,7 +80,6 @@
               <table class="table align-middle mb-0">
                 <thead class="small text-muted">
                   <tr>
-                    <th>Ordem</th>
                     <th>Codigo</th>
                     <th>UC</th>
                     <th>Modelo do curso</th>
@@ -94,7 +93,6 @@
                   <?php if (! empty($ucs)): ?>
                   <?php foreach ($ucs as $uc): ?>
                   <tr>
-                    <td><?php echo (int) ($uc['ordem'] ?? 0); ?></td>
                     <td class="fw-semibold"><?php echo htmlspecialchars($uc['codigo'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($uc['nome'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($uc['curso_modelo_nome'] ?? ''); ?></td>
@@ -115,7 +113,7 @@
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
+                    <td colspan="6" class="text-center text-muted py-4">
                       Nenhuma UC encontrada.
                     </td>
                   </tr>

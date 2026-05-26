@@ -18,10 +18,11 @@ class CursoController
 
         $busca  = trim($_GET['busca'] ?? '');
         $status = trim($_GET['status'] ?? 'todos');
-        $escopo = (new AccessControl())->escopo();
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         $cursos      = $this->cursoModel->listar($busca, $status, $escopo);
         $totalCursos = $this->cursoModel->contar($busca, $status, $escopo);
+        $salas       = $this->cursoModel->listarSalasAtivas();
 
         require_once __DIR__ . '/../views/dashboard/cursos.php';
     }
@@ -30,7 +31,7 @@ class CursoController
     {
         $this->exigirLogin();
 
-        $cursoModelos = $this->cursoModel->listarCursoModelos();
+        $cursoModelos = $this->cursoModel->listarCursoModelos((new AccessControl())->escopoAreaAtuacao());
 
         require_once __DIR__ . '/../views/dashboard/cadastrar_curso.php';
     }
@@ -40,6 +41,7 @@ class CursoController
         $this->exigirLogin();
 
         $id = (int) ($_GET['id'] ?? 0);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0) {
             $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Turma invalida.'));
@@ -47,11 +49,11 @@ class CursoController
 
         $cursoForm = $this->cursoModel->buscarPorId($id);
 
-        if (! $cursoForm) {
+        if (! $cursoForm || ! $this->cursoModel->turmaPertenceEscopo($id, $escopo)) {
             $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Turma nao encontrada.'));
         }
 
-        $cursoModelos = $this->cursoModel->listarCursoModelos();
+        $cursoModelos = $this->cursoModel->listarCursoModelos((new AccessControl())->escopoAreaAtuacao());
 
         require_once __DIR__ . '/../views/dashboard/editar_curso.php';
     }
@@ -66,12 +68,13 @@ class CursoController
 
         $dados = $this->obterDadosPost();
         $queryBase = $this->montarQueryCadastro($dados);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if (! $this->validarDados($dados)) {
             $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
         }
 
-        if (! $this->cursoModel->cursoModeloExiste($dados['curso_modelo_id'])) {
+        if (! $this->cursoModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
             $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Curso selecionado nao foi encontrado.'));
         }
 
@@ -79,7 +82,9 @@ class CursoController
             $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Ja existe um curso com este codigo de oferta.'));
         }
 
-        if ($this->cursoModel->salvar($dados)) {
+        $turmaId = $this->cursoModel->salvar($dados);
+
+        if ($turmaId) {
             $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=sucesso&msg=' . urlencode('Turma cadastrada com sucesso.'));
         }
 
@@ -96,16 +101,17 @@ class CursoController
 
         $dados = $this->obterDadosPost();
         $dados['id'] = (int) ($_POST['id'] ?? 0);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
             $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
-        if (! $this->cursoModel->cursoModeloExiste($dados['curso_modelo_id'])) {
+        if (! $this->cursoModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
             $this->redirecionar('/mapa_de_sala/public/?page=turmas&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Curso selecionado nao foi encontrado.'));
         }
 
-        if (! $this->cursoModel->buscarPorId($dados['id'])) {
+        if (! $this->cursoModel->buscarPorId($dados['id']) || ! $this->cursoModel->turmaPertenceEscopo($dados['id'], $escopo)) {
             $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Turma nao encontrada.'));
         }
 
@@ -125,9 +131,14 @@ class CursoController
         $this->exigirLogin();
 
         $id = (int) ($_POST['id'] ?? 0);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0) {
             $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Turma invalida.'));
+        }
+
+        if (! $this->cursoModel->turmaPertenceEscopo($id, $escopo)) {
+            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Turma nao encontrada.'));
         }
 
         if ($this->cursoModel->excluir($id)) {
@@ -135,6 +146,29 @@ class CursoController
         }
 
         $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a turma. Verifique se existe algum vinculo.'));
+    }
+
+    public function gerarQuadro(): void
+    {
+        $this->exigirLogin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Metodo invalido.'));
+        }
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $dataInicio = trim($_POST['data_inicio'] ?? '');
+        $salaId = (int) ($_POST['sala_id'] ?? 0);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
+
+        if ($id <= 0 || $dataInicio === '' || ! $this->cursoModel->turmaPertenceEscopo($id, $escopo)) {
+            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Dados invalidos para gerar o quadro horario.'));
+        }
+
+        $resultado = $this->cursoModel->gerarQuadroCompleto($id, $dataInicio, $salaId > 0 ? $salaId : null);
+        $tipo = ! empty($resultado['sucesso']) ? 'sucesso' : 'erro';
+
+        $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=' . $tipo . '&msg=' . urlencode($resultado['mensagem'] ?? 'Processo concluido.'));
     }
 
     private function exigirLogin(): void
@@ -154,11 +188,14 @@ class CursoController
             'curso_modelo_id'     => (int) ($_POST['curso_modelo_id'] ?? 0),
             'nome'                => trim($_POST['nome'] ?? ''),
             'codigo_oferta'       => trim($_POST['codigo_oferta'] ?? ''),
-            'periodo'             => trim($_POST['periodo'] ?? ''),
             'hora_inicio'         => trim($_POST['hora_inicio'] ?? ''),
             'hora_fim'            => trim($_POST['hora_fim'] ?? ''),
-            'carga_horaria_total' => (int) ($_POST['carga_horaria_total'] ?? 0),
-            'hora_aula'           => $this->obterHoraAulaPost(),
+            'aula_segunda'        => isset($_POST['aula_segunda']) ? 1 : 0,
+            'aula_terca'          => isset($_POST['aula_terca']) ? 1 : 0,
+            'aula_quarta'         => isset($_POST['aula_quarta']) ? 1 : 0,
+            'aula_quinta'         => isset($_POST['aula_quinta']) ? 1 : 0,
+            'aula_sexta'          => isset($_POST['aula_sexta']) ? 1 : 0,
+            'aula_sabado'         => isset($_POST['aula_sabado']) ? 1 : 0,
             'status'              => trim($_POST['status'] ?? 'Em andamento'),
             'descricao'           => trim($_POST['descricao'] ?? ''),
         ];
@@ -169,10 +206,8 @@ class CursoController
         return $dados['nome'] !== ''
             && $dados['curso_modelo_id'] > 0
             && $dados['codigo_oferta'] !== ''
-            && $dados['periodo'] !== ''
             && $this->validarHorario($dados)
-            && $dados['carga_horaria_total'] > 0
-            && $dados['hora_aula'] > 0
+            && $this->temDiaAula($dados)
             && in_array($dados['status'], ['Em andamento', 'Finalizada'], true);
     }
 
@@ -184,11 +219,14 @@ class CursoController
             'curso_modelo_id'     => $dados['curso_modelo_id'] > 0 ? $dados['curso_modelo_id'] : '',
             'nome'                => $dados['nome'],
             'codigo_oferta'       => $dados['codigo_oferta'],
-            'periodo'             => $dados['periodo'],
             'hora_inicio'         => $dados['hora_inicio'],
             'hora_fim'            => $dados['hora_fim'],
-            'carga_horaria_total' => $dados['carga_horaria_total'] > 0 ? $dados['carga_horaria_total'] : '',
-            'hora_aula'           => $dados['hora_aula'] > 0 ? $dados['hora_aula'] : '',
+            'aula_segunda'        => $dados['aula_segunda'],
+            'aula_terca'          => $dados['aula_terca'],
+            'aula_quarta'         => $dados['aula_quarta'],
+            'aula_quinta'         => $dados['aula_quinta'],
+            'aula_sexta'          => $dados['aula_sexta'],
+            'aula_sabado'         => $dados['aula_sabado'],
             'status'              => $dados['status'],
             'descricao'           => $dados['descricao'],
         ]);
@@ -212,24 +250,16 @@ class CursoController
         return $inicio !== '' && $fim !== '';
     }
 
-    private function obterHoraAulaPost(): float
+    private function temDiaAula(array $dados): bool
     {
-        $horas = (int) ($_POST['hora_aula_horas'] ?? 0);
-        $minutos = (int) ($_POST['hora_aula_minutos'] ?? 0);
-
-        if ($horas < 0) {
-            $horas = 0;
+        foreach (['aula_segunda', 'aula_terca', 'aula_quarta', 'aula_quinta', 'aula_sexta', 'aula_sabado'] as $campo) {
+            if ((int) ($dados[$campo] ?? 0) === 1) {
+                return true;
+            }
         }
 
-        if ($minutos < 0) {
-            $minutos = 0;
-        }
-
-        if ($minutos > 59) {
-            $minutos = 59;
-        }
-
-        return round($horas + ($minutos / 60), 2);
+        return false;
     }
+
 }
 

@@ -77,7 +77,7 @@
           </div>
 
           <div class="row g-3 mb-3">
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-6 col-xl">
               <div class="app-card p-3">
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
@@ -92,7 +92,7 @@
               </div>
             </div>
 
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-6 col-xl">
               <div class="app-card p-3">
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
@@ -107,7 +107,7 @@
               </div>
             </div>
 
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-6 col-xl">
               <div class="app-card p-3">
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
@@ -122,7 +122,7 @@
               </div>
             </div>
 
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-6 col-xl">
               <div class="app-card p-3">
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
@@ -133,7 +133,22 @@
                     <i class="bi bi-tools"></i>
                   </div>
                 </div>
-                <div class="small text-muted mt-2">Indisponiveis no cadastro</div>
+                <div class="small text-muted mt-2"><?php echo htmlspecialchars($dataHojeFormatada); ?></div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl">
+              <div class="app-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="small text-muted">Salas reservadas</div>
+                    <div class="fs-3 fw-bold"><?php echo (int) ($indicadores['salas_reservadas'] ?? 0); ?></div>
+                  </div>
+                  <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--uso">
+                    <i class="bi bi-bookmark-check"></i>
+                  </div>
+                </div>
+                <div class="small text-muted mt-2"><?php echo htmlspecialchars($dataHojeFormatada); ?></div>
               </div>
             </div>
           </div>
@@ -162,7 +177,7 @@
                       <?php echo htmlspecialchars($turno); ?>
                     </div>
                     <span class="badge text-bg-primary fs-6 px-3 py-2">
-                      <?php echo count($aulasTurno); ?> turma(s)
+                      <?php echo count($aulasTurno); ?> sala(s)
                     </span>
                   </div>
 
@@ -170,9 +185,36 @@
                   <div class="d-grid gap-2">
                     <?php foreach ($aulasTurno as $aula): ?>
                     <div class="border rounded p-2">
-                      <div class="fw-semibold"><?php echo htmlspecialchars($aula['sala_nome'] ?? ''); ?></div>
+                      <div class="fw-semibold"><?php echo ! empty($aula['sala_nome']) ? htmlspecialchars($aula['sala_nome']) : 'Sala em aberto'; ?></div>
                       <div><?php echo htmlspecialchars($aula['turma_nome'] ?? ''); ?></div>
-                      <div class="small text-muted"><?php echo htmlspecialchars($aula['docentes'] ?? ''); ?></div>
+                      <?php if (! empty($aula['tipo_reserva'])): ?>
+                      <div class="my-1">
+                        <span class="badge text-bg-<?php echo ($aula['tipo_reserva'] ?? '') === 'Manutencao' ? 'danger' : 'primary'; ?>">
+                          <?php echo ($aula['tipo_reserva'] ?? '') === 'Manutencao' ? 'Manutencao' : 'Reservada'; ?>
+                        </span>
+                      </div>
+                      <?php endif; ?>
+                      <?php if ((int) ($aula['visita_tecnica'] ?? 0) === 1): ?>
+                      <div class="my-1">
+                        <span class="badge text-bg-info">Visita Técnica</span>
+                      </div>
+                      <?php endif; ?>
+                      <?php if ((int) ($aula['ead_assincrona'] ?? 0) === 1): ?>
+                      <div class="my-1">
+                        <span class="badge text-bg-secondary">EAD/Assíncrona</span>
+                      </div>
+                      <?php endif; ?>
+                      <?php if (! empty($aula['aprendizagem_quadro_id'])): ?>
+                      <div class="my-1">
+                        <span class="badge text-bg-warning">Aceleração</span>
+                      </div>
+                      <?php endif; ?>
+                      <?php if (! empty($aula['docentes'])): ?>
+                      <div class="small text-muted">Docente: <?php echo htmlspecialchars($aula['docentes']); ?></div>
+                      <?php endif; ?>
+                      <?php if (! empty($aula['solicitante_nome'])): ?>
+                      <div class="small text-muted fw-semibold">Solicitante: <?php echo htmlspecialchars($aula['solicitante_nome']); ?></div>
+                      <?php endif; ?>
                     </div>
                     <?php endforeach; ?>
                   </div>

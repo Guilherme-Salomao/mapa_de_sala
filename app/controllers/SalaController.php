@@ -53,7 +53,7 @@ class SalaController
         $capacidade = (int) ($_POST['capacidade'] ?? 0);
         $status     = trim($_POST['status'] ?? '');
         $descricao  = trim($_POST['descricao'] ?? '');
-        $recursos   = $_POST['quantidade_recursos'] ?? [];
+        $recursosTratados = $this->obterRecursosPost();
 
         $queryBase = http_build_query([
             'page'       => 'salas',
@@ -63,6 +63,7 @@ class SalaController
             'capacidade' => $capacidade > 0 ? $capacidade : '',
             'status'     => $status,
             'descricao'  => $descricao,
+            'recursos'   => $recursosTratados,
         ]);
 
         if (empty($nome) || empty($tipo) || $capacidade <= 0 || ! $this->statusValido($status)) {
@@ -73,19 +74,6 @@ class SalaController
         if ($this->salaModel->nomeExiste($nome)) {
             header('Location: /mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Já existe uma sala cadastrada com esse nome.'));
             exit;
-        }
-
-        $recursosTratados = [];
-
-        if (! empty($_POST['recursos']) && is_array($_POST['recursos'])) {
-            foreach ($_POST['recursos'] as $recursoId) {
-                $recursoId  = (int) $recursoId;
-                $quantidade = (int) ($_POST['quantidade_recursos'][$recursoId] ?? 1);
-
-                if ($recursoId > 0 && $quantidade > 0) {
-                    $recursosTratados[$recursoId] = $quantidade;
-                }
-            }
         }
 
         $dados = [
@@ -158,12 +146,11 @@ class SalaController
         $dados = [
             'id'                  => $id,
             'nome'                => trim($_POST['nome'] ?? ''),
-            'tipo'                => trim($_POST['tipo'] ?? ''),
+            'tipo'                => trim($_POST['tipo_sala'] ?? ''),
             'capacidade'          => (int) ($_POST['capacidade'] ?? 0),
             'status'              => trim($_POST['status'] ?? 'ativa'),
             'descricao'           => trim($_POST['descricao'] ?? ''),
-            'recursos'            => $_POST['recursos'] ?? [],
-            'quantidade_recursos' => $_POST['quantidade_recursos'] ?? [],
+            'recursos'            => $this->obterRecursosPost(),
         ];
 
         if (
@@ -219,6 +206,24 @@ class SalaController
 
     private function statusValido(string $status): bool
     {
-        return in_array($status, ['ativa', 'manutencao', 'inativa'], true);
+        return in_array($status, ['ativa', 'inativa'], true);
+    }
+
+    private function obterRecursosPost(): array
+    {
+        $recursosTratados = [];
+
+        if (! empty($_POST['recursos']) && is_array($_POST['recursos'])) {
+            foreach ($_POST['recursos'] as $recursoId) {
+                $recursoId = (int) $recursoId;
+                $quantidade = (int) ($_POST['quantidade_recursos'][$recursoId] ?? 1);
+
+                if ($recursoId > 0 && $quantidade > 0) {
+                    $recursosTratados[$recursoId] = $quantidade;
+                }
+            }
+        }
+
+        return $recursosTratados;
     }
 }

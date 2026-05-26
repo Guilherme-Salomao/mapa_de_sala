@@ -22,7 +22,6 @@
         'codigo'          => '',
         'nome'            => '',
         'carga_horaria'   => '',
-        'ordem'           => '',
         'status'          => 'Ativa',
     ];
 

@@ -22,6 +22,61 @@
     $botaoTopoLink   = '/mapa_de_sala/public/?page=turmas&action=cadastrar';
     $botaoTopoClasse = 'app-btn-primary';
     $botaoTopoIcone  = 'bi-plus-circle';
+
+    function formatarHoraAulaTurma(?string $horaInicio, ?string $horaFim): string
+    {
+        if (empty($horaInicio) || empty($horaFim)) {
+            return 'Nao informado';
+        }
+
+        $inicio = strtotime($horaInicio);
+        $fim = strtotime($horaFim);
+
+        if ($inicio === false || $fim === false || $fim <= $inicio) {
+            return 'Nao informado';
+        }
+
+        $minutosTotais = (int) round(($fim - $inicio) / 60);
+        $horas = intdiv($minutosTotais, 60);
+        $minutos = $minutosTotais % 60;
+
+        return $minutos > 0
+            ? $horas . 'h' . str_pad((string) $minutos, 2, '0', STR_PAD_LEFT)
+            : $horas . 'h';
+    }
+
+    function periodoTurmaPorHorario(?string $horaInicio, ?string $horaFim): string
+    {
+        if (empty($horaInicio) || empty($horaFim)) {
+            return 'Nao informado';
+        }
+
+        $inicio = strtotime($horaInicio);
+        $fim = strtotime($horaFim);
+
+        if ($inicio === false || $fim === false || $fim <= $inicio) {
+            return 'Nao informado';
+        }
+
+        $periodos = [];
+        $faixas = [
+            'Manha' => ['00:00', '12:00'],
+            'Tarde' => ['12:00', '18:00'],
+            'Noite' => ['18:00', '23:59'],
+        ];
+
+        foreach ($faixas as $periodo => [$inicioFaixa, $fimFaixa]) {
+            $base = date('Y-m-d ', $inicio);
+            $faixaInicio = strtotime($base . $inicioFaixa);
+            $faixaFim = strtotime($base . $fimFaixa);
+
+            if ($faixaInicio !== false && $faixaFim !== false && $inicio < $faixaFim && $fim > $faixaInicio) {
+                $periodos[] = $periodo;
+            }
+        }
+
+        return count($periodos) > 1 ? 'Integral' : ($periodos[0] ?? 'Nao informado');
+    }
 ?>
 
 <!doctype html>
@@ -83,8 +138,7 @@
                     <th>Codigo da oferta</th>
                     <th>Periodo</th>
                     <th>Horario</th>
-                    <th>Carga horaria</th>
-                    <th>Hora-aula</th>
+                    <th>Hora aula</th>
                     <th>Status</th>
                     <th class="text-end">Acoes</th>
                   </tr>
@@ -101,7 +155,7 @@
                       <?php endif; ?>
                     </td>
                     <td><?php echo htmlspecialchars($curso['codigo_oferta'] ?? ''); ?></td>
-                    <td><?php echo htmlspecialchars($curso['periodo'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars(periodoTurmaPorHorario($curso['hora_inicio'] ?? null, $curso['hora_fim'] ?? null)); ?></td>
                     <td>
                       <?php if (! empty($curso['hora_inicio']) && ! empty($curso['hora_fim'])): ?>
                       <?php echo htmlspecialchars(substr($curso['hora_inicio'], 0, 5) . ' - ' . substr($curso['hora_fim'], 0, 5)); ?>
@@ -109,23 +163,7 @@
                       <span class="text-muted">Nao informado</span>
                       <?php endif; ?>
                     </td>
-                    <td><?php echo (int) ($curso['carga_horaria_total'] ?? 0); ?>h</td>
-                    <td>
-                      <?php
-                          $horaAula = (float) ($curso['hora_aula'] ?? 0);
-                          $horaAulaHoras = (int) floor($horaAula);
-                          $horaAulaMinutos = (int) round(($horaAula - $horaAulaHoras) * 60);
-
-                          if ($horaAulaMinutos === 60) {
-                              $horaAulaHoras++;
-                              $horaAulaMinutos = 0;
-                          }
-
-                          echo $horaAulaMinutos > 0
-                              ? htmlspecialchars($horaAulaHoras . 'h' . str_pad((string) $horaAulaMinutos, 2, '0', STR_PAD_LEFT))
-                              : htmlspecialchars($horaAulaHoras . 'h');
-                      ?>
-                    </td>
+                    <td><?php echo htmlspecialchars(formatarHoraAulaTurma($curso['hora_inicio'] ?? null, $curso['hora_fim'] ?? null)); ?></td>
                     <td>
                       <?php
                           $statusCurso = $curso['status'] ?? 'Em andamento';
@@ -142,7 +180,7 @@
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="8" class="text-center text-muted py-4">
+                    <td colspan="7" class="text-center text-muted py-4">
                       Nenhuma turma encontrada.
                     </td>
                   </tr>

@@ -1,4 +1,5 @@
 <form id="formUsuario" method="POST" action="<?php echo $formAction; ?>" novalidate>
+  <?php $perfilProprio = (bool) ($perfilProprio ?? false); ?>
   <?php if ($modoEdicao): ?>
   <input type="hidden" name="id" value="<?php echo (int) ($usuarioForm['id'] ?? 0); ?>">
   <?php endif; ?>
@@ -29,7 +30,10 @@
 
     <div class="col-12 col-md-6">
       <label for="nivel_acesso" class="form-label">Nível de acesso</label>
-      <select class="form-select" id="nivel_acesso" name="nivel_acesso" required>
+      <?php if ($perfilProprio): ?>
+      <input type="hidden" name="nivel_acesso" value="<?php echo htmlspecialchars($usuarioForm['nivel_acesso'] ?? ''); ?>">
+      <?php endif; ?>
+      <select class="form-select" id="nivel_acesso" name="nivel_acesso" required <?php echo $perfilProprio ? 'disabled' : ''; ?>>
         <option value="" <?php echo empty($usuarioForm['nivel_acesso']) ? 'selected' : ''; ?> disabled>Selecione...
         </option>
         <option value="Admin" <?php echo(($usuarioForm['nivel_acesso'] ?? '') === 'Admin') ? 'selected' : ''; ?>>Admin
@@ -48,7 +52,10 @@
 
     <div class="col-12 col-md-6">
       <label for="status" class="form-label">Status</label>
-      <select class="form-select" id="status" name="status" required>
+      <?php if ($perfilProprio): ?>
+      <input type="hidden" name="status" value="<?php echo htmlspecialchars($usuarioForm['status'] ?? ''); ?>">
+      <?php endif; ?>
+      <select class="form-select" id="status" name="status" required <?php echo $perfilProprio ? 'disabled' : ''; ?>>
         <option value="Ativo" <?php echo(($usuarioForm['status'] ?? 'Ativo') === 'Ativo') ? 'selected' : ''; ?>>Ativo
         </option>
         <option value="Inativo" <?php echo(($usuarioForm['status'] ?? '') === 'Inativo') ? 'selected' : ''; ?>>Inativo
@@ -59,7 +66,7 @@
       </div>
     </div>
 
-    <div class="col-12" id="areasUsuarioWrap">
+    <div class="col-12 <?php echo $perfilProprio ? 'd-none' : ''; ?>" id="areasUsuarioWrap">
       <label class="form-label">Areas de acesso</label>
       <div class="row g-2">
         <?php foreach (($areas ?? []) as $area): ?>
@@ -125,7 +132,7 @@
   <hr class="my-4" />
 
   <div class="d-flex flex-wrap gap-2 justify-content-end">
-    <a href="/mapa_de_sala/public/?page=usuarios" class="btn btn-outline-secondary">
+    <a href="<?php echo $perfilProprio ? '/mapa_de_sala/public/?page=home' : '/mapa_de_sala/public/?page=usuarios'; ?>" class="btn btn-outline-secondary">
       <i class="bi bi-x-circle"></i> Cancelar
     </a>
 
@@ -137,11 +144,13 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+  const perfilProprio = <?php echo $perfilProprio ? 'true' : 'false'; ?>;
   const nivel = document.getElementById("nivel_acesso");
   const areasWrap = document.getElementById("areasUsuarioWrap");
 
   function alternarAreas() {
     if (!nivel || !areasWrap) return;
+    if (perfilProprio) return;
 
     const mostrar = nivel.value === "Gestor" || nivel.value === "Apoio";
     areasWrap.classList.toggle("d-none", !mostrar);

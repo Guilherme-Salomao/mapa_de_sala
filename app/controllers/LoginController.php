@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../models/Usuario.php';
 require_once __DIR__ . '/../core/Email.php';
+require_once __DIR__ . '/../core/AuditLog.php';
 
 class LoginController
 {
@@ -52,6 +53,8 @@ class LoginController
             'nivel_acesso' => $usuario['nivel_acesso'],
             'status'       => $usuario['status'],
         ];
+
+        AuditLog::registrarRequisicao('login', 'entrar');
 
         $this->usuarioModel->atualizarUltimoLogin((int) $usuario['id']);
 

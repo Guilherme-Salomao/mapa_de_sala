@@ -19,9 +19,14 @@ class QuadroHorario
                 co.id,
                 co.nome,
                 co.codigo_oferta,
-                co.periodo,
                 co.hora_inicio,
                 co.hora_fim,
+                co.aula_segunda,
+                co.aula_terca,
+                co.aula_quarta,
+                co.aula_quinta,
+                co.aula_sexta,
+                co.aula_sabado,
                 co.curso_modelo_id,
                 cm.nome AS curso_nome
             FROM cursos_ofertas co
@@ -49,9 +54,14 @@ class QuadroHorario
                 co.id,
                 co.nome,
                 co.codigo_oferta,
-                co.periodo,
                 co.hora_inicio,
                 co.hora_fim,
+                co.aula_segunda,
+                co.aula_terca,
+                co.aula_quarta,
+                co.aula_quinta,
+                co.aula_sexta,
+                co.aula_sabado,
                 co.curso_modelo_id,
                 cm.nome AS curso_nome
             FROM cursos_ofertas co
@@ -76,16 +86,16 @@ class QuadroHorario
         }
 
         $sql = "
-            SELECT id, codigo, nome, carga_horaria, ordem
-            FROM unidades_curriculares
-            WHERE curso_modelo_id = :curso_modelo_id
-              AND status = 'Ativa'
+            SELECT uc.id, uc.codigo, uc.nome, uc.carga_horaria
+            FROM unidades_curriculares uc
+            WHERE uc.curso_modelo_id = :curso_modelo_id
+              AND uc.status = 'Ativa'
         ";
 
         $params = [':curso_modelo_id' => (int) $oferta['curso_modelo_id']];
         $this->aplicarEscopoUc($sql, $params, $escopo);
 
-        $sql .= " ORDER BY ordem ASC, nome ASC";
+        $sql .= " ORDER BY CHAR_LENGTH(uc.codigo) ASC, uc.codigo ASC, uc.nome ASC";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
@@ -158,6 +168,7 @@ class QuadroHorario
         $sql = "
             SELECT
                 qh.id,
+                qh.aprendizagem_quadro_id,
                 qh.curso_oferta_id,
                 qh.unidade_curricular_id,
                 qh.sala_id,
@@ -166,6 +177,8 @@ class QuadroHorario
                 qh.hora_fim,
                 qh.divisao_por_hora,
                 qh.dupla_docencia,
+                qh.visita_tecnica,
+                qh.ead_assincrona,
                 qh.status,
                 qh.observacoes,
                 uc.codigo AS uc_codigo,
@@ -173,7 +186,7 @@ class QuadroHorario
                 s.nome AS sala_nome
             FROM quadro_horario qh
             INNER JOIN unidades_curriculares uc ON uc.id = qh.unidade_curricular_id
-            INNER JOIN salas s ON s.id = qh.sala_id
+            LEFT JOIN salas s ON s.id = qh.sala_id
             WHERE qh.curso_oferta_id = :curso_oferta_id
               AND qh.data_aula BETWEEN :inicio AND :fim
             ORDER BY qh.data_aula ASC, qh.hora_inicio ASC
@@ -227,10 +240,10 @@ class QuadroHorario
 
         $sql = "
             SELECT id
-            FROM unidades_curriculares
-            WHERE id = :id
-              AND curso_modelo_id = :curso_modelo_id
-              AND status = 'Ativa'
+            FROM unidades_curriculares uc
+            WHERE uc.id = :id
+              AND uc.curso_modelo_id = :curso_modelo_id
+              AND uc.status = 'Ativa'
             LIMIT 1
         ";
 
@@ -286,6 +299,8 @@ class QuadroHorario
                     hora_fim = :hora_fim,
                     divisao_por_hora = :divisao_por_hora,
                     dupla_docencia = :dupla_docencia,
+                    visita_tecnica = :visita_tecnica,
+                    ead_assincrona = :ead_assincrona,
                     status = :status,
                     observacoes = :observacoes
                 WHERE id = :id
@@ -296,12 +311,14 @@ class QuadroHorario
                 ':id'                    => $dados['id'],
                 ':curso_oferta_id'       => $dados['curso_oferta_id'],
                 ':unidade_curricular_id' => $dados['unidade_curricular_id'],
-                ':sala_id'               => $dados['sala_id'],
+                ':sala_id'               => $dados['sala_id'] > 0 ? $dados['sala_id'] : null,
                 ':data_aula'             => $dados['data_aula'],
                 ':hora_inicio'           => $dados['hora_inicio'],
                 ':hora_fim'              => $dados['hora_fim'],
                 ':divisao_por_hora'      => $dados['divisao_por_hora'],
                 ':dupla_docencia'        => $dados['dupla_docencia'],
+                ':visita_tecnica'        => $dados['visita_tecnica'],
+                ':ead_assincrona'        => $dados['ead_assincrona'],
                 ':status'                => $dados['status'],
                 ':observacoes'           => $dados['observacoes'],
             ]);
@@ -335,6 +352,10 @@ class QuadroHorario
 
     public function encontrarConflitoSala(int $salaId, string $dataAula, string $horaInicio, string $horaFim, ?int $ignorarId = null): ?array
     {
+        if ($salaId <= 0) {
+            return null;
+        }
+
         $sql = "
             SELECT qh.id, qh.hora_inicio, qh.hora_fim, co.nome AS turma_nome
             FROM quadro_horario qh
@@ -364,7 +385,37 @@ class QuadroHorario
         $stmt->execute($params);
         $conflito = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $conflito ?: null;
+        if ($conflito) {
+            return $conflito;
+        }
+
+        return $this->encontrarBloqueioSala($salaId, $dataAula, $horaInicio, $horaFim);
+    }
+
+    private function encontrarBloqueioSala(int $salaId, string $dataAula, string $horaInicio, string $horaFim): ?array
+    {
+        $sql = "
+            SELECT id, hora_inicio, hora_fim, tipo
+            FROM sala_reservas
+            WHERE sala_id = :sala_id
+              AND status = 'Ativo'
+              AND data_inicio <= :data_aula
+              AND data_fim >= :data_aula
+              AND hora_inicio < :hora_fim
+              AND hora_fim > :hora_inicio
+            LIMIT 1
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([
+            ':sala_id' => $salaId,
+            ':data_aula' => $dataAula,
+            ':hora_inicio' => $horaInicio,
+            ':hora_fim' => $horaFim,
+        ]);
+        $bloqueio = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $bloqueio ?: null;
     }
 
     public function encontrarConflitoTurma(int $cursoOfertaId, string $dataAula, string $horaInicio, string $horaFim, ?int $ignorarId = null): ?array
@@ -435,6 +486,121 @@ class QuadroHorario
         return $conflito ?: null;
     }
 
+    public function encontrarAulaDocenteNoDia(int $docenteId, string $dataAula, ?int $ignorarId = null): ?array
+    {
+        $sql = "
+            SELECT qh.id, qh.hora_inicio, qh.hora_fim, co.nome AS turma_nome, s.nome AS sala_nome
+            FROM quadro_horario qh
+            INNER JOIN quadro_horario_docentes qhd ON qhd.quadro_horario_id = qh.id
+            INNER JOIN cursos_ofertas co ON co.id = qh.curso_oferta_id
+            LEFT JOIN salas s ON s.id = qh.sala_id
+            WHERE qhd.docente_id = :docente_id
+              AND qh.data_aula = :data_aula
+              AND qh.status = 'Ativa'
+        ";
+
+        $params = [
+            ':docente_id' => $docenteId,
+            ':data_aula' => $dataAula,
+        ];
+
+        if ($ignorarId !== null) {
+            $sql .= " AND qh.id != :ignorar_id";
+            $params[':ignorar_id'] = $ignorarId;
+        }
+
+        $sql .= " LIMIT 1";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        $aula = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $aula ?: null;
+    }
+
+    public function docenteTemEscala(int $docenteId, string $dataAula, string $horaInicio, string $horaFim): bool
+    {
+        $diaSemana = $this->diaSemanaPortugues($dataAula);
+        $periodos = $this->periodosPorHorario($horaInicio, $horaFim);
+
+        if ($diaSemana === '' || empty($periodos)) {
+            return false;
+        }
+
+        $placeholders = [];
+        $params = [
+            ':docente_id' => $docenteId,
+            ':dia_semana' => $diaSemana,
+        ];
+
+        foreach ($periodos as $index => $periodo) {
+            $placeholder = ':periodo_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $periodo;
+        }
+
+        $sql = "
+            SELECT id
+            FROM docente_escala
+            WHERE docente_id = :docente_id
+              AND dia_semana = :dia_semana
+              AND periodo IN (" . implode(',', $placeholders) . ")
+            LIMIT 1
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function diaSemanaPortugues(string $data): string
+    {
+        $timestamp = strtotime($data);
+
+        if ($timestamp === false) {
+            return '';
+        }
+
+        return [
+            1 => 'Segunda',
+            2 => 'Terça',
+            3 => 'Quarta',
+            4 => 'Quinta',
+            5 => 'Sexta',
+            6 => 'Sábado',
+            7 => 'Domingo',
+        ][(int) date('N', $timestamp)] ?? '';
+    }
+
+    private function periodosPorHorario(string $horaInicio, string $horaFim): array
+    {
+        $inicio = strtotime($horaInicio);
+        $fim = strtotime($horaFim);
+
+        if ($inicio === false || $fim === false || $fim <= $inicio) {
+            return [];
+        }
+
+        $periodos = [];
+        $faixas = [
+            'Manhã' => ['00:00', '12:00'],
+            'Tarde' => ['12:00', '18:00'],
+            'Noite' => ['18:00', '23:59'],
+        ];
+
+        foreach ($faixas as $periodo => [$inicioFaixa, $fimFaixa]) {
+            $faixaInicio = strtotime(date('Y-m-d ', $inicio) . $inicioFaixa);
+            $faixaFim = strtotime(date('Y-m-d ', $inicio) . $fimFaixa);
+
+            if ($faixaInicio !== false && $faixaFim !== false && $inicio < $faixaFim && $fim > $faixaInicio) {
+                $periodos[] = $periodo;
+            }
+        }
+
+        return $periodos;
+    }
+
     private function inserirAula(array $dados, string $horaInicio, string $horaFim): int
     {
         $sql = "
@@ -447,6 +613,8 @@ class QuadroHorario
                 hora_fim,
                 divisao_por_hora,
                 dupla_docencia,
+                visita_tecnica,
+                ead_assincrona,
                 status,
                 observacoes
             ) VALUES (
@@ -458,6 +626,8 @@ class QuadroHorario
                 :hora_fim,
                 :divisao_por_hora,
                 :dupla_docencia,
+                :visita_tecnica,
+                :ead_assincrona,
                 :status,
                 :observacoes
             )
@@ -467,12 +637,14 @@ class QuadroHorario
         $stmt->execute([
             ':curso_oferta_id'       => $dados['curso_oferta_id'],
             ':unidade_curricular_id' => $dados['unidade_curricular_id'],
-            ':sala_id'               => $dados['sala_id'],
+            ':sala_id'               => $dados['sala_id'] > 0 ? $dados['sala_id'] : null,
             ':data_aula'             => $dados['data_aula'],
             ':hora_inicio'           => $horaInicio,
             ':hora_fim'              => $horaFim,
             ':divisao_por_hora'      => $dados['divisao_por_hora'],
             ':dupla_docencia'        => $dados['dupla_docencia'],
+            ':visita_tecnica'        => $dados['visita_tecnica'],
+            ':ead_assincrona'        => $dados['ead_assincrona'],
             ':status'                => $dados['status'],
             ':observacoes'           => $dados['observacoes'],
         ]);
@@ -585,6 +757,6 @@ class QuadroHorario
             $params[$placeholder] = $id;
         }
 
-        $sql .= " AND id IN (" . implode(',', $placeholders) . ")";
+        $sql .= " AND uc.id IN (" . implode(',', $placeholders) . ")";
     }
 }

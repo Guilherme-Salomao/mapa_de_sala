@@ -1,19 +1,25 @@
 <?php
 
 require_once __DIR__ . '/../models/RelatorioDocente.php';
+require_once __DIR__ . '/../models/EducacaoCorporativa.php';
+require_once __DIR__ . '/../core/AccessControl.php';
 
 class RelatorioDocenteController
 {
     private RelatorioDocente $relatorioModel;
+    private EducacaoCorporativa $educacaoModel;
 
     public function __construct()
     {
         $this->relatorioModel = new RelatorioDocente();
+        $this->educacaoModel = new EducacaoCorporativa();
     }
 
     public function index(): void
     {
         $this->exigirLogin();
+        $access = new AccessControl();
+        $relatorioProprioDocente = $access->nivel() === 'Professor';
 
         $mes = (int) ($_GET['mes'] ?? date('n'));
         $ano = (int) ($_GET['ano'] ?? date('Y'));
@@ -26,22 +32,41 @@ class RelatorioDocenteController
             $ano = (int) date('Y');
         }
 
-        $docentes = $this->relatorioModel->listarDocentes();
-        $docenteId = (int) ($_GET['docente_id'] ?? ($docentes[0]['id'] ?? 0));
-        $docenteSelecionado = $docenteId > 0 ? $this->relatorioModel->buscarDocente($docenteId) : null;
+        if ($relatorioProprioDocente) {
+            $docenteId = $access->docenteId();
+
+            if ($docenteId === null) {
+                $this->redirecionar('/mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Seu usuario ainda nao esta vinculado a um docente ativo.'));
+            }
+
+            $docenteSelecionado = $this->relatorioModel->buscarDocente($docenteId);
+            $docentes = $docenteSelecionado ? [$docenteSelecionado] : [];
+        } else {
+            $escopo = $access->escopoAreaAtuacao();
+            $docentes = $this->relatorioModel->listarDocentes($escopo);
+            $docenteId = (int) ($_GET['docente_id'] ?? ($docentes[0]['id'] ?? 0));
+            $docenteSelecionado = $docenteId > 0 ? $this->relatorioModel->buscarDocente($docenteId, $escopo) : null;
+        }
+
+        if (! $docenteSelecionado) {
+            $docenteId = 0;
+        }
+
         $escala = $docenteSelecionado ? $this->relatorioModel->listarEscala($docenteId) : [];
         $aulas = $docenteSelecionado ? $this->relatorioModel->listarAulasMensais($docenteId, $mes, $ano) : [];
-        $eventosPorData = $this->montarEventos($escala, $aulas, $mes, $ano);
+        $cursosCorporativos = $docenteSelecionado ? $this->educacaoModel->listarPorDocenteMes($docenteId, $mes, $ano) : [];
+        $eventosPorData = $this->montarEventos($escala, $aulas, $cursosCorporativos, $mes, $ano);
         $resumoCarga = $this->calcularResumoCarga($eventosPorData);
         $periodosEscala = $this->periodosDaEscala($escala);
 
         require_once __DIR__ . '/../views/dashboard/relatorio_docente.php';
     }
 
-    private function montarEventos(array $escala, array $aulas, int $mes, int $ano): array
+    private function montarEventos(array $escala, array $aulas, array $cursosCorporativos, int $mes, int $ano): array
     {
         $escalaPorDia = [];
         $aulasPorData = [];
+        $cursosPorData = [];
         $eventosPorData = [];
         $inicio = sprintf('%04d-%02d-01', $ano, $mes);
         $diasNoMes = (int) date('t', strtotime($inicio));
@@ -60,15 +85,28 @@ class RelatorioDocenteController
 
         foreach ($aulas as $aula) {
             $data = (string) $aula['data_aula'];
-            $periodoKey = $this->normalizarPeriodo((string) ($aula['periodo'] ?? ''));
+            $periodoKey = $this->periodoPorHorario(
+                (string) ($aula['hora_inicio'] ?? ''),
+                (string) ($aula['hora_fim'] ?? '')
+            );
             $aula['periodo_key'] = $periodoKey;
             $aulasPorData[$data][] = $aula;
+        }
+
+        foreach ($cursosCorporativos as $curso) {
+            $data = (string) ($curso['data'] ?? '');
+
+            if ($data !== '') {
+                $cursosPorData[$data][] = $curso;
+            }
         }
 
         for ($dia = 1; $dia <= $diasNoMes; $dia++) {
             $data = sprintf('%04d-%02d-%02d', $ano, $mes, $dia);
             $diaKey = $this->diaSemanaPorData($data);
             $aulasData = $aulasPorData[$data] ?? [];
+            $cursoData = $cursosPorData[$data][0] ?? null;
+            $escalaData = $escalaPorDia[$diaKey] ?? [];
             $periodosComAula = [];
 
             foreach ($aulasData as $aula) {
@@ -90,7 +128,30 @@ class RelatorioDocenteController
                 ];
             }
 
-            foreach (($escalaPorDia[$diaKey] ?? []) as $periodoKey => $itemEscala) {
+            if ($cursoData && ! empty($escalaData)) {
+                $periodosCurso = [];
+                $horasCurso = 0.0;
+
+                foreach ($escalaData as $itemEscala) {
+                    $periodosCurso[] = $itemEscala['periodo'];
+                    $horasCurso += (float) ($itemEscala['horas'] ?? 0);
+                }
+
+                $eventosPorData[$data][] = [
+                    'tipo' => 'curso',
+                    'periodo' => implode(' / ', array_unique($periodosCurso)),
+                    'periodo_key' => 'curso',
+                    'hora' => $this->formatarHoras($horasCurso),
+                    'horas_numero' => $horasCurso,
+                    'turma' => 'Curso: ' . ($cursoData['titulo'] ?? ''),
+                    'uc' => '',
+                    'sala' => '',
+                ];
+
+                continue;
+            }
+
+            foreach ($escalaData as $periodoKey => $itemEscala) {
                 if (isset($periodosComAula[$periodoKey])) {
                     continue;
                 }
@@ -115,6 +176,7 @@ class RelatorioDocenteController
     {
         $horasAula = 0.0;
         $horasPlanejamento = 0.0;
+        $horasCurso = 0.0;
 
         foreach ($eventosPorData as $eventos) {
             foreach ($eventos as $evento) {
@@ -127,18 +189,25 @@ class RelatorioDocenteController
 
                 if (($evento['tipo'] ?? '') === 'planejamento') {
                     $horasPlanejamento += $horas;
+                    continue;
+                }
+
+                if (($evento['tipo'] ?? '') === 'curso') {
+                    $horasCurso += $horas;
                 }
             }
         }
 
-        $total = $horasAula + $horasPlanejamento;
+        $total = $horasAula + $horasPlanejamento + $horasCurso;
 
         return [
             'horas_aula' => $horasAula,
             'horas_planejamento' => $horasPlanejamento,
+            'horas_curso' => $horasCurso,
             'total_horas' => $total,
             'percentual_aula' => $total > 0 ? round(($horasAula / $total) * 100, 1) : 0,
             'percentual_planejamento' => $total > 0 ? round(($horasPlanejamento / $total) * 100, 1) : 0,
+            'percentual_curso' => $total > 0 ? round(($horasCurso / $total) * 100, 1) : 0,
         ];
     }
 
@@ -176,6 +245,18 @@ class RelatorioDocenteController
         }
 
         return ($fim - $inicio) / 3600;
+    }
+
+    private function formatarHoras(float $horas): string
+    {
+        if (fmod($horas, 1.0) === 0.0) {
+            return (int) $horas . 'h';
+        }
+
+        $horasInteiras = (int) floor($horas);
+        $minutos = (int) round(($horas - $horasInteiras) * 60);
+
+        return $horasInteiras . 'h' . str_pad((string) $minutos, 2, '0', STR_PAD_LEFT);
     }
 
     private function diaSemanaPorData(string $data): string
@@ -241,6 +322,26 @@ class RelatorioDocenteController
         return '';
     }
 
+    private function periodoPorHorario(string $horaInicio, string $horaFim): string
+    {
+        $inicio = strtotime($horaInicio);
+        $fim = strtotime($horaFim);
+
+        if ($inicio === false || $fim === false || $fim <= $inicio) {
+            return '';
+        }
+
+        if (date('H:i', $inicio) < '12:00') {
+            return 'manha';
+        }
+
+        if (date('H:i', $inicio) < '18:00') {
+            return 'tarde';
+        }
+
+        return 'noite';
+    }
+
     private function periodoLabel(string $periodo): string
     {
         return [
@@ -272,6 +373,12 @@ class RelatorioDocenteController
             header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
             exit;
         }
+    }
+
+    private function redirecionar(string $url): void
+    {
+        header('Location: ' . $url);
+        exit;
     }
 
 }

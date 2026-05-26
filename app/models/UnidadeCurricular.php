@@ -22,7 +22,6 @@ class UnidadeCurricular
                 uc.codigo,
                 uc.nome,
                 uc.carga_horaria,
-                uc.ordem,
                 uc.status,
                 cm.nome AS curso_modelo_nome
             FROM {$this->table} uc
@@ -49,7 +48,7 @@ class UnidadeCurricular
 
         $this->aplicarEscopo($sql, $params, $escopo);
 
-        $sql .= " ORDER BY cm.nome ASC, uc.ordem ASC, uc.nome ASC";
+        $sql .= " ORDER BY cm.nome ASC, CHAR_LENGTH(uc.codigo) ASC, uc.codigo ASC, uc.nome ASC";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
@@ -95,7 +94,7 @@ class UnidadeCurricular
     public function buscarPorId(int $id): ?array
     {
         $sql = "
-            SELECT id, curso_modelo_id, codigo, nome, carga_horaria, ordem, status
+            SELECT id, curso_modelo_id, codigo, nome, carga_horaria, status
             FROM {$this->table}
             WHERE id = :id
             LIMIT 1
@@ -141,11 +140,38 @@ class UnidadeCurricular
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function cursoModeloExiste(int $cursoModeloId): bool
+    public function cursoModeloExiste(int $cursoModeloId, array $escopo = ['tipo' => 'todos', 'ids' => []]): bool
     {
-        $sql = "SELECT id FROM curso_modelos WHERE id = :id LIMIT 1";
+        $sql = "
+            SELECT id
+            FROM curso_modelos cm
+            WHERE id = :id
+        ";
+        $params = [':id' => $cursoModeloId];
+        $this->aplicarEscopoCursoModelo($sql, $params, $escopo);
+        $sql .= " LIMIT 1";
+
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([':id' => $cursoModeloId]);
+        $stmt->execute($params);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function ucPertenceEscopo(int $ucId, array $escopo = ['tipo' => 'todos', 'ids' => []]): bool
+    {
+        $sql = "
+            SELECT uc.id
+            FROM {$this->table} uc
+            INNER JOIN curso_modelos cm ON cm.id = uc.curso_modelo_id
+            WHERE uc.id = :id
+        ";
+
+        $params = [':id' => $ucId];
+        $this->aplicarEscopo($sql, $params, $escopo);
+        $sql .= " LIMIT 1";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
 
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -186,14 +212,12 @@ class UnidadeCurricular
                     codigo,
                     nome,
                     carga_horaria,
-                    ordem,
                     status
                 ) VALUES (
                     :curso_modelo_id,
                     :codigo,
                     :nome,
                     :carga_horaria,
-                    :ordem,
                     :status
                 )
             ";
@@ -205,7 +229,6 @@ class UnidadeCurricular
                 ':codigo'          => $dados['codigo'],
                 ':nome'            => $dados['nome'],
                 ':carga_horaria'   => $dados['carga_horaria'],
-                ':ordem'           => $dados['ordem'],
                 ':status'          => $dados['status'],
             ]);
         } catch (Throwable $e) {
@@ -222,7 +245,6 @@ class UnidadeCurricular
                     codigo = :codigo,
                     nome = :nome,
                     carga_horaria = :carga_horaria,
-                    ordem = :ordem,
                     status = :status
                 WHERE id = :id
             ";
@@ -235,7 +257,6 @@ class UnidadeCurricular
                 ':codigo'          => $dados['codigo'],
                 ':nome'            => $dados['nome'],
                 ':carga_horaria'   => $dados['carga_horaria'],
-                ':ordem'           => $dados['ordem'],
                 ':status'          => $dados['status'],
             ]);
         } catch (Throwable $e) {

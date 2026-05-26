@@ -267,10 +267,18 @@ class Sala
 
         $stmt = $this->conn->prepare($sql);
 
-        foreach ($recursos as $recursoId) {
+        $listaDeIds = array_keys($recursos) === range(0, count($recursos) - 1);
+
+        foreach ($recursos as $chaveRecurso => $valorRecurso) {
+            $recursoId = $listaDeIds ? (int) $valorRecurso : (int) $chaveRecurso;
+
+            if ($recursoId <= 0) {
+                continue;
+            }
+
             $stmt->execute([
                 ':sala_id'    => $salaId,
-                ':recurso_id' => (int) $recursoId,
+                ':recurso_id' => $recursoId,
             ]);
         }
     }

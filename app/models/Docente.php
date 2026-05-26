@@ -289,6 +289,7 @@ class Docente
         $sql = "
             SELECT
                 uc.id,
+                uc.curso_modelo_id,
                 uc.codigo,
                 uc.nome,
                 cm.nome AS curso_nome,
@@ -297,7 +298,43 @@ class Docente
             INNER JOIN curso_modelos cm ON cm.id = uc.curso_modelo_id
             LEFT JOIN areas a ON a.id = cm.area_id
             WHERE uc.status = 'Ativa'
-            ORDER BY a.nome ASC, cm.nome ASC, uc.ordem ASC, uc.nome ASC
+            ORDER BY a.nome ASC, cm.nome ASC, CHAR_LENGTH(uc.codigo) ASC, uc.codigo ASC, uc.nome ASC
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function listarAreas(): array
+    {
+        $sql = "
+            SELECT id, nome, status
+            FROM areas
+            WHERE status = 'Ativa'
+            ORDER BY nome ASC
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function listarCursoModelosComUc(): array
+    {
+        $sql = "
+            SELECT DISTINCT
+                cm.id,
+                cm.nome,
+                a.nome AS area_nome
+            FROM curso_modelos cm
+            INNER JOIN unidades_curriculares uc ON uc.curso_modelo_id = cm.id
+            LEFT JOIN areas a ON a.id = cm.area_id
+            WHERE cm.status = 'Ativo'
+              AND uc.status = 'Ativa'
+            ORDER BY a.nome ASC, cm.nome ASC
         ";
 
         $stmt = $this->conn->prepare($sql);

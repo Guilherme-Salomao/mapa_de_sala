@@ -18,7 +18,7 @@ class CursoModeloController
 
         $busca = trim($_GET['busca'] ?? '');
         $status = trim($_GET['status'] ?? 'todos');
-        $escopo = (new AccessControl())->escopo();
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         $cursos = $this->cursoModel->listar($busca, $status, $escopo);
         $totalCursos = $this->cursoModel->contar($busca, $status, $escopo);
@@ -30,7 +30,7 @@ class CursoModeloController
     {
         $this->exigirLogin();
 
-        $areas = $this->cursoModel->listarAreas();
+        $areas = $this->cursoModel->listarAreas((new AccessControl())->escopoAreaAtuacao());
 
         require_once __DIR__ . '/../views/dashboard/cadastrar_curso_modelo.php';
     }
@@ -40,6 +40,7 @@ class CursoModeloController
         $this->exigirLogin();
 
         $id = (int) ($_GET['id'] ?? 0);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0) {
             $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Curso invalido.'));
@@ -47,11 +48,11 @@ class CursoModeloController
 
         $cursoForm = $this->cursoModel->buscarPorId($id);
 
-        if (! $cursoForm) {
+        if (! $cursoForm || ! $this->cursoModel->cursoPertenceEscopo($id, $escopo)) {
             $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Curso nao encontrado.'));
         }
 
-        $areas = $this->cursoModel->listarAreas();
+        $areas = $this->cursoModel->listarAreas($escopo);
 
         require_once __DIR__ . '/../views/dashboard/editar_curso_modelo.php';
     }
@@ -62,12 +63,13 @@ class CursoModeloController
 
         $dados = $this->obterDadosPost();
         $queryBase = $this->montarQueryCadastro($dados);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if (! $this->validarDados($dados)) {
             $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
         }
 
-        if (! $this->cursoModel->areaExiste($dados['area_id'])) {
+        if (! $this->cursoModel->areaExiste($dados['area_id'], $escopo)) {
             $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Area selecionada nao foi encontrada.'));
         }
 
@@ -88,16 +90,17 @@ class CursoModeloController
 
         $dados = $this->obterDadosPost();
         $dados['id'] = (int) ($_POST['id'] ?? 0);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
             $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
-        if (! $this->cursoModel->areaExiste($dados['area_id'])) {
+        if (! $this->cursoModel->areaExiste($dados['area_id'], $escopo)) {
             $this->redirecionar('/mapa_de_sala/public/?page=cursos&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Area selecionada nao foi encontrada.'));
         }
 
-        if (! $this->cursoModel->buscarPorId($dados['id'])) {
+        if (! $this->cursoModel->buscarPorId($dados['id']) || ! $this->cursoModel->cursoPertenceEscopo($dados['id'], $escopo)) {
             $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Curso nao encontrado.'));
         }
 
@@ -115,6 +118,7 @@ class CursoModeloController
     public function excluir(): void
     {
         $this->exigirLogin();
+        $this->bloquearProfessor();
 
         $id = (int) ($_POST['id'] ?? 0);
 
@@ -137,6 +141,13 @@ class CursoModeloController
 
         if (! isset($_SESSION['usuario'])) {
             $this->redirecionar('/mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+        }
+    }
+
+    private function bloquearProfessor(): void
+    {
+        if ((new AccessControl())->nivel() === 'Professor') {
+            $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Professor pode cadastrar curso, mas nao pode editar ou excluir cursos existentes.'));
         }
     }
 

@@ -19,18 +19,21 @@
     $docenteForm = $docenteForm ?? [
         'id'              => '',
         'usuario_id'      => '',
-        'horas_semanais' => '',
         'area_atuacao'   => '',
         'status'         => 'Ativo',
         'observacoes'    => '',
         'unidades_curriculares' => [],
     ];
+    $areas = $areas ?? [];
+    $cursoModelos = $cursoModelos ?? [];
     $unidadesCurriculares = $unidadesCurriculares ?? [];
+    $somenteVinculosUc = $somenteVinculosUc ?? false;
+    $cadastroProprioDocente = $cadastroProprioDocente ?? false;
 
-    $tituloPagina    = 'Editar Docente';
-    $subtituloPagina = 'Atualize os dados do docente selecionado';
+    $tituloPagina    = $cadastroProprioDocente ? 'Meu Cadastro Docente' : 'Editar Docente';
+    $subtituloPagina = $cadastroProprioDocente ? 'Atualize seus dados, escala e UCs' : 'Atualize os dados do docente selecionado';
     $botaoTopoTexto  = 'Voltar';
-    $botaoTopoLink   = '/mapa_de_sala/public/?page=docentes';
+    $botaoTopoLink   = $cadastroProprioDocente ? '/mapa_de_sala/public/?page=home' : '/mapa_de_sala/public/?page=docentes';
     $botaoTopoClasse = 'btn-outline-secondary';
     $botaoTopoIcone  = 'bi-arrow-left';
 ?>
@@ -89,7 +92,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = "Editar Docente";
+  if (pageTitle) pageTitle.textContent = <?php echo json_encode($tituloPagina); ?>;
 
   const userName = document.getElementById("userName");
   if (userName) userName.textContent = <?php echo json_encode($usuarioLogado); ?>;

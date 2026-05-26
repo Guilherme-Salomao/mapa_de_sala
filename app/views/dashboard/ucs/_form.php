@@ -19,18 +19,11 @@
       <div class="invalid-feedback">Selecione o modelo do curso.</div>
     </div>
 
-    <div class="col-12 col-md-3">
+    <div class="col-12 col-md-6">
       <label for="codigo" class="form-label">Codigo da UC</label>
-      <input type="text" class="form-control" id="codigo" name="codigo" maxlength="20" placeholder="Ex.: UC01"
+      <input type="text" class="form-control" id="codigo" name="codigo" maxlength="20" placeholder="Ex.: UC1"
         value="<?php echo htmlspecialchars($ucForm['codigo'] ?? ''); ?>" required>
       <div class="invalid-feedback">Informe o codigo da UC.</div>
-    </div>
-
-    <div class="col-12 col-md-3">
-      <label for="ordem" class="form-label">Ordem</label>
-      <input type="number" class="form-control" id="ordem" name="ordem" min="1" step="1" placeholder="Ex.: 1"
-        value="<?php echo htmlspecialchars($ucForm['ordem'] ?? ''); ?>" required>
-      <div class="invalid-feedback">Informe a ordem da UC.</div>
     </div>
 
     <div class="col-12 col-md-6">

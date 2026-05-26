@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/Docente.php';
+require_once __DIR__ . '/../core/AccessControl.php';
 
 class DocenteController
 {
@@ -14,6 +15,17 @@ class DocenteController
     public function index(): void
     {
         $this->exigirLogin();
+        $access = new AccessControl();
+
+        if ($access->nivel() === 'Professor') {
+            $docenteId = $access->docenteId();
+
+            if ($docenteId === null) {
+                $this->redirecionar('/mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Seu usuario ainda nao esta vinculado a um cadastro docente.'));
+            }
+
+            $this->redirecionar('/mapa_de_sala/public/?page=docentes&action=editar&id=' . $docenteId);
+        }
 
         $busca  = trim($_GET['busca'] ?? '');
         $status = trim($_GET['status'] ?? 'todos');
@@ -27,8 +39,11 @@ class DocenteController
     public function cadastrar(): void
     {
         $this->exigirLogin();
+        $this->bloquearProfessor();
 
         $usuariosDisponiveis = $this->docenteModel->listarUsuariosDisponiveis();
+        $areas = $this->docenteModel->listarAreas();
+        $cursoModelos = $this->docenteModel->listarCursoModelosComUc();
         $unidadesCurriculares = $this->docenteModel->listarUnidadesCurriculares();
 
         require_once __DIR__ . '/../views/dashboard/cadastrar_docente.php';
@@ -37,6 +52,7 @@ class DocenteController
     public function salvar(): void
     {
         $this->exigirLogin();
+        $this->bloquearProfessor();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Método inválido.'));
@@ -47,10 +63,6 @@ class DocenteController
 
         if (! $this->validarDados($dados)) {
             $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
-        }
-
-        if ($this->totalHorasEscala($dados['escala']) > $dados['horas_semanais']) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('A escala não pode ultrapassar as horas semanais do docente.'));
         }
 
         if (! $this->docenteModel->usuarioExiste($dados['usuario_id'])) {
@@ -71,11 +83,17 @@ class DocenteController
     public function editar(): void
     {
         $this->exigirLogin();
+        $access = new AccessControl();
+        $cadastroProprioDocente = $access->nivel() === 'Professor';
 
         $id = (int) ($_GET['id'] ?? 0);
 
         if ($id <= 0) {
             $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Docente inválido.'));
+        }
+
+        if ($cadastroProprioDocente && $access->docenteId() !== $id) {
+            $this->redirecionar('/mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Voce so pode acessar o seu proprio cadastro docente.'));
         }
 
         $docenteForm = $this->docenteModel->buscarPorId($id);
@@ -85,7 +103,10 @@ class DocenteController
         }
 
         $usuariosDisponiveis = $this->docenteModel->listarUsuariosDisponiveis((int) $docenteForm['usuario_id']);
+        $areas = $this->docenteModel->listarAreas();
+        $cursoModelos = $this->docenteModel->listarCursoModelosComUc();
         $unidadesCurriculares = $this->docenteModel->listarUnidadesCurriculares();
+        $somenteVinculosUc = false;
 
         require_once __DIR__ . '/../views/dashboard/editar_docente.php';
     }
@@ -93,6 +114,7 @@ class DocenteController
     public function atualizar(): void
     {
         $this->exigirLogin();
+        $access = new AccessControl();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Método inválido.'));
@@ -100,16 +122,23 @@ class DocenteController
 
         $dados = $this->obterDadosPost();
         $dados['id'] = (int) ($_POST['id'] ?? 0);
+        $docenteAtual = $dados['id'] > 0 ? $this->docenteModel->buscarPorId($dados['id']) : null;
+
+        if ($access->nivel() === 'Professor') {
+            if (! $docenteAtual || $access->docenteId() !== $dados['id']) {
+                $this->redirecionar('/mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Voce so pode alterar o seu proprio cadastro docente.'));
+            }
+
+            $dados['usuario_id'] = (int) $docenteAtual['usuario_id'];
+            $dados['area_atuacao'] = (string) $docenteAtual['area_atuacao'];
+            $dados['status'] = (string) $docenteAtual['status'];
+        }
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
             $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Dados inválidos para atualização.'));
         }
 
-        if ($this->totalHorasEscala($dados['escala']) > $dados['horas_semanais']) {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('A escala não pode ultrapassar as horas semanais do docente.'));
-        }
-
-        if (! $this->docenteModel->buscarPorId($dados['id'])) {
+        if (! $docenteAtual) {
             $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Docente não encontrado.'));
         }
 
@@ -122,6 +151,10 @@ class DocenteController
         }
 
         if ($this->docenteModel->atualizar($dados)) {
+            if ($access->nivel() === 'Professor') {
+                $this->redirecionar('/mapa_de_sala/public/?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=sucesso&msg=' . urlencode('Cadastro atualizado com sucesso.'));
+            }
+
             $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=sucesso&msg=' . urlencode('Docente atualizado com sucesso.'));
         }
 
@@ -131,6 +164,7 @@ class DocenteController
     public function excluir(): void
     {
         $this->exigirLogin();
+        $this->bloquearProfessor();
 
         $id = (int) ($_POST['id'] ?? 0);
 
@@ -156,15 +190,24 @@ class DocenteController
         }
     }
 
+    private function bloquearProfessor(): void
+    {
+        if ((new AccessControl())->nivel() === 'Professor') {
+            $this->redirecionar('/mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Voce nao tem permissao para esta acao.'));
+        }
+    }
+
     private function obterDadosPost(): array
     {
+        $escala = $this->obterEscalaPost();
+
         return [
             'usuario_id'      => (int) ($_POST['usuario_id'] ?? 0),
-            'horas_semanais' => (int) ($_POST['horas_semanais'] ?? 0),
+            'horas_semanais' => $this->totalHorasEscala($escala),
             'area_atuacao'   => trim($_POST['area_atuacao'] ?? ''),
             'status'         => trim($_POST['status'] ?? 'Ativo'),
             'observacoes'    => trim($_POST['observacoes'] ?? ''),
-            'escala'         => $this->obterEscalaPost(),
+            'escala'         => $escala,
             'unidades_curriculares' => $this->obterUcsPost(),
         ];
     }
@@ -237,7 +280,6 @@ class DocenteController
             'page'            => 'docentes',
             'action'          => 'cadastrar',
             'usuario_id'      => $dados['usuario_id'] > 0 ? $dados['usuario_id'] : '',
-            'horas_semanais' => $dados['horas_semanais'] > 0 ? $dados['horas_semanais'] : '',
             'area_atuacao'   => $dados['area_atuacao'],
             'status'         => $dados['status'],
             'observacoes'    => $dados['observacoes'],

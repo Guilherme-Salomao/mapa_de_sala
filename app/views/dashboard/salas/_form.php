@@ -39,6 +39,16 @@
           Sala Teatro
         </option>
 
+        <option value="Sala Experimental"
+          <?php echo(($salaForm['tipo'] ?? '') === 'Sala Experimental') ? 'selected' : ''; ?>>
+          Sala Experimental
+        </option>
+
+        <option value="Laboratório de Enfermagem"
+          <?php echo(($salaForm['tipo'] ?? '') === 'Laboratório de Enfermagem') ? 'selected' : ''; ?>>
+          Laboratório de Enfermagem
+        </option>
+
         <option value="Laboratório de Beleza"
           <?php echo(($salaForm['tipo'] ?? '') === 'Laboratório de Beleza') ? 'selected' : ''; ?>>
           Laboratório de Beleza
@@ -66,12 +76,8 @@
     <div class="col-12 col-md-6">
       <label for="status" class="form-label">Status</label>
       <select class="form-select" id="status" name="status" required>
-        <option value="ativa" <?php echo(in_array(($salaForm['status'] ?? 'ativa'), ['ativa', 'livre', 'uso'], true)) ? 'selected' : ''; ?>>
+        <option value="ativa" <?php echo(in_array(($salaForm['status'] ?? 'ativa'), ['ativa', 'livre', 'uso', 'manutencao'], true)) ? 'selected' : ''; ?>>
           Ativa
-        </option>
-
-        <option value="manutencao" <?php echo(($salaForm['status'] ?? '') === 'manutencao') ? 'selected' : ''; ?>>
-          Manutenção
         </option>
 
         <option value="inativa" <?php echo(($salaForm['status'] ?? '') === 'inativa') ? 'selected' : ''; ?>>
@@ -89,6 +95,27 @@
       <div class="row g-2">
         <?php
             $recursosSelecionados = $salaForm['recursos'] ?? [];
+
+            if (is_array($recursosSelecionados)) {
+                $recursosNormalizados = [];
+                $listaDeIds = array_keys($recursosSelecionados) === range(0, count($recursosSelecionados) - 1);
+
+                foreach ($recursosSelecionados as $chaveRecurso => $valorRecurso) {
+                    if ($listaDeIds) {
+                        $recursoIdNormalizado = (int) $valorRecurso;
+                        $quantidadeNormalizada = 1;
+                    } else {
+                        $recursoIdNormalizado = (int) $chaveRecurso;
+                        $quantidadeNormalizada = (int) $valorRecurso;
+                    }
+
+                    if ($recursoIdNormalizado > 0) {
+                        $recursosNormalizados[$recursoIdNormalizado] = max(1, $quantidadeNormalizada);
+                    }
+                }
+
+                $recursosSelecionados = $recursosNormalizados;
+            }
 
             if (! isset($recursosDisponiveis)) {
                 $recursosDisponiveis = [];

@@ -11,6 +11,7 @@
     $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuario';
     $docentes = $docentes ?? [];
     $docenteId = (int) ($docenteId ?? 0);
+    $relatorioProprioDocente = $relatorioProprioDocente ?? false;
     $mes = (int) ($mes ?? date('n'));
     $ano = (int) ($ano ?? date('Y'));
     $eventosPorData = $eventosPorData ?? [];
@@ -18,9 +19,11 @@
     $resumoCarga = $resumoCarga ?? [
         'horas_aula' => 0,
         'horas_planejamento' => 0,
+        'horas_curso' => 0,
         'total_horas' => 0,
         'percentual_aula' => 0,
         'percentual_planejamento' => 0,
+        'percentual_curso' => 0,
     ];
 
     $tituloPagina = 'Relatorio Docente';
@@ -75,6 +78,12 @@
     color: #1e3a8a;
   }
 
+  .periodo-curso {
+    background: #dcfce7;
+    border-color: #16a34a !important;
+    color: #14532d;
+   }
+
   .relatorio-calendario thead th {
     background: #0d6efd;
     color: #fff;
@@ -116,6 +125,11 @@
 
               <div class="col-12 col-lg-5">
                 <label for="docente_id" class="form-label">Docente</label>
+                <?php if ($relatorioProprioDocente): ?>
+                <input type="hidden" name="docente_id" value="<?php echo $docenteId; ?>">
+                <input type="text" class="form-control" id="docente_id"
+                  value="<?php echo htmlspecialchars($docenteSelecionado['nome'] ?? ''); ?>" disabled>
+                <?php else: ?>
                 <select class="form-select" id="docente_id" name="docente_id" required>
                   <?php if (empty($docentes)): ?>
                   <option value="">Nenhum docente ativo</option>
@@ -127,6 +141,7 @@
                   </option>
                   <?php endforeach; ?>
                 </select>
+                <?php endif; ?>
               </div>
 
               <div class="col-6 col-lg-2">
@@ -181,6 +196,10 @@
                   style="min-width: 190px;">
                   Planejamento: <?php echo number_format((float) $resumoCarga['percentual_planejamento'], 1, ',', '.'); ?>%
                 </span>
+                <span class="badge text-bg-success d-inline-flex align-items-center justify-content-center fs-6 py-2"
+                  style="min-width: 190px;">
+                  Curso: <?php echo number_format((float) ($resumoCarga['percentual_curso'] ?? 0), 1, ',', '.'); ?>%
+                </span>
               </div>
             </div>
           </div>
@@ -221,6 +240,11 @@
                         <div class="fw-bold text-center mb-1">
                           <?php echo htmlspecialchars($evento['periodo'] ?? ''); ?>
                         </div>
+                        <?php if (! empty($evento['hora'])): ?>
+                        <div class="fw-semibold text-center mb-1">
+                          <?php echo htmlspecialchars($evento['hora']); ?>
+                        </div>
+                        <?php endif; ?>
                         <div><?php echo htmlspecialchars($evento['turma'] ?? ''); ?></div>
                         <?php if (! empty($evento['sala'])): ?>
                         <div class="text-muted">Sala <?php echo htmlspecialchars($evento['sala']); ?></div>

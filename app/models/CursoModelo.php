@@ -115,26 +115,52 @@ class CursoModelo
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function listarAreas(): array
+    public function listarAreas(array $escopo = ['tipo' => 'todos', 'ids' => []]): array
     {
         $sql = "
             SELECT id, nome, status
             FROM areas
             WHERE status = 'Ativa'
-            ORDER BY nome ASC
         ";
 
+        $params = [];
+        $this->aplicarEscopoArea($sql, $params, $escopo);
+
+        $sql .= " ORDER BY nome ASC";
+
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function areaExiste(int $areaId): bool
+    public function areaExiste(int $areaId, array $escopo = ['tipo' => 'todos', 'ids' => []]): bool
     {
-        $sql = "SELECT id FROM areas WHERE id = :id AND status = 'Ativa' LIMIT 1";
+        $sql = "SELECT id FROM areas WHERE id = :id AND status = 'Ativa'";
+        $params = [':id' => $areaId];
+        $this->aplicarEscopoArea($sql, $params, $escopo);
+        $sql .= " LIMIT 1";
+
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([':id' => $areaId]);
+        $stmt->execute($params);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function cursoPertenceEscopo(int $cursoId, array $escopo = ['tipo' => 'todos', 'ids' => []]): bool
+    {
+        $sql = "
+            SELECT cm.id
+            FROM {$this->table} cm
+            WHERE cm.id = :id
+        ";
+
+        $params = [':id' => $cursoId];
+        $this->aplicarEscopo($sql, $params, $escopo);
+        $sql .= " LIMIT 1";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
 
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -242,5 +268,30 @@ class CursoModelo
                   AND uc_escopo.id IN (" . implode(',', $placeholders) . ")
             )";
         }
+    }
+
+    private function aplicarEscopoArea(string &$sql, array &$params, array $escopo): void
+    {
+        $tipo = $escopo['tipo'] ?? 'todos';
+        $ids = array_values(array_filter(array_map('intval', $escopo['ids'] ?? [])));
+
+        if ($tipo === 'todos') {
+            return;
+        }
+
+        if ($tipo !== 'areas' || empty($ids)) {
+            $sql .= " AND 1 = 0";
+            return;
+        }
+
+        $placeholders = [];
+
+        foreach ($ids as $index => $id) {
+            $placeholder = ':escopo_area_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $id;
+        }
+
+        $sql .= " AND id IN (" . implode(',', $placeholders) . ")";
     }
 }

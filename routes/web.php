@@ -4,24 +4,48 @@ require_once __DIR__ . '/../app/controllers/LoginController.php';
 require_once __DIR__ . '/../app/controllers/HomeController.php';
 require_once __DIR__ . '/../app/controllers/UsuarioController.php';
 require_once __DIR__ . '/../app/controllers/SalaController.php';
+require_once __DIR__ . '/../app/controllers/SalaReservaController.php';
 require_once __DIR__ . '/../app/controllers/DocenteController.php';
 require_once __DIR__ . '/../app/controllers/CursoController.php';
 require_once __DIR__ . '/../app/controllers/CursoModeloController.php';
 require_once __DIR__ . '/../app/controllers/UnidadeCurricularController.php';
 require_once __DIR__ . '/../app/controllers/QuadroHorarioController.php';
 require_once __DIR__ . '/../app/controllers/RelatorioDocenteController.php';
+require_once __DIR__ . '/../app/controllers/RelatorioGestorController.php';
 require_once __DIR__ . '/../app/controllers/RelatorioTurmaController.php';
+require_once __DIR__ . '/../app/controllers/RelatorioSalaController.php';
+require_once __DIR__ . '/../app/controllers/CalendarioBloqueioController.php';
+require_once __DIR__ . '/../app/controllers/EducacaoCorporativaController.php';
+require_once __DIR__ . '/../app/controllers/AprendizagemQuadroController.php';
+require_once __DIR__ . '/../app/controllers/SistemaLogController.php';
+require_once __DIR__ . '/../app/core/AuditLog.php';
+require_once __DIR__ . '/../app/core/AccessControl.php';
 
 $page   = $_GET['page'] ?? 'login';
 $action = $_GET['action'] ?? '';
 
-$rotasPermitidas = ['login', 'cadastro', 'esqueci_senha', 'home', 'usuarios', 'salas', 'docentes', 'cursos', 'turmas', 'ucs', 'quadro_horario', 'relatorio_docente', 'relatorio_turma', 'logout'];
+$rotasPermitidas = ['login', 'cadastro', 'esqueci_senha', 'perfil', 'home', 'usuarios', 'salas', 'gestao_salas', 'docentes', 'cursos', 'turmas', 'ucs', 'quadro_horario', 'calendario', 'educacao_corporativa', 'aprendizagem', 'aceleracao', 'relatorio_docente', 'relatorio_gestor', 'relatorio_turma', 'relatorio_salas', 'logs', 'logout'];
 
 if (! in_array($page, $rotasPermitidas, true)) {
     $page = 'login';
 }
 
+if (! in_array($page, ['login', 'cadastro', 'esqueci_senha'], true)) {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    $accessControl = new AccessControl();
+
+    if (! $accessControl->podeAcessarPagina($page)) {
+        header('Location: /mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Voce nao tem permissao para acessar esta tela.'));
+        exit;
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    AuditLog::registrarRequisicao($page, $action);
+
     if ($page === 'usuarios' && $action === 'salvar') {
         $controller = new UsuarioController();
         $controller->salvar();
@@ -40,6 +64,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($page === 'perfil' && $action === 'atualizar') {
+        $controller = new UsuarioController();
+        $controller->atualizarPerfil();
+        exit;
+    }
+
     if ($page === 'salas' && $action === 'salvar') {
         $controller = new SalaController();
         $controller->salvar();
@@ -55,6 +85,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($page === 'salas' && $action === 'excluir') {
         $controller = new SalaController();
         $controller->excluir();
+        exit;
+    }
+
+    if ($page === 'gestao_salas' && $action === 'salvar') {
+        $controller = new SalaReservaController();
+        $controller->salvar();
+        exit;
+    }
+
+    if ($page === 'gestao_salas' && $action === 'excluir') {
+        $controller = new SalaReservaController();
+        $controller->excluir();
+        exit;
+    }
+
+    if ($page === 'gestao_salas' && $action === 'trocar_sala') {
+        $controller = new SalaReservaController();
+        $controller->trocarSala();
         exit;
     }
 
@@ -91,6 +139,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($page === 'turmas' && $action === 'excluir') {
         $controller = new CursoController();
         $controller->excluir();
+        exit;
+    }
+
+    if ($page === 'turmas' && $action === 'gerar_quadro') {
+        $controller = new CursoController();
+        $controller->gerarQuadro();
         exit;
     }
 
@@ -148,6 +202,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($page === 'calendario' && $action === 'salvar') {
+        $controller = new CalendarioBloqueioController();
+        $controller->salvar();
+        exit;
+    }
+
+    if ($page === 'calendario' && $action === 'atualizar') {
+        $controller = new CalendarioBloqueioController();
+        $controller->atualizar();
+        exit;
+    }
+
+    if ($page === 'calendario' && $action === 'excluir') {
+        $controller = new CalendarioBloqueioController();
+        $controller->excluir();
+        exit;
+    }
+
+    if ($page === 'educacao_corporativa' && $action === 'salvar') {
+        $controller = new EducacaoCorporativaController();
+        $controller->salvar();
+        exit;
+    }
+
+    if ($page === 'educacao_corporativa' && $action === 'atualizar') {
+        $controller = new EducacaoCorporativaController();
+        $controller->atualizar();
+        exit;
+    }
+
+    if ($page === 'educacao_corporativa' && $action === 'excluir') {
+        $controller = new EducacaoCorporativaController();
+        $controller->excluir();
+        exit;
+    }
+
+    if (in_array($page, ['aprendizagem', 'aceleracao'], true) && $action === 'salvar') {
+        $controller = new AprendizagemQuadroController();
+        $controller->salvar();
+        exit;
+    }
+
+    if (in_array($page, ['aprendizagem', 'aceleracao'], true) && $action === 'excluir') {
+        $controller = new AprendizagemQuadroController();
+        $controller->excluir();
+        exit;
+    }
+
     $controller = new LoginController();
     if ($page === 'cadastro') {
         $controller->cadastrar();
@@ -191,6 +293,11 @@ switch ($page) {
         $controller->index();
         break;
 
+    case 'perfil':
+        $controller = new UsuarioController();
+        $controller->perfil();
+        break;
+
     case 'salas':
         if ($action === 'cadastrar') {
             require_once __DIR__ . '/../app/views/dashboard/cadastrar_sala.php';
@@ -204,6 +311,11 @@ switch ($page) {
         }
 
         $controller = new SalaController();
+        $controller->index();
+        break;
+
+    case 'gestao_salas':
+        $controller = new SalaReservaController();
         $controller->index();
         break;
 
@@ -280,13 +392,44 @@ switch ($page) {
         $controller->index();
         break;
 
+    case 'calendario':
+        $controller = new CalendarioBloqueioController();
+        $controller->index();
+        break;
+
+    case 'educacao_corporativa':
+        $controller = new EducacaoCorporativaController();
+        $controller->index();
+        break;
+
+    case 'aprendizagem':
+    case 'aceleracao':
+        $controller = new AprendizagemQuadroController();
+        $controller->index();
+        break;
+
     case 'relatorio_docente':
         $controller = new RelatorioDocenteController();
         $controller->index();
         break;
 
+    case 'relatorio_gestor':
+        $controller = new RelatorioGestorController();
+        $controller->index();
+        break;
+
     case 'relatorio_turma':
         $controller = new RelatorioTurmaController();
+        $controller->index();
+        break;
+
+    case 'relatorio_salas':
+        $controller = new RelatorioSalaController();
+        $controller->index();
+        break;
+
+    case 'logs':
+        $controller = new SistemaLogController();
         $controller->index();
         break;
 

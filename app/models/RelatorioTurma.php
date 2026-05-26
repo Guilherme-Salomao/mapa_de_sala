@@ -15,7 +15,7 @@ class RelatorioTurma
     public function listarTurmas(array $escopo = ['tipo' => 'todos', 'ids' => []]): array
     {
         $sql = "
-            SELECT co.id, co.nome, co.codigo_oferta, co.periodo, co.status
+            SELECT co.id, co.nome, co.codigo_oferta, co.hora_inicio, co.hora_fim, co.status
             FROM cursos_ofertas co
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             WHERE 1 = 1
@@ -42,7 +42,8 @@ class RelatorioTurma
                 co.curso_modelo_id,
                 co.nome,
                 co.codigo_oferta,
-                co.periodo,
+                co.hora_inicio,
+                co.hora_fim,
                 co.status,
                 cm.nome AS curso_nome
             FROM cursos_ofertas co
@@ -87,8 +88,8 @@ class RelatorioTurma
                 AND qh.status = 'Ativa'
             WHERE uc.curso_modelo_id = :curso_modelo_id
               AND uc.status = 'Ativa'
-            GROUP BY uc.id, uc.codigo, uc.nome, uc.carga_horaria, uc.ordem
-            ORDER BY uc.ordem ASC, uc.nome ASC
+            GROUP BY uc.id, uc.codigo, uc.nome, uc.carga_horaria
+            ORDER BY CHAR_LENGTH(uc.codigo) ASC, uc.codigo ASC, uc.nome ASC
         ";
 
         $stmt = $this->conn->prepare($sql);

@@ -27,6 +27,7 @@
     'capacidade' => $_GET['capacidade'] ?? '',
     'status'     => $_GET['status'] ?? 'Ativo',
     'descricao'  => $_GET['descricao'] ?? '',
+    'recursos'   => is_array($_GET['recursos'] ?? null) ? $_GET['recursos'] : [],
     ];
 
     $tituloPagina    = 'Cadastrar Sala';

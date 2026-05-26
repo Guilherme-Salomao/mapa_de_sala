@@ -154,6 +154,31 @@ class UsuarioController
         require __DIR__ . '/../views/dashboard/editar_usuario.php';
     }
 
+    public function perfil(): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (! isset($_SESSION['usuario'])) {
+            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            exit;
+        }
+
+        $id = (int) ($_SESSION['usuario']['id'] ?? 0);
+        $usuario = $this->usuarioModel->buscarPorId($id);
+
+        if (! $usuario) {
+            header('Location: /mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Seu usuário não foi encontrado.'));
+            exit;
+        }
+
+        $areas = [];
+        $areasUsuario = [];
+
+        require __DIR__ . '/../views/dashboard/perfil_usuario.php';
+    }
+
     public function atualizar(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
@@ -242,6 +267,84 @@ class UsuarioController
         }
 
         header('Location: /mapa_de_sala/public/?page=usuarios&tipo=sucesso&msg=' . urlencode('Usuário atualizado com sucesso.'));
+        exit;
+    }
+
+    public function atualizarPerfil(): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (! isset($_SESSION['usuario'])) {
+            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('Método inválido.'));
+            exit;
+        }
+
+        $id = (int) ($_SESSION['usuario']['id'] ?? 0);
+        $nome = trim($_POST['nome'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $senha = trim($_POST['senha'] ?? '');
+        $confSenha = trim($_POST['confSenha'] ?? '');
+
+        if ($id <= 0 || $nome === '' || $email === '') {
+            header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('Preencha nome e e-mail.'));
+            exit;
+        }
+
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('Informe um e-mail válido.'));
+            exit;
+        }
+
+        if ($this->usuarioModel->emailExiste($email, $id)) {
+            header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('Já existe outro usuário com este e-mail.'));
+            exit;
+        }
+
+        $usuario = $this->usuarioModel->buscarPorId($id);
+
+        if (! $usuario) {
+            header('Location: /mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Seu usuário não foi encontrado.'));
+            exit;
+        }
+
+        $atualizou = $this->usuarioModel->atualizar(
+            $id,
+            $nome,
+            $email,
+            (string) $usuario['nivel_acesso'],
+            (string) $usuario['status']
+        );
+
+        if (! $atualizou) {
+            header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('Não foi possível atualizar seus dados.'));
+            exit;
+        }
+
+        if ($senha !== '' || $confSenha !== '') {
+            if ($senha !== $confSenha) {
+                header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('As senhas não conferem.'));
+                exit;
+            }
+
+            if (strlen($senha) < 4) {
+                header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('A nova senha deve ter no mínimo 4 caracteres.'));
+                exit;
+            }
+
+            $this->usuarioModel->atualizarSenha($id, password_hash($senha, PASSWORD_DEFAULT));
+        }
+
+        $_SESSION['usuario']['nome'] = $nome;
+        $_SESSION['usuario']['email'] = $email;
+
+        header('Location: /mapa_de_sala/public/?page=perfil&tipo=sucesso&msg=' . urlencode('Dados atualizados com sucesso.'));
         exit;
     }
 

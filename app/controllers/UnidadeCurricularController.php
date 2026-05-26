@@ -19,7 +19,7 @@ class UnidadeCurricularController
         $busca = trim($_GET['busca'] ?? '');
         $status = trim($_GET['status'] ?? 'todos');
         $cursoModeloId = (int) ($_GET['curso_modelo_id'] ?? 0);
-        $escopo = (new AccessControl())->escopo();
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         $ucs = $this->ucModel->listar($busca, $status, $cursoModeloId, $escopo);
         $totalUcs = $this->ucModel->contar($busca, $status, $cursoModeloId, $escopo);
@@ -32,7 +32,7 @@ class UnidadeCurricularController
     {
         $this->exigirLogin();
 
-        $cursoModelos = $this->ucModel->listarCursoModelosPorEscopo((new AccessControl())->escopo());
+        $cursoModelos = $this->ucModel->listarCursoModelosPorEscopo((new AccessControl())->escopoAreaAtuacao());
 
         require_once __DIR__ . '/../views/dashboard/cadastrar_uc.php';
     }
@@ -42,6 +42,7 @@ class UnidadeCurricularController
         $this->exigirLogin();
 
         $id = (int) ($_GET['id'] ?? 0);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0) {
             $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('UC invalida.'));
@@ -49,11 +50,11 @@ class UnidadeCurricularController
 
         $ucForm = $this->ucModel->buscarPorId($id);
 
-        if (! $ucForm) {
+        if (! $ucForm || ! $this->ucModel->ucPertenceEscopo($id, $escopo)) {
             $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
         }
 
-        $cursoModelos = $this->ucModel->listarCursoModelosPorEscopo((new AccessControl())->escopo());
+        $cursoModelos = $this->ucModel->listarCursoModelosPorEscopo($escopo);
 
         require_once __DIR__ . '/../views/dashboard/editar_uc.php';
     }
@@ -64,12 +65,13 @@ class UnidadeCurricularController
 
         $dados = $this->obterDadosPost();
         $queryBase = $this->montarQueryCadastro($dados);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if (! $this->validarDados($dados)) {
             $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
         }
 
-        if (! $this->ucModel->cursoModeloExiste($dados['curso_modelo_id'])) {
+        if (! $this->ucModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
             $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Modelo de curso nao encontrado.'));
         }
 
@@ -90,13 +92,18 @@ class UnidadeCurricularController
 
         $dados = $this->obterDadosPost();
         $dados['id'] = (int) ($_POST['id'] ?? 0);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
             $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
-        if (! $this->ucModel->buscarPorId($dados['id'])) {
+        if (! $this->ucModel->buscarPorId($dados['id']) || ! $this->ucModel->ucPertenceEscopo($dados['id'], $escopo)) {
             $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
+        }
+
+        if (! $this->ucModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
+            $this->redirecionar('/mapa_de_sala/public/?page=ucs&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Modelo de curso nao encontrado.'));
         }
 
         if ($this->ucModel->codigoExiste($dados['curso_modelo_id'], $dados['codigo'], $dados['id'])) {
@@ -115,9 +122,14 @@ class UnidadeCurricularController
         $this->exigirLogin();
 
         $id = (int) ($_POST['id'] ?? 0);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0) {
             $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('UC invalida.'));
+        }
+
+        if (! $this->ucModel->ucPertenceEscopo($id, $escopo)) {
+            $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
         }
 
         if ($this->ucModel->excluir($id)) {
@@ -145,7 +157,6 @@ class UnidadeCurricularController
             'codigo'          => trim($_POST['codigo'] ?? ''),
             'nome'            => trim($_POST['nome'] ?? ''),
             'carga_horaria'   => (int) ($_POST['carga_horaria'] ?? 0),
-            'ordem'           => (int) ($_POST['ordem'] ?? 0),
             'status'          => trim($_POST['status'] ?? 'Ativa'),
         ];
     }
@@ -156,7 +167,6 @@ class UnidadeCurricularController
             && $dados['codigo'] !== ''
             && $dados['nome'] !== ''
             && $dados['carga_horaria'] > 0
-            && $dados['ordem'] > 0
             && in_array($dados['status'], ['Ativa', 'Inativa'], true);
     }
 
@@ -169,7 +179,6 @@ class UnidadeCurricularController
             'codigo'          => $dados['codigo'],
             'nome'            => $dados['nome'],
             'carga_horaria'   => $dados['carga_horaria'] > 0 ? $dados['carga_horaria'] : '',
-            'ordem'           => $dados['ordem'] > 0 ? $dados['ordem'] : '',
             'status'          => $dados['status'],
         ]);
     }
