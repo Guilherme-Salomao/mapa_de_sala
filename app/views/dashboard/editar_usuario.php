@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
     session_start();
     }
@@ -38,7 +38,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Editar Usuário - Sistema de Controle de Salas</title>
+  <title>Editar Usuário - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -69,8 +69,8 @@
 
           <div class="app-card p-4">
             <?php if (! empty($mensagem)): ?>
-            <div class="alert <?php echo $tipo === 'sucesso' ? 'alert-success' : 'alert-danger' ?>" role="alert">
-              <i class="bi <?php echo $tipo === 'sucesso' ? 'bi-check-circle' : 'bi-exclamation-triangle' ?>"></i>
+            <div class="alert <?php echo $tipo === 'sucesso' ? 'alert-success' : 'alert-danger'; ?>" role="alert">
+              <i class="bi <?php echo $tipo === 'sucesso' ? 'bi-check-circle' : 'bi-exclamation-triangle'; ?>"></i>
               <?php echo htmlspecialchars($mensagem) ?>
             </div>
             <?php endif; ?>
@@ -100,7 +100,7 @@
     btnToggleSenha.addEventListener("click", function() {
       const isPassword = senha.type === "password";
       senha.type = isPassword ? "text" : "password";
-      btnToggleSenha.innerHTML = isPassword ?
+      btnToggleSenha.innerHTML = isPassword 
         '<i class="bi bi-eye-slash"></i>' :
         '<i class="bi bi-eye"></i>';
     });
@@ -135,3 +135,4 @@
 </body>
 
 </html>
+

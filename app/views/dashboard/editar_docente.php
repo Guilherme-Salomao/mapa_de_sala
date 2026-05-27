@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -30,7 +30,7 @@
     $somenteVinculosUc = $somenteVinculosUc ?? false;
     $cadastroProprioDocente = $cadastroProprioDocente ?? false;
 
-    $tituloPagina    = $cadastroProprioDocente ? 'Meu Cadastro Docente' : 'Editar Docente';
+    $tituloPagina    = $cadastroProprioDocente ? 'Meu Cadastro' : 'Editar Docente';
     $subtituloPagina = $cadastroProprioDocente ? 'Atualize seus dados, escala e UCs' : 'Atualize os dados do docente selecionado';
     $botaoTopoTexto  = 'Voltar';
     $botaoTopoLink   = $cadastroProprioDocente ? '/mapa_de_sala/public/?page=home' : '/mapa_de_sala/public/?page=docentes';
@@ -44,7 +44,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Editar Docente - Sistema de Controle de Salas</title>
+  <title>Editar Docente - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -116,3 +116,4 @@
 </body>
 
 </html>
+

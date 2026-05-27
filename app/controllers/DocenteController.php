@@ -1,15 +1,18 @@
 <?php
 
 require_once __DIR__ . '/../models/Docente.php';
+require_once __DIR__ . '/../models/Usuario.php';
 require_once __DIR__ . '/../core/AccessControl.php';
 
 class DocenteController
 {
     private Docente $docenteModel;
+    private Usuario $usuarioModel;
 
     public function __construct()
     {
         $this->docenteModel = new Docente();
+        $this->usuarioModel = new Usuario();
     }
 
     public function index(): void
@@ -30,8 +33,9 @@ class DocenteController
         $busca  = trim($_GET['busca'] ?? '');
         $status = trim($_GET['status'] ?? 'todos');
 
-        $docentes      = $this->docenteModel->listar($busca, $status);
-        $totalDocentes = $this->docenteModel->contar($busca, $status);
+        $escopoDocentes = $access->escopoAreaAtuacao();
+        $docentes      = $this->docenteModel->listar($busca, $status, $escopoDocentes);
+        $totalDocentes = $this->docenteModel->contar($busca, $status, $escopoDocentes);
 
         require_once __DIR__ . '/../views/dashboard/docentes.php';
     }
@@ -42,7 +46,7 @@ class DocenteController
         $this->bloquearProfessor();
 
         $usuariosDisponiveis = $this->docenteModel->listarUsuariosDisponiveis();
-        $areas = $this->docenteModel->listarAreas();
+        $areas = $this->docenteModel->listarAreas((new AccessControl())->escopoAreaAtuacao());
         $cursoModelos = $this->docenteModel->listarCursoModelosComUc();
         $unidadesCurriculares = $this->docenteModel->listarUnidadesCurriculares();
 
@@ -96,14 +100,15 @@ class DocenteController
             $this->redirecionar('/mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Voce so pode acessar o seu proprio cadastro docente.'));
         }
 
-        $docenteForm = $this->docenteModel->buscarPorId($id);
+        $escopoDocentes = $cadastroProprioDocente ? ['tipo' => 'todos', 'ids' => []] : $access->escopoAreaAtuacao();
+        $docenteForm = $this->docenteModel->buscarPorId($id, $escopoDocentes);
 
         if (! $docenteForm) {
             $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Docente não encontrado.'));
         }
 
         $usuariosDisponiveis = $this->docenteModel->listarUsuariosDisponiveis((int) $docenteForm['usuario_id']);
-        $areas = $this->docenteModel->listarAreas();
+        $areas = $this->docenteModel->listarAreas($access->escopoAreaAtuacao());
         $cursoModelos = $this->docenteModel->listarCursoModelosComUc();
         $unidadesCurriculares = $this->docenteModel->listarUnidadesCurriculares();
         $somenteVinculosUc = false;
@@ -122,7 +127,8 @@ class DocenteController
 
         $dados = $this->obterDadosPost();
         $dados['id'] = (int) ($_POST['id'] ?? 0);
-        $docenteAtual = $dados['id'] > 0 ? $this->docenteModel->buscarPorId($dados['id']) : null;
+        $escopoAtualizacao = $access->nivel() === 'Professor' ? ['tipo' => 'todos', 'ids' => []] : $access->escopoAreaAtuacao();
+        $docenteAtual = $dados['id'] > 0 ? $this->docenteModel->buscarPorId($dados['id'], $escopoAtualizacao) : null;
 
         if ($access->nivel() === 'Professor') {
             if (! $docenteAtual || $access->docenteId() !== $dados['id']) {
@@ -132,6 +138,12 @@ class DocenteController
             $dados['usuario_id'] = (int) $docenteAtual['usuario_id'];
             $dados['area_atuacao'] = (string) $docenteAtual['area_atuacao'];
             $dados['status'] = (string) $docenteAtual['status'];
+
+            $erroPerfil = $this->validarPerfilProprio($dados);
+
+            if ($erroPerfil !== null) {
+                $this->redirecionar('/mapa_de_sala/public/?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode($erroPerfil));
+            }
         }
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
@@ -152,6 +164,8 @@ class DocenteController
 
         if ($this->docenteModel->atualizar($dados)) {
             if ($access->nivel() === 'Professor') {
+                $_SESSION['usuario']['nome'] = $dados['usuario_nome'];
+                $_SESSION['usuario']['email'] = $dados['usuario_email'];
                 $this->redirecionar('/mapa_de_sala/public/?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=sucesso&msg=' . urlencode('Cadastro atualizado com sucesso.'));
             }
 
@@ -167,9 +181,14 @@ class DocenteController
         $this->bloquearProfessor();
 
         $id = (int) ($_POST['id'] ?? 0);
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0) {
             $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Docente inválido.'));
+        }
+
+        if (! $this->docenteModel->buscarPorId($id, $escopo)) {
+            $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Docente nao encontrado na sua area de atuacao.'));
         }
 
         if ($this->docenteModel->excluir($id)) {
@@ -209,7 +228,41 @@ class DocenteController
             'observacoes'    => trim($_POST['observacoes'] ?? ''),
             'escala'         => $escala,
             'unidades_curriculares' => $this->obterUcsPost(),
+            'usuario_nome' => trim($_POST['usuario_nome'] ?? ''),
+            'usuario_email' => trim($_POST['usuario_email'] ?? ''),
+            'senha' => trim($_POST['senha'] ?? ''),
+            'confirmar_senha' => trim($_POST['confirmar_senha'] ?? ''),
+            'senha_hash' => null,
         ];
+    }
+
+    private function validarPerfilProprio(array &$dados): ?string
+    {
+        if ($dados['usuario_nome'] === '' || $dados['usuario_email'] === '') {
+            return 'Preencha nome e e-mail.';
+        }
+
+        if (! filter_var($dados['usuario_email'], FILTER_VALIDATE_EMAIL)) {
+            return 'Informe um e-mail valido.';
+        }
+
+        if ($this->usuarioModel->emailExiste($dados['usuario_email'], (int) $dados['usuario_id'])) {
+            return 'Ja existe outro usuario com este e-mail.';
+        }
+
+        if ($dados['senha'] !== '' || $dados['confirmar_senha'] !== '') {
+            if ($dados['senha'] !== $dados['confirmar_senha']) {
+                return 'As senhas nao conferem.';
+            }
+
+            if (strlen($dados['senha']) < 4) {
+                return 'A nova senha deve ter no minimo 4 caracteres.';
+            }
+
+            $dados['senha_hash'] = password_hash($dados['senha'], PASSWORD_DEFAULT);
+        }
+
+        return null;
     }
 
     private function validarDados(array $dados): bool

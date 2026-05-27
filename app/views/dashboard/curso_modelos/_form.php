@@ -26,7 +26,7 @@
     </div>
 
     <div class="col-12 col-md-3">
-      <label for="carga_horaria_total" class="form-label">Carga horaria total</label>
+      <label for="carga_horaria_total" class="form-label">Carga horária total</label>
       <div class="input-group">
         <span class="input-group-text app-input-icon">
           <i class="bi bi-hourglass-split"></i>
@@ -35,7 +35,7 @@
           step="1" placeholder="Ex.: 1200"
           value="<?php echo htmlspecialchars($cursoForm['carga_horaria_total'] ?? ''); ?>" required>
         <span class="input-group-text">h</span>
-        <div class="invalid-feedback">Informe a carga horaria total.</div>
+        <div class="invalid-feedback">Informe a carga horária total.</div>
       </div>
     </div>
 

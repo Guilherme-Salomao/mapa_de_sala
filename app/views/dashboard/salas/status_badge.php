@@ -13,8 +13,8 @@
         'texto'  => 'Ativa',
     ],
 
-    'manutencao' => [
-        'classe' => 'sala-status sala-status--manutencao',
+    'manutenção' => [
+        'classe' => 'sala-status sala-status--manutenção',
         'icone'  => 'bi-tools',
         'texto'  => 'Manutenção',
     ],

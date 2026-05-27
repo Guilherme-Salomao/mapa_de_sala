@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
     session_start();
     }
@@ -14,12 +14,11 @@
       <button class="btn btn-outline-light btn-sm d-md-none" type="button" id="btnToggleSidebar">
         <i class="bi bi-list"></i>
       </button>
-      <!-- Logo / Nome Sistema -->
       <div class="d-flex align-items-center gap-2">
-        <i class="bi bi-building fs-4"></i>
+        <i class="bi bi-calendar2-week fs-4"></i>
         <div class="lh-sm">
-          <div class="fw-bold">Sistema de Controle de Salas</div>
-          <div class="small opacity-75" id="pageTitle">Painel do Sistema</div>
+          <div class="fw-bold">SIGHA</div>
+          <div class="small opacity-75" id="pageTitle">Sistema Integrado de Gestão de Horários e Ambientes</div>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -17,7 +17,7 @@
     $ucs = $ucs ?? [];
     $totalUcs = $totalUcs ?? count($ucs);
 
-    $tituloPagina = 'Manutencao de UCs';
+    $tituloPagina = 'Manutenção de UCs';
     $subtituloPagina = 'Gerencie unidades curriculares por modelo de curso';
     $botaoTopoTexto = 'Nova UC';
     $botaoTopoLink = '/mapa_de_sala/public/?page=ucs&action=cadastrar';
@@ -31,7 +31,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>UCs - Sistema de Controle de Salas</title>
+  <title>UCs - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -83,9 +83,9 @@
                     <th>Codigo</th>
                     <th>UC</th>
                     <th>Modelo do curso</th>
-                    <th>Carga horaria</th>
+                    <th>Carga horária</th>
                     <th>Status</th>
-                    <th class="text-end">Acoes</th>
+                    <th class="text-end">Ações</th>
                   </tr>
                 </thead>
 
@@ -146,3 +146,5 @@
 </body>
 
 </html>
+
+

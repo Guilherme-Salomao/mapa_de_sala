@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     $mensagem = $_GET['msg'] ?? ($mensagem ?? '');
     $tipo = $_GET['tipo'] ?? ($tipo ?? '');
     $nome = $_GET['nome'] ?? '';
@@ -11,7 +11,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cadastro - Sistema de Controle de Salas</title>
+  <title>Cadastro - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -103,7 +103,7 @@
           </div>
 
           <div class="text-center">
-            <span class="small text-muted">Ja possui conta?</span>
+            <span class="small text-muted">Ja possui conta</span>
             <a href="/mapa_de_sala/public/" class="small fw-semibold text-decoration-none">
               <i class="bi bi-box-arrow-in-right"></i> Entrar
             </a>
@@ -119,3 +119,4 @@
 </body>
 
 </html>
+

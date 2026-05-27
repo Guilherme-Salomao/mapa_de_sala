@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -38,7 +38,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Aceleração - Sistema de Controle de Salas</title>
+  <title>Aceleração - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -205,7 +205,7 @@
                     <th>Docente</th>
                     <th>Periodo</th>
                     <th>Aulas</th>
-                    <th class="text-end">Acoes</th>
+                    <th class="text-end">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -226,9 +226,9 @@
                     </td>
                     <td><?php echo (int) ($registro['aulas_geradas'] ?? 0); ?></td>
                     <td class="text-end">
-                      <form method="POST" action="/mapa_de_sala/public/?page=aceleracao&action=excluir">
+                      <form method="POST" action="/mapa_de_sala/public/?page=aceleracao&action=excluir" class="app-actions">
                         <input type="hidden" name="id" value="<?php echo (int) $registro['id']; ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <button type="submit" class="btn btn-sm btn-outline-danger app-action-btn">
                           <i class="bi bi-trash"></i> Excluir
                         </button>
                       </form>
@@ -258,7 +258,7 @@
 
     function filtrarUcs() {
       const turmaOption = turmaSelect.options[turmaSelect.selectedIndex];
-      const cursoModelo = turmaOption ? turmaOption.getAttribute("data-curso-modelo") : "";
+      const cursoModelo = turmaOption  turmaOption.getAttribute("data-curso-modelo") : "";
       let primeiraUc = "";
 
       Array.from(ucSelect.options).forEach((option) => {
@@ -318,3 +318,5 @@
 </body>
 
 </html>
+
+

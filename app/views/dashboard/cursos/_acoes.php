@@ -2,24 +2,24 @@
     $cursoId = (int) ($cursoId ?? 0);
 ?>
 
-<div class="d-flex justify-content-end gap-2">
+<div class="app-actions">
   <a href="/mapa_de_sala/public/?page=turmas&action=editar&id=<?php echo $cursoId; ?>"
-    class="btn btn-sm btn-outline-primary" title="Editar turma">
+    class="btn btn-sm btn-outline-primary app-action-btn" title="Editar turma">
     <i class="bi bi-pencil"></i>
     Editar
   </a>
 
-  <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal"
+  <button type="button" class="btn btn-sm btn-outline-success app-action-btn" data-bs-toggle="modal"
     data-bs-target="#gerarQuadro_<?php echo $cursoId; ?>" title="Gerar quadro horario">
     <i class="bi bi-calendar-plus"></i>
     Gerar
   </button>
 
   <form method="POST" action="/mapa_de_sala/public/?page=turmas&action=excluir" class="d-inline"
-    onsubmit="return confirm('Deseja realmente excluir esta turma?');">
+    onsubmit="return confirm('Deseja realmente excluir esta turma');">
     <input type="hidden" name="id" value="<?php echo $cursoId; ?>">
 
-    <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir turma">
+    <button type="submit" class="btn btn-sm btn-outline-danger app-action-btn" title="Excluir turma">
       <i class="bi bi-trash"></i>
       Excluir
     </button>

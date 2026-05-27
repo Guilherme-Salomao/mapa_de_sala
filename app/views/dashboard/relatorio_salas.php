@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -28,7 +28,7 @@
             'livre' => 'Livre',
             'ocupada' => 'Ocupada',
             'reservada' => 'Reservada',
-            'manutencao' => 'Manutenção',
+            'manutenção' => 'Manutenção',
             'inativa' => 'Inativa',
         ][$situacao] ?? 'Todas';
     }
@@ -39,7 +39,7 @@
             'livre' => 'text-bg-success',
             'ocupada' => 'text-bg-primary',
             'reservada' => 'text-bg-info',
-            'manutencao' => 'text-bg-warning',
+            'manutenção' => 'text-bg-warning',
             'inativa' => 'text-bg-secondary',
         ][$situacao] ?? 'text-bg-light';
     }
@@ -53,8 +53,8 @@
         }
 
         foreach ($turno['reservas'] ?? [] as $reserva) {
-            $titulo = ($reserva['tipo'] ?? '') === 'Manutencao'
-                ? 'Manutencao'
+            $titulo = ($reserva['tipo'] ?? '') === 'Manutenção'
+                 ? 'Manutenção'
                 : (($reserva['motivo'] ?? '') ?: 'Reserva');
             $solicitante = ! empty($reserva['solicitante']) ? ' - ' . $reserva['solicitante'] : '';
             $detalhes[] = trim(substr((string) ($reserva['hora_inicio'] ?? ''), 0, 5) . ' - ' . substr((string) ($reserva['hora_fim'] ?? ''), 0, 5) . ' - ' . $titulo . $solicitante);
@@ -69,7 +69,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Relatório de Salas - Sistema de Controle de Salas</title>
+  <title>Relatório de Salas - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -109,7 +109,7 @@
               <div class="col-12 col-md-4 col-lg-3">
                 <label for="situacao" class="form-label">Situação</label>
                 <select class="form-select" id="situacao" name="situacao">
-                  <?php foreach (['todas' => 'Todas', 'livre' => 'Livres', 'ocupada' => 'Ocupadas', 'reservada' => 'Reservadas', 'manutencao' => 'Em manutenção', 'inativa' => 'Inativas'] as $valor => $label): ?>
+                  <?php foreach (['todas' => 'Todas', 'livre' => 'Livres', 'ocupada' => 'Ocupadas', 'reservada' => 'Reservadas', 'manutenção' => 'Em manutenção', 'inativa' => 'Inativas'] as $valor => $label): ?>
                   <option value="<?php echo htmlspecialchars($valor); ?>" <?php echo $situacao === $valor ? 'selected' : ''; ?>>
                     <?php echo htmlspecialchars($label); ?>
                   </option>
@@ -138,7 +138,7 @@
                     'livre' => ['label' => 'Livres', 'icone' => 'bi-check-circle', 'classe' => 'kpi-icon--livre'],
                     'ocupada' => ['label' => 'Ocupadas', 'icone' => 'bi-calendar-check', 'classe' => 'kpi-icon--uso'],
                     'reservada' => ['label' => 'Reservadas', 'icone' => 'bi-bookmark-check', 'classe' => 'kpi-icon--uso'],
-                    'manutencao' => ['label' => 'Manutenção', 'icone' => 'bi-tools', 'classe' => 'kpi-icon--manut'],
+                    'manutenção' => ['label' => 'Manutenção', 'icone' => 'bi-tools', 'classe' => 'kpi-icon--manut'],
                 ];
             ?>
             <?php foreach ($cardsRelatorio as $chave => $card): ?>
@@ -247,3 +247,4 @@
 </body>
 
 </html>
+

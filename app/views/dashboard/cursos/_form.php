@@ -35,14 +35,14 @@
     </div>
 
     <div class="col-12 col-md-3">
-      <label for="hora_inicio" class="form-label">Hora de inicio</label>
+      <label for="hora_inicio" class="form-label">Inicio manha</label>
       <input type="time" class="form-control" id="hora_inicio" name="hora_inicio"
         value="<?php echo htmlspecialchars(substr($cursoForm['hora_inicio'] ?? '', 0, 5)); ?>">
       <div class="form-text">Opcional.</div>
     </div>
 
     <div class="col-12 col-md-3">
-      <label for="hora_fim" class="form-label">Hora de fim</label>
+      <label for="hora_fim" class="form-label">Fim manha</label>
       <input type="time" class="form-control" id="hora_fim" name="hora_fim"
         value="<?php echo htmlspecialchars(substr($cursoForm['hora_fim'] ?? '', 0, 5)); ?>">
       <div class="form-text">Opcional.</div>
@@ -63,23 +63,51 @@
     </div>
 
     <div class="col-12">
+      <label class="form-check border rounded p-2 d-flex align-items-center gap-2">
+        <input class="form-check-input m-0" type="checkbox" id="integral" name="integral" value="1"
+          <?php echo((int) ($cursoForm['integral'] ?? 0) === 1) ? 'checked' : ''; ?>>
+        <span class="fw-semibold">Turma integral</span>
+      </label>
+    </div>
+
+    <div class="col-12">
+      <label class="form-check border rounded p-2 d-flex align-items-center gap-2">
+        <input class="form-check-input m-0" type="checkbox" name="participa_parada_pedagogica" value="1"
+          <?php echo((int) ($cursoForm['participa_parada_pedagogica'] ?? 1) === 1) ? 'checked' : ''; ?>>
+        <span class="fw-semibold">Participa de parada pedagogica</span>
+      </label>
+    </div>
+
+    <div class="col-12 col-md-3 turma-integral-campo">
+      <label for="hora_inicio_tarde" class="form-label">Inicio tarde</label>
+      <input type="time" class="form-control" id="hora_inicio_tarde" name="hora_inicio_tarde"
+        value="<?php echo htmlspecialchars(substr($cursoForm['hora_inicio_tarde'] ?? '', 0, 5)); ?>">
+    </div>
+
+    <div class="col-12 col-md-3 turma-integral-campo">
+      <label for="hora_fim_tarde" class="form-label">Fim tarde</label>
+      <input type="time" class="form-control" id="hora_fim_tarde" name="hora_fim_tarde"
+        value="<?php echo htmlspecialchars(substr($cursoForm['hora_fim_tarde'] ?? '', 0, 5)); ?>">
+    </div>
+
+    <div class="col-12">
       <label class="form-label">Dias de aula</label>
       <div class="row g-2">
         <?php
             $diasAulaTurma = [
                 'aula_segunda' => 'Segunda',
-                'aula_terca' => 'Terca',
-                'aula_quarta' => 'Quarta',
-                'aula_quinta' => 'Quinta',
-                'aula_sexta' => 'Sexta',
-                'aula_sabado' => 'Sabado',
+                'aula_terca'   => 'Terca',
+                'aula_quarta'  => 'Quarta',
+                'aula_quinta'  => 'Quinta',
+                'aula_sexta'   => 'Sexta',
+                'aula_sabado'  => 'Sabado',
             ];
         ?>
         <?php foreach ($diasAulaTurma as $campoDia => $labelDia): ?>
         <div class="col-6 col-md-4 col-lg-2">
           <label class="form-check border rounded p-2 d-flex align-items-center gap-2 h-100">
             <input class="form-check-input m-0" type="checkbox" name="<?php echo $campoDia; ?>" value="1"
-              <?php echo ((int) ($cursoForm[$campoDia] ?? 0) === 1) ? 'checked' : ''; ?>>
+              <?php echo((int) ($cursoForm[$campoDia] ?? 0) === 1) ? 'checked' : ''; ?>>
             <span><?php echo htmlspecialchars($labelDia); ?></span>
           </label>
         </div>
@@ -91,7 +119,7 @@
     <div class="col-12">
       <label for="descricao" class="form-label">Descricao</label>
       <textarea class="form-control" id="descricao" name="descricao" rows="4"
-        placeholder="Informacoes adicionais sobre o curso..."><?php echo htmlspecialchars($cursoForm['descricao'] ?? ''); ?></textarea>
+        placeholder="Informações adicionais sobre o curso..."><?php echo htmlspecialchars($cursoForm['descricao'] ?? ''); ?></textarea>
     </div>
 
   </div>
@@ -108,3 +136,21 @@
     </button>
   </div>
 </form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const integral = document.getElementById("integral");
+  const campos = document.querySelectorAll(".turma-integral-campo");
+
+  function atualizarCamposIntegral() {
+    campos.forEach(function(campo) {
+      campo.classList.toggle("d-none", !integral.checked);
+    });
+  }
+
+  if (integral) {
+    integral.addEventListener("change", atualizarCamposIntegral);
+    atualizarCamposIntegral();
+  }
+});
+</script>

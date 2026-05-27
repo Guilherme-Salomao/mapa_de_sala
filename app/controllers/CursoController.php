@@ -188,8 +188,12 @@ class CursoController
             'curso_modelo_id'     => (int) ($_POST['curso_modelo_id'] ?? 0),
             'nome'                => trim($_POST['nome'] ?? ''),
             'codigo_oferta'       => trim($_POST['codigo_oferta'] ?? ''),
+            'integral'            => isset($_POST['integral']) ? 1 : 0,
             'hora_inicio'         => trim($_POST['hora_inicio'] ?? ''),
             'hora_fim'            => trim($_POST['hora_fim'] ?? ''),
+            'hora_inicio_tarde'   => trim($_POST['hora_inicio_tarde'] ?? ''),
+            'hora_fim_tarde'      => trim($_POST['hora_fim_tarde'] ?? ''),
+            'participa_parada_pedagogica' => isset($_POST['participa_parada_pedagogica']) ? 1 : 0,
             'aula_segunda'        => isset($_POST['aula_segunda']) ? 1 : 0,
             'aula_terca'          => isset($_POST['aula_terca']) ? 1 : 0,
             'aula_quarta'         => isset($_POST['aula_quarta']) ? 1 : 0,
@@ -219,8 +223,12 @@ class CursoController
             'curso_modelo_id'     => $dados['curso_modelo_id'] > 0 ? $dados['curso_modelo_id'] : '',
             'nome'                => $dados['nome'],
             'codigo_oferta'       => $dados['codigo_oferta'],
+            'integral'            => $dados['integral'],
             'hora_inicio'         => $dados['hora_inicio'],
             'hora_fim'            => $dados['hora_fim'],
+            'hora_inicio_tarde'   => $dados['hora_inicio_tarde'],
+            'hora_fim_tarde'      => $dados['hora_fim_tarde'],
+            'participa_parada_pedagogica' => $dados['participa_parada_pedagogica'],
             'aula_segunda'        => $dados['aula_segunda'],
             'aula_terca'          => $dados['aula_terca'],
             'aula_quarta'         => $dados['aula_quarta'],
@@ -244,10 +252,24 @@ class CursoController
         $fim = $dados['hora_fim'];
 
         if ($inicio === '' && $fim === '') {
+            return (int) ($dados['integral'] ?? 0) === 0;
+        }
+
+        if ($inicio === '' || $fim === '' || strtotime($fim) <= strtotime($inicio)) {
+            return false;
+        }
+
+        if ((int) ($dados['integral'] ?? 0) === 0) {
             return true;
         }
 
-        return $inicio !== '' && $fim !== '';
+        $inicioTarde = $dados['hora_inicio_tarde'] ?? '';
+        $fimTarde = $dados['hora_fim_tarde'] ?? '';
+
+        return $inicioTarde !== ''
+            && $fimTarde !== ''
+            && strtotime($fimTarde) > strtotime($inicioTarde)
+            && strtotime($inicioTarde) >= strtotime($fim);
     }
 
     private function temDiaAula(array $dados): bool

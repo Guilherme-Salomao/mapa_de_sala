@@ -32,7 +32,7 @@ class CalendarioBloqueio
             $params[':status'] = $status;
         }
 
-        $sql .= " ORDER BY data DESC, titulo ASC";
+        $sql .= " ORDER BY data DESC, COALESCE(data_fim, data) DESC, titulo ASC";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
@@ -62,8 +62,9 @@ class CalendarioBloqueio
             SELECT *
             FROM calendario_bloqueios
             WHERE status = 'Ativo'
-              AND data BETWEEN :data_inicio AND :data_fim
-            ORDER BY data ASC, titulo ASC
+              AND data <= :data_fim
+              AND COALESCE(data_fim, data) >= :data_inicio
+            ORDER BY data ASC, COALESCE(data_fim, data) ASC, titulo ASC
         ";
 
         $stmt = $this->conn->prepare($sql);
@@ -75,22 +76,36 @@ class CalendarioBloqueio
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function buscarAtivoPorData(string $data): ?array
+    public function buscarAtivoPorData(string $data, ?array $turma = null): ?array
     {
         $sql = "
             SELECT *
             FROM calendario_bloqueios
             WHERE status = 'Ativo'
-              AND data = :data
+              AND data <= :data
+              AND COALESCE(data_fim, data) >= :data
             ORDER BY data ASC
-            LIMIT 1
         ";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([':data' => $data]);
-        $bloqueio = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $bloqueio ?: null;
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $bloqueio) {
+            if ($this->bloqueioAplicaTurma($bloqueio, $turma)) {
+                return $bloqueio;
+            }
+        }
+
+        return null;
+    }
+
+    public function bloqueioAplicaTurma(array $bloqueio, ?array $turma = null): bool
+    {
+        if (($bloqueio['tipo'] ?? '') !== 'Parada Pedagogica') {
+            return true;
+        }
+
+        return (int) ($turma['participa_parada_pedagogica'] ?? 1) === 1;
     }
 
     public function salvar(array $dados): bool
@@ -99,12 +114,14 @@ class CalendarioBloqueio
             $sql = "
                 INSERT INTO calendario_bloqueios (
                     data,
+                    data_fim,
                     titulo,
                     tipo,
                     descricao,
                     status
                 ) VALUES (
                     :data,
+                    :data_fim,
                     :titulo,
                     :tipo,
                     :descricao,
@@ -116,6 +133,7 @@ class CalendarioBloqueio
 
             return $stmt->execute([
                 ':data' => $dados['data'],
+                ':data_fim' => $dados['data_fim'] ?: null,
                 ':titulo' => $dados['titulo'],
                 ':tipo' => $dados['tipo'],
                 ':descricao' => $dados['descricao'],
@@ -132,6 +150,7 @@ class CalendarioBloqueio
             $sql = "
                 UPDATE calendario_bloqueios SET
                     data = :data,
+                    data_fim = :data_fim,
                     titulo = :titulo,
                     tipo = :tipo,
                     descricao = :descricao,
@@ -144,6 +163,7 @@ class CalendarioBloqueio
             return $stmt->execute([
                 ':id' => $dados['id'],
                 ':data' => $dados['data'],
+                ':data_fim' => $dados['data_fim'] ?: null,
                 ':titulo' => $dados['titulo'],
                 ':tipo' => $dados['tipo'],
                 ':descricao' => $dados['descricao'],

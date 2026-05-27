@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -16,46 +16,74 @@
     $cursos        = $cursos ?? [];
     $totalCursos   = $totalCursos ?? count($cursos);
 
-    $tituloPagina    = 'Manutencao de Turmas';
-    $subtituloPagina = 'Gerencie turmas, ofertas e carga horaria';
+    $tituloPagina    = 'Manutenção de Turmas';
+    $subtituloPagina = 'Gerencie turmas, ofertas e carga horária';
     $botaoTopoTexto  = 'Nova Turma';
     $botaoTopoLink   = '/mapa_de_sala/public/?page=turmas&action=cadastrar';
     $botaoTopoClasse = 'app-btn-primary';
     $botaoTopoIcone  = 'bi-plus-circle';
 
-    function formatarHoraAulaTurma(?string $horaInicio, ?string $horaFim): string
+    function minutosTurma(array $curso): int
+    {
+        $total = minutosEntreHorarioTurma($curso['hora_inicio'] ?? null, $curso['hora_fim'] ?? null);
+
+        if ((int) ($curso['integral'] ?? 0) === 1) {
+            $total += minutosEntreHorarioTurma($curso['hora_inicio_tarde'] ?? null, $curso['hora_fim_tarde'] ?? null);
+        }
+
+        return $total;
+    }
+
+    function minutosEntreHorarioTurma(string $horaInicio, string $horaFim): int
     {
         if (empty($horaInicio) || empty($horaFim)) {
-            return 'Nao informado';
+            return 0;
         }
 
         $inicio = strtotime($horaInicio);
         $fim = strtotime($horaFim);
 
         if ($inicio === false || $fim === false || $fim <= $inicio) {
-            return 'Nao informado';
+            return 0;
         }
 
-        $minutosTotais = (int) round(($fim - $inicio) / 60);
+        return (int) round(($fim - $inicio) / 60);
+    }
+
+    function formatarHoraAulaTurma(array $curso): string
+    {
+        $minutosTotais = minutosTurma($curso);
+
+        if ($minutosTotais <= 0) {
+            return 'Não informado';
+        }
+
         $horas = intdiv($minutosTotais, 60);
         $minutos = $minutosTotais % 60;
 
         return $minutos > 0
-            ? $horas . 'h' . str_pad((string) $minutos, 2, '0', STR_PAD_LEFT)
+             ? $horas . 'h' . str_pad((string) $minutos, 2, '0', STR_PAD_LEFT)
             : $horas . 'h';
     }
 
-    function periodoTurmaPorHorario(?string $horaInicio, ?string $horaFim): string
+    function periodoTurmaPorHorario(array $curso): string
     {
+        if ((int) ($curso['integral'] ?? 0) === 1) {
+            return 'Integral';
+        }
+
+        $horaInicio = $curso['hora_inicio'] ?? null;
+        $horaFim = $curso['hora_fim'] ?? null;
+
         if (empty($horaInicio) || empty($horaFim)) {
-            return 'Nao informado';
+            return 'Não informado';
         }
 
         $inicio = strtotime($horaInicio);
         $fim = strtotime($horaFim);
 
         if ($inicio === false || $fim === false || $fim <= $inicio) {
-            return 'Nao informado';
+            return 'Não informado';
         }
 
         $periodos = [];
@@ -75,7 +103,22 @@
             }
         }
 
-        return count($periodos) > 1 ? 'Integral' : ($periodos[0] ?? 'Nao informado');
+        return count($periodos) > 1 ? 'Integral' : ($periodos[0] ?? 'Não informado');
+    }
+
+    function horarioTurma(array $curso): string
+    {
+        if (empty($curso['hora_inicio']) || empty($curso['hora_fim'])) {
+            return '';
+        }
+
+        $horario = substr($curso['hora_inicio'], 0, 5) . ' - ' . substr($curso['hora_fim'], 0, 5);
+
+        if ((int) ($curso['integral'] ?? 0) === 1 && ! empty($curso['hora_inicio_tarde']) && ! empty($curso['hora_fim_tarde'])) {
+            $horario .= ' / ' . substr($curso['hora_inicio_tarde'], 0, 5) . ' - ' . substr($curso['hora_fim_tarde'], 0, 5);
+        }
+
+        return $horario;
     }
 ?>
 
@@ -85,7 +128,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Turmas - Sistema de Controle de Salas</title>
+  <title>Turmas - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -140,7 +183,7 @@
                     <th>Horario</th>
                     <th>Hora aula</th>
                     <th>Status</th>
-                    <th class="text-end">Acoes</th>
+                    <th class="text-end">Ações</th>
                   </tr>
                 </thead>
 
@@ -155,15 +198,15 @@
                       <?php endif; ?>
                     </td>
                     <td><?php echo htmlspecialchars($curso['codigo_oferta'] ?? ''); ?></td>
-                    <td><?php echo htmlspecialchars(periodoTurmaPorHorario($curso['hora_inicio'] ?? null, $curso['hora_fim'] ?? null)); ?></td>
+                    <td><?php echo htmlspecialchars(periodoTurmaPorHorario($curso)); ?></td>
                     <td>
                       <?php if (! empty($curso['hora_inicio']) && ! empty($curso['hora_fim'])): ?>
-                      <?php echo htmlspecialchars(substr($curso['hora_inicio'], 0, 5) . ' - ' . substr($curso['hora_fim'], 0, 5)); ?>
+                      <?php echo htmlspecialchars(horarioTurma($curso)); ?>
                       <?php else: ?>
-                      <span class="text-muted">Nao informado</span>
+                      <span class="text-muted">Não informado</span>
                       <?php endif; ?>
                     </td>
-                    <td><?php echo htmlspecialchars(formatarHoraAulaTurma($curso['hora_inicio'] ?? null, $curso['hora_fim'] ?? null)); ?></td>
+                    <td><?php echo htmlspecialchars(formatarHoraAulaTurma($curso)); ?></td>
                     <td>
                       <?php
                           $statusCurso = $curso['status'] ?? 'Em andamento';
@@ -213,4 +256,6 @@
 </body>
 
 </html>
+
+
 

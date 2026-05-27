@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -35,6 +35,42 @@
     $diasNoMes = (int) date('t', strtotime($primeiroDia));
     $inicioSemana = (int) date('w', strtotime($primeiroDia));
     $nomesSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+
+    function abreviarUcRelatorioDocente(string $texto, int $limite = 6): string
+    {
+        $texto = trim($texto);
+
+        if ($texto === '') {
+            return '';
+        }
+
+        $partes = explode(' - ', $texto, 2);
+        $codigo = $partes[0] ?? '';
+        $nome = $partes[1] ?? $texto;
+        $palavrasIgnoradas = ['a', 'as', 'o', 'os', 'e', 'de', 'da', 'das', 'do', 'dos', 'em', 'no', 'na', 'nos', 'nas', 'para', 'por'];
+        $palavras = preg_split('/\s+/', trim($nome)) ?: [];
+        $abreviadas = [];
+
+        foreach ($palavras as $palavra) {
+            $limpa = trim($palavra, " \t\n\r\0\x0B.,;:()[]{}");
+
+            if ($limpa === '') {
+                continue;
+            }
+
+            if (in_array(strtolower($limpa), $palavrasIgnoradas, true)) {
+                continue;
+            }
+
+            $abreviadas[] = mb_strlen($limpa, 'UTF-8') > $limite
+                ? mb_substr($limpa, 0, $limite, 'UTF-8')
+                : $limpa;
+        }
+
+        $nomeAbreviado = implode(' ', array_slice($abreviadas, 0, 5));
+
+        return trim($codigo . ($nomeAbreviado !== '' ? ' - ' . $nomeAbreviado : ''));
+    }
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -42,7 +78,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Relatorio Docente - Sistema de Controle de Salas</title>
+  <title>Relatorio Docente - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -94,6 +130,24 @@
 
   .relatorio-calendario thead th:first-child {
     background: #f97316;
+  }
+
+  .relatorio-uc {
+    color: #0f172a;
+    font-size: .82rem;
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
+  }
+
+  .relatorio-turma {
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+  }
+
+  .relatorio-sala {
+    text-align: center;
   }
   </style>
 
@@ -245,9 +299,14 @@
                           <?php echo htmlspecialchars($evento['hora']); ?>
                         </div>
                         <?php endif; ?>
-                        <div><?php echo htmlspecialchars($evento['turma'] ?? ''); ?></div>
+                        <div class="relatorio-turma"><?php echo htmlspecialchars($evento['turma'] ?? ''); ?></div>
+                        <?php if ($isAula && ! empty($evento['uc'])): ?>
+                        <div class="relatorio-uc" title="<?php echo htmlspecialchars($evento['uc']); ?>">
+                          <?php echo htmlspecialchars(abreviarUcRelatorioDocente((string) $evento['uc'])); ?>
+                        </div>
+                        <?php endif; ?>
                         <?php if (! empty($evento['sala'])): ?>
-                        <div class="text-muted">Sala <?php echo htmlspecialchars($evento['sala']); ?></div>
+                        <div class="text-muted relatorio-sala">Sala <?php echo htmlspecialchars($evento['sala']); ?></div>
                         <?php endif; ?>
                       </div>
                       <?php endforeach; ?>
@@ -294,3 +353,4 @@
 </body>
 
 </html>
+

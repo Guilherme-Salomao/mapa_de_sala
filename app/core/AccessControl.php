@@ -46,7 +46,7 @@ class AccessControl
         }
 
         if ($nivel === 'Apoio') {
-            return ! in_array($pagina, ['usuarios', 'logs'], true);
+            return ! in_array($pagina, ['usuarios', 'logs', 'relatorio_gestor', 'relatorio_docente'], true);
         }
 
         if ($nivel === 'Professor') {

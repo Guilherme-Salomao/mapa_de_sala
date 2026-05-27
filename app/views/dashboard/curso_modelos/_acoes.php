@@ -3,18 +3,18 @@
     $nivelUsuario = $_SESSION['usuario']['nivel_acesso'] ?? '';
 ?>
 
-<div class="d-flex justify-content-end gap-2">
+<div class="app-actions">
   <a href="/mapa_de_sala/public/?page=cursos&action=editar&id=<?php echo $cursoId; ?>"
-    class="btn btn-sm btn-outline-primary" title="Editar curso">
+    class="btn btn-sm btn-outline-primary app-action-btn" title="Editar curso">
     <i class="bi bi-pencil"></i>
     Editar
   </a>
 
   <?php if ($nivelUsuario !== 'Professor'): ?>
   <form method="POST" action="/mapa_de_sala/public/?page=cursos&action=excluir" class="d-inline"
-    onsubmit="return confirm('Deseja realmente excluir este curso?');">
+    onsubmit="return confirm('Deseja realmente excluir este curso');">
     <input type="hidden" name="id" value="<?php echo $cursoId; ?>">
-    <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir curso">
+    <button type="submit" class="btn btn-sm btn-outline-danger app-action-btn" title="Excluir curso">
       <i class="bi bi-trash"></i>
       Excluir
     </button>

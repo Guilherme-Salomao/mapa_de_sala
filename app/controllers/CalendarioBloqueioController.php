@@ -89,10 +89,13 @@ class CalendarioBloqueioController
 
     private function obterDadosPost(): array
     {
+        $tipo = trim($_POST['tipo'] ?? 'Feriado');
+
         return [
             'data' => trim($_POST['data'] ?? ''),
+            'data_fim' => $tipo === 'Recesso' ? trim($_POST['data_fim'] ?? '') : '',
             'titulo' => trim($_POST['titulo'] ?? ''),
-            'tipo' => trim($_POST['tipo'] ?? 'Evento'),
+            'tipo' => $tipo,
             'descricao' => trim($_POST['descricao'] ?? ''),
             'status' => trim($_POST['status'] ?? 'Ativo'),
         ];
@@ -103,13 +106,23 @@ class CalendarioBloqueioController
         if (
             $dados['data'] === '' ||
             $dados['titulo'] === '' ||
-            ! in_array($dados['tipo'], ['Feriado', 'Evento', 'Recesso', 'Outro'], true) ||
+            ! in_array($dados['tipo'], ['Feriado', 'Recesso', 'Parada Pedagogica'], true) ||
             ! in_array($dados['status'], ['Ativo', 'Inativo'], true)
         ) {
             return false;
         }
 
-        return strtotime($dados['data']) !== false;
+        if (strtotime($dados['data']) === false) {
+            return false;
+        }
+
+        if ($dados['tipo'] !== 'Recesso') {
+            return true;
+        }
+
+        return $dados['data_fim'] !== ''
+            && strtotime($dados['data_fim']) !== false
+            && strtotime($dados['data_fim']) >= strtotime($dados['data']);
     }
 
     private function queryCadastro(array $dados): string
@@ -117,6 +130,7 @@ class CalendarioBloqueioController
         return http_build_query([
             'page' => 'calendario',
             'data' => $dados['data'],
+            'data_fim' => $dados['data_fim'],
             'titulo' => $dados['titulo'],
             'tipo_bloqueio' => $dados['tipo'],
             'descricao' => $dados['descricao'],

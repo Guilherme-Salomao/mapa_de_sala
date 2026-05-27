@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -25,7 +25,7 @@
     $areas = [];
     $areasUsuario = [];
 
-    $tituloPagina = 'Meus Dados';
+    $tituloPagina = 'Meu Cadastro';
     $subtituloPagina = 'Atualize seu nome, e-mail ou senha';
     $botaoTopoTexto = 'Voltar';
     $botaoTopoLink = '/mapa_de_sala/public/?page=home';
@@ -38,7 +38,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Meus Dados - Sistema de Controle de Salas</title>
+  <title>Meu Cadastro - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -86,7 +86,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = "Meus Dados";
+  if (pageTitle) pageTitle.textContent = "Meu Cadastro";
 
   const userName = document.getElementById("userName");
   if (userName) userName.textContent = <?php echo json_encode($usuarioLogado); ?>;
@@ -98,9 +98,9 @@
     btnToggleSenha.addEventListener("click", function() {
       const isPassword = senha.type === "password";
       senha.type = isPassword ? "text" : "password";
-      btnToggleSenha.innerHTML = isPassword ?
-        '<i class="bi bi-eye-slash"></i>' :
-        '<i class="bi bi-eye"></i>';
+      btnToggleSenha.innerHTML = isPassword
+        ? '<i class="bi bi-eye-slash"></i>'
+        : '<i class="bi bi-eye"></i>';
     });
   }
 
@@ -133,3 +133,4 @@
 </body>
 
 </html>
+

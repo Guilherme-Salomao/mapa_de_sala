@@ -424,7 +424,7 @@ body {
   border: 1px solid rgba(220, 53, 69, 0.16);
   color: var(--status-uso);
 }
-.sala-status--manutencao {
+.sala-status--manutenção {
   background: rgba(247, 148, 29, 0.12);
   border: 1px solid rgba(247, 148, 29, 0.22);
   color: var(--senac-laranja);
@@ -456,4 +456,71 @@ body {
 }
 .sala-recurso strong {
   font-weight: 700;
+}
+
+/* ==================================================
+   ACOES DE TABELA
+================================================== */
+.app-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: nowrap;
+}
+
+.app-actions form {
+  margin: 0;
+}
+
+.app-action-btn {
+  min-width: 86px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding-inline: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.app-action-btn i {
+  font-size: 0.95rem;
+}
+
+.app-calendar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.app-calendar-actions form {
+  margin: 0;
+}
+
+.app-calendar-action-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 6px;
+}
+
+.app-calendar-action-btn i {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+@media (max-width: 575.98px) {
+  .app-actions {
+    flex-wrap: wrap;
+  }
+
+  .app-action-btn {
+    min-width: 78px;
+  }
 }

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     $mensagem = $_GET['msg'] ?? '';
     $tipo     = $_GET['tipo'] ?? '';
 ?>
@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login - Sistema de Controle de Salas</title>
+  <title>Login - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -25,11 +25,11 @@
 
         <div class="text-center mb-4">
           <div class="app-icon-badge mx-auto mb-2">
-            <i class="bi bi-door-open"></i>
+            <i class="bi bi-calendar2-week"></i>
           </div>
-          <h4 class="mb-1">Login</h4>
+          <h4 class="mb-1">SIGHA</h4>
           <div class="small text-muted">
-            Entre com suas credenciais para acessar
+            Sistema Integrado de Gestão de Horários e Ambientes
           </div>
         </div>
 
@@ -77,7 +77,7 @@
           </div>
 
           <div class="text-center">
-            <span class="small text-muted">Não possui conta?</span>
+            <span class="small text-muted">Não possui conta</span>
             <a href="/mapa_de_sala/public/?page=cadastro" class="small fw-semibold text-decoration-none">
               <i class="bi bi-person-plus"></i> Cadastre-se
             </a>
@@ -95,3 +95,4 @@
 </body>
 
 </html>
+

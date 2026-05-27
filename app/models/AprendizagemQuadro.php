@@ -352,7 +352,7 @@ class AprendizagemQuadro
 
     private function motivoBloqueio(int $turmaId, int $salaId, int $docenteId, string $data, string $horaInicio, string $horaFim): ?string
     {
-        if ($this->dataBloqueada($data)) {
+        if ($this->dataBloqueada($data, $turmaId)) {
             return 'calendario bloqueado';
         }
 
@@ -379,18 +379,30 @@ class AprendizagemQuadro
         return null;
     }
 
-    private function dataBloqueada(string $data): bool
+    private function dataBloqueada(string $data, int $turmaId): bool
     {
+        $turma = $this->buscarTurma($turmaId);
+
         $stmt = $this->conn->prepare("
-            SELECT id
+            SELECT tipo
             FROM calendario_bloqueios
-            WHERE data = :data
-              AND status = 'Ativo'
-            LIMIT 1
+            WHERE status = 'Ativo'
+              AND data <= :data
+              AND COALESCE(data_fim, data) >= :data
         ");
         $stmt->execute([':data' => $data]);
 
-        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $bloqueio) {
+            if (($bloqueio['tipo'] ?? '') !== 'Parada Pedagogica') {
+                return true;
+            }
+
+            if ((int) ($turma['participa_parada_pedagogica'] ?? 1) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function turmaOcupada(int $turmaId, string $data, string $horaInicio, string $horaFim): bool
@@ -526,6 +538,7 @@ class AprendizagemQuadro
                 curso_modelo_id,
                 hora_inicio,
                 hora_fim,
+                participa_parada_pedagogica,
                 aula_segunda,
                 aula_terca,
                 aula_quarta,

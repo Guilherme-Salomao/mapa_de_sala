@@ -99,7 +99,7 @@
         </button>
         <div class="invalid-feedback">
           <?php echo $modoEdicao
-                  ? 'Informe a nova senha com no mínimo 4 caracteres, se desejar alterá-la.'
+              ? 'Informe a nova senha com no mínimo 4 caracteres, se desejar alterá-la.'
               : 'Informe uma senha com no mínimo 4 caracteres.'; ?>
         </div>
       </div>

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -15,7 +15,7 @@
     $datasTurma = $datasTurma ?? ['data_inicial' => null, 'data_final' => null];
 
     $tituloPagina = 'Relatorio da Turma';
-    $subtituloPagina = 'Acompanhamento de carga horaria por unidade curricular';
+    $subtituloPagina = 'Acompanhamento de carga horária por unidade curricular';
     $botaoTopoTexto = '';
     $botaoTopoLink = '';
 
@@ -38,7 +38,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Relatorio da Turma - Sistema de Controle de Salas</title>
+  <title>Relatorio da Turma - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -135,13 +135,13 @@
               <div class="small flex-shrink-0">
                 Data inicial:
                 <strong>
-                  <?php echo ! empty($datasTurma['data_inicial']) ? htmlspecialchars(date('d/m/Y', strtotime($datasTurma['data_inicial']))) : '-'; ?>
+                  <?php echo ! empty($datasTurma['data_inicial']) ? htmlspecialchars(date('d/m/Y', strtotime($datasTurma['data_inicial'])))  : '-'; ?>
                 </strong>
               </div>
               <div class="small flex-shrink-0">
                 Data prevista para termino:
                 <strong style="color: <?php echo $corDataFinal; ?>;">
-                  <?php echo ! empty($datasTurma['data_final']) ? htmlspecialchars(date('d/m/Y', strtotime($datasTurma['data_final']))) : '-'; ?>
+                  <?php echo ! empty($datasTurma['data_final']) ? htmlspecialchars(date('d/m/Y', strtotime($datasTurma['data_final'])))  : '-'; ?>
                 </strong>
               </div>
             </div>
@@ -153,7 +153,7 @@
                 <thead>
                   <tr>
                     <th>Unidade Curricular</th>
-                    <th class="text-center">Carga Horaria</th>
+                    <th class="text-center">Carga Horária</th>
                     <th class="text-center">A Lancar</th>
                     <th class="text-center">Horas Lancadas</th>
                     <th class="text-center">Horas Dadas</th>
@@ -170,7 +170,7 @@
                       $horasDadas = $horasLancadas;
                       $aLancar = $cargaHoraria - $horasLancadas;
                       $classeHoras = abs($horasLancadas - $cargaHoraria) < 0.01
-                          ? 'horas-ok'
+                           ? 'horas-ok'
                           : ($horasLancadas > $cargaHoraria ? 'horas-acima' : 'horas-pendente');
                   ?>
                   <tr>
@@ -180,10 +180,10 @@
                     <td class="col-numero <?php echo $classeHoras; ?>"><?php echo number_format($horasLancadas, 0, ',', '.'); ?></td>
                     <td class="col-numero"><?php echo number_format($horasDadas, 0, ',', '.'); ?></td>
                     <td class="col-numero">
-                      <?php echo ! empty($linha['data_inicial']) ? htmlspecialchars(date('d/m/y', strtotime($linha['data_inicial']))) : '-'; ?>
+                      <?php echo ! empty($linha['data_inicial']) ? htmlspecialchars(date('d/m/y', strtotime($linha['data_inicial'])))  : '-'; ?>
                     </td>
                     <td class="col-numero">
-                      <?php echo ! empty($linha['data_final']) ? htmlspecialchars(date('d/m/y', strtotime($linha['data_final']))) : '-'; ?>
+                      <?php echo ! empty($linha['data_final']) ? htmlspecialchars(date('d/m/y', strtotime($linha['data_final'])))  : '-'; ?>
                     </td>
                   </tr>
                   <?php endforeach; ?>
@@ -235,3 +235,4 @@
 </body>
 
 </html>
+

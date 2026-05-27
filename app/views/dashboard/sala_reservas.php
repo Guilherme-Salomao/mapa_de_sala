@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -32,7 +32,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gestão de Salas - Sistema de Controle de Salas</title>
+  <title>Gestão de Salas - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -91,7 +91,7 @@
               <div class="col-6 col-lg-2">
                 <label class="form-label">Tipo</label>
                 <select name="tipo_reserva" class="form-select">
-                  <?php foreach (['todos' => 'Todos', 'Reservada' => 'Reservada', 'Manutencao' => 'Manutenção'] as $valor => $label): ?>
+                  <?php foreach (['todos' => 'Todos', 'Reservada' => 'Reservada', 'Manutenção' => 'Manutenção'] as $valor => $label): ?>
                   <option value="<?php echo htmlspecialchars($valor); ?>" <?php echo $tipo === $valor ? 'selected' : ''; ?>>
                     <?php echo htmlspecialchars($label); ?>
                   </option>
@@ -130,7 +130,7 @@
                   <div class="col-12 col-md-5">
                     <label class="form-label">Tipo</label>
                     <select name="tipo_reserva" class="form-select" required>
-                      <?php foreach (['Reservada' => 'Reservada', 'Manutencao' => 'Manutenção'] as $valor => $label): ?>
+                      <?php foreach (['Reservada' => 'Reservada', 'Manutenção' => 'Manutenção'] as $valor => $label): ?>
                       <option value="<?php echo htmlspecialchars($valor); ?>"><?php echo htmlspecialchars($label); ?></option>
                       <?php endforeach; ?>
                     </select>
@@ -221,7 +221,7 @@
 
           <div class="app-card p-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <div class="fw-bold">Reservas e manutenções</div>
+              <div class="fw-bold">Reservas e manuten??es</div>
               <div class="small text-muted"><?php echo count($reservas); ?> registro(s)</div>
             </div>
             <div class="table-responsive">
@@ -241,7 +241,7 @@
                   <?php foreach ($reservas as $reserva): ?>
                   <tr>
                     <td><?php echo htmlspecialchars($reserva['sala_nome'] ?? ''); ?></td>
-                    <td><?php echo htmlspecialchars(($reserva['tipo'] ?? '') === 'Manutencao' ? 'Manutenção' : ($reserva['tipo'] ?? '')); ?></td>
+                    <td><?php echo htmlspecialchars(($reserva['tipo'] ?? '') === 'Manutenção' ? 'Manutenção' : ($reserva['tipo'] ?? '')); ?></td>
                     <td>
                       <?php echo htmlspecialchars(date('d/m/Y', strtotime($reserva['data_inicio'])) . ' até ' . date('d/m/Y', strtotime($reserva['data_fim']))); ?>
                       <div class="small text-muted"><?php echo htmlspecialchars(substr($reserva['hora_inicio'], 0, 5) . ' - ' . substr($reserva['hora_fim'], 0, 5)); ?></div>
@@ -258,9 +258,9 @@
                     <td><?php echo htmlspecialchars($reserva['status'] ?? ''); ?></td>
                     <td class="text-end">
                       <?php if (($reserva['status'] ?? '') === 'Ativo'): ?>
-                      <form method="POST" action="/mapa_de_sala/public/?page=gestao_salas&action=excluir">
+                      <form method="POST" action="/mapa_de_sala/public/?page=gestao_salas&action=excluir" class="app-actions">
                         <input type="hidden" name="id" value="<?php echo (int) $reserva['id']; ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <button type="submit" class="btn btn-sm btn-outline-danger app-action-btn">
                           <i class="bi bi-x-circle"></i> Inativar
                         </button>
                       </form>
@@ -287,3 +287,5 @@
 </body>
 
 </html>
+
+

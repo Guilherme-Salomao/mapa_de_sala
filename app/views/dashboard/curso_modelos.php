@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -16,7 +16,7 @@
     $cursos = $cursos ?? [];
     $totalCursos = $totalCursos ?? count($cursos);
 
-    $tituloPagina = 'Manutencao de Cursos';
+    $tituloPagina = 'Manutenção de Cursos';
     $subtituloPagina = 'Gerencie os modelos de curso usados pelas turmas e UCs';
     $botaoTopoTexto = 'Novo Curso';
     $botaoTopoLink = '/mapa_de_sala/public/?page=cursos&action=cadastrar';
@@ -30,7 +30,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cursos - Sistema de Controle de Salas</title>
+  <title>Cursos - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -81,9 +81,9 @@
                   <tr>
                     <th>Curso</th>
                     <th>Area</th>
-                    <th>Carga horaria total</th>
+                    <th>Carga horária total</th>
                     <th>Status</th>
-                    <th class="text-end">Acoes</th>
+                    <th class="text-end">Ações</th>
                   </tr>
                 </thead>
 
@@ -92,7 +92,7 @@
                   <?php foreach ($cursos as $curso): ?>
                   <tr>
                     <td class="fw-semibold"><?php echo htmlspecialchars($curso['nome'] ?? ''); ?></td>
-                    <td><?php echo htmlspecialchars($curso['area_nome'] ?? 'Nao informada'); ?></td>
+                    <td><?php echo htmlspecialchars($curso['area_nome'] ?? 'Não informada'); ?></td>
                     <td><?php echo (int) ($curso['carga_horaria_total'] ?? 0); ?>h</td>
                     <td>
                       <?php
@@ -143,3 +143,5 @@
 </body>
 
 </html>
+
+

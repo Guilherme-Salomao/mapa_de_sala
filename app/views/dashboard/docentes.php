@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -16,8 +16,8 @@
     $docentes      = $docentes ?? [];
     $totalDocentes = $totalDocentes ?? count($docentes);
 
-    $tituloPagina    = 'Manutencao de Docentes';
-    $subtituloPagina = 'Gerencie docentes, carga horaria e area de atuacao';
+    $tituloPagina    = 'Manutenção de Docentes';
+    $subtituloPagina = 'Gerencie docentes, carga horária e area de atuacao';
     $botaoTopoTexto  = 'Novo Docente';
     $botaoTopoLink   = '/mapa_de_sala/public/?page=docentes&action=cadastrar';
     $botaoTopoClasse = 'app-btn-primary';
@@ -30,7 +30,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Docentes - Sistema de Controle de Salas</title>
+  <title>Docentes - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -83,7 +83,7 @@
                     <th>Area de atuacao</th>
                     <th>Horas semanais</th>
                     <th>Status</th>
-                    <th class="text-end">Acoes</th>
+                    <th class="text-end">Ações</th>
                   </tr>
                 </thead>
 
@@ -146,3 +146,5 @@
 </body>
 
 </html>
+
+

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -18,17 +18,50 @@
     $cursoOfertaId = (int) ($cursoOfertaId ?? 0);
     $bloqueiosPorData = $bloqueiosPorData ?? [];
 
-    function periodoQuadroPorHorario(?string $horaInicio, ?string $horaFim): string
+    function labelTipoBloqueioQuadro(string $tipo): string
+    {
+        return $tipo === 'Parada Pedagogica' ? 'Parada Pedagógica' : $tipo;
+    }
+
+    function tituloBloqueioEhPonteQuadro(array $bloqueio): bool
+    {
+        $titulo = (string) ($bloqueio['titulo'] ?? '');
+
+        return $titulo !== '' && stripos($titulo, 'Ponte') !== false;
+    }
+
+    function textoPrincipalBloqueioQuadro(array $bloqueio): string
+    {
+        if (tituloBloqueioEhPonteQuadro($bloqueio)) {
+            return (string) ($bloqueio['titulo'] ?? 'Ponte');
+        }
+
+        return labelTipoBloqueioQuadro((string) ($bloqueio['tipo'] ?? 'Feriado'));
+    }
+
+    function mostrarTituloBloqueioQuadro(array $bloqueio): bool
+    {
+        $tipo = (string) ($bloqueio['tipo'] ?? '');
+        $titulo = (string) ($bloqueio['titulo'] ?? '');
+
+        if ($tipo === 'Parada Pedagogica' || tituloBloqueioEhPonteQuadro($bloqueio)) {
+            return false;
+        }
+
+        return $titulo !== '';
+    }
+
+    function periodoQuadroPorHorario(string $horaInicio, string $horaFim): string
     {
         if (empty($horaInicio) || empty($horaFim)) {
-            return 'Nao informado';
+            return 'Não informado';
         }
 
         $inicio = strtotime($horaInicio);
         $fim = strtotime($horaFim);
 
         if ($inicio === false || $fim === false || $fim <= $inicio) {
-            return 'Nao informado';
+            return 'Não informado';
         }
 
         $periodos = [];
@@ -48,7 +81,7 @@
             }
         }
 
-        return count($periodos) > 1 ? 'Integral' : ($periodos[0] ?? 'Nao informado');
+        return count($periodos) > 1 ? 'Integral' : ($periodos[0] ?? 'Não informado');
     }
 
     $tituloPagina = 'Quadro Horario';
@@ -76,7 +109,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quadro Horario - Sistema de Controle de Salas</title>
+  <title>Quadro Horario - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -192,11 +225,13 @@
                       <?php foreach ($bloqueiosDia as $bloqueioDia): ?>
                       <div class="border rounded p-2 mb-2 small bg-warning-subtle border-warning">
                         <div class="fw-semibold text-center">
-                          <?php echo htmlspecialchars($bloqueioDia['tipo'] ?? 'Evento'); ?>
+                          <?php echo htmlspecialchars(textoPrincipalBloqueioQuadro($bloqueioDia)); ?>
                         </div>
+                        <?php if (mostrarTituloBloqueioQuadro($bloqueioDia)): ?>
                         <div class="text-center">
                           <?php echo htmlspecialchars($bloqueioDia['titulo'] ?? 'Data bloqueada'); ?>
                         </div>
+                        <?php endif; ?>
                       </div>
                       <?php endforeach; ?>
                       <?php endif; ?>
@@ -246,7 +281,8 @@
                               </option>
                               <?php foreach ($docentesDisponiveisDia as $docente): ?>
                               <option value="<?php echo (int) $docente['id']; ?>"
-                                data-uc-ids="<?php echo htmlspecialchars((string) ($docente['uc_ids'] ?? '')); ?>">
+                                data-uc-ids="<?php echo htmlspecialchars((string) ($docente['uc_ids'] ?? '')); ?>"
+                                data-tem-escala="<?php echo (int) ($docente['tem_escala'] ?? 0); ?>">
                                 <?php echo htmlspecialchars($docente['nome'] ?? ''); ?>
                               </option>
                               <?php endforeach; ?>
@@ -275,6 +311,10 @@
                               <input class="form-check-input quick-ead" type="checkbox" name="ead_assincrona">
                               EAD/Assíncrona
                             </label>
+                            <label class="form-check small mb-0">
+                              <input class="form-check-input quick-troca-escala" type="checkbox" name="troca_escala">
+                              Troca de escala
+                            </label>
                           </div>
 
                           <div class="mb-2 d-none" id="docente2_<?php echo $dataId; ?>">
@@ -284,7 +324,8 @@
                               </option>
                               <?php foreach ($docentesDisponiveisDia as $docente): ?>
                               <option value="<?php echo (int) $docente['id']; ?>"
-                                data-uc-ids="<?php echo htmlspecialchars((string) ($docente['uc_ids'] ?? '')); ?>">
+                                data-uc-ids="<?php echo htmlspecialchars((string) ($docente['uc_ids'] ?? '')); ?>"
+                                data-tem-escala="<?php echo (int) ($docente['tem_escala'] ?? 0); ?>">
                                 <?php echo htmlspecialchars($docente['nome'] ?? ''); ?>
                               </option>
                               <?php endforeach; ?>
@@ -317,7 +358,8 @@
                                 </option>
                                 <?php foreach ($docentesBloco as $docente): ?>
                                 <option value="<?php echo (int) $docente['id']; ?>"
-                                  data-uc-ids="<?php echo htmlspecialchars((string) ($docente['uc_ids'] ?? '')); ?>">
+                                  data-uc-ids="<?php echo htmlspecialchars((string) ($docente['uc_ids'] ?? '')); ?>"
+                                  data-tem-escala="<?php echo (int) ($docente['tem_escala'] ?? 0); ?>">
                                   <?php echo htmlspecialchars($docente['nome'] ?? ''); ?>
                                 </option>
                                 <?php endforeach; ?>
@@ -326,7 +368,7 @@
                             <?php endforeach; ?>
                           </div>
 
-                          <button type="submit" class="btn btn-sm app-btn-primary w-100" <?php echo $cadastroDisponivel ? '' : 'disabled'; ?>>
+                          <button type="submit" class="btn btn-sm app-btn-primary w-100">
                             <i class="bi bi-save"></i> Salvar
                           </button>
                         </form>
@@ -343,6 +385,17 @@
                           $editDocente2Id = 'editDocente2_' . (int) $aula['id'];
                           $salasEdicao = $salasDisponiveisPorAula[(int) $aula['id']] ?? [];
                           $docentesEdicao = $docentesDisponiveisPorAula[(int) $aula['id']] ?? [];
+                          $temDocenteSemEscalaEdicao = false;
+                          foreach ($docentesEdicao as $docenteEdicao) {
+                              $docenteEdicaoId = (int) ($docenteEdicao['id'] ?? 0);
+                              if (
+                                  in_array($docenteEdicaoId, [$docentePrincipalId, $docente2Id], true)
+                                  && (int) ($docenteEdicao['tem_escala'] ?? 0) !== 1
+                              ) {
+                                  $temDocenteSemEscalaEdicao = true;
+                                  break;
+                              }
+                          }
                       ?>
                       <div class="border rounded p-2 mb-2 small">
                         <div class="fw-semibold">
@@ -372,8 +425,8 @@
                           <?php echo htmlspecialchars(implode(', ', array_map(fn($docente) => $docente['nome'], $aula['docentes']))); ?>
                         </div>
                         <?php endif; ?>
-                        <div class="d-flex gap-1 mt-2">
-                          <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
+                        <div class="app-calendar-actions mt-2">
+                          <button class="btn btn-sm btn-outline-primary app-calendar-action-btn" type="button" data-bs-toggle="collapse"
                             data-bs-target="#<?php echo $editId; ?>" aria-expanded="false" title="Editar aula">
                             <i class="bi bi-pencil"></i>
                           </button>
@@ -382,7 +435,7 @@
                             <input type="hidden" name="curso_oferta_id" value="<?php echo $cursoOfertaId; ?>">
                             <input type="hidden" name="mes" value="<?php echo $mes; ?>">
                             <input type="hidden" name="ano" value="<?php echo $ano; ?>">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <button type="submit" class="btn btn-sm btn-outline-danger app-calendar-action-btn" title="Excluir aula">
                               <i class="bi bi-trash"></i>
                             </button>
                           </form>
@@ -429,6 +482,7 @@
                                 <?php foreach ($docentesEdicao as $docente): ?>
                                 <option value="<?php echo (int) $docente['id']; ?>"
                                   data-uc-ids="<?php echo htmlspecialchars((string) ($docente['uc_ids'] ?? '')); ?>"
+                                  data-tem-escala="<?php echo (int) ($docente['tem_escala'] ?? 0); ?>"
                                   <?php echo $docentePrincipalId === (int) $docente['id'] ? 'selected' : ''; ?>>
                                   <?php echo htmlspecialchars($docente['nome'] ?? ''); ?>
                                 </option>
@@ -450,7 +504,7 @@
                             <label class="form-check small mb-2">
                               <input class="form-check-input quick-dupla" type="checkbox" name="dupla_docencia"
                                 data-target="<?php echo $editDocente2Id; ?>" <?php echo $temDupla ? 'checked' : ''; ?>>
-                              Dupla docÃªncia
+                              Dupla docência
                             </label>
 
                             <label class="form-check small mb-2">
@@ -465,6 +519,12 @@
                               EAD/Assíncrona
                             </label>
 
+                            <label class="form-check small mb-2">
+                              <input class="form-check-input quick-troca-escala" type="checkbox" name="troca_escala"
+                                <?php echo $temDocenteSemEscalaEdicao ? 'checked' : ''; ?>>
+                              Troca de escala
+                            </label>
+
                             <div class="mb-2 <?php echo $temDupla ? '' : 'd-none'; ?>" id="<?php echo $editDocente2Id; ?>">
                               <select class="form-select form-select-sm quick-docente2" name="docente_2_id"
                                 <?php echo $temDupla ? 'required' : ''; ?>>
@@ -472,6 +532,7 @@
                                 <?php foreach ($docentesEdicao as $docente): ?>
                                 <option value="<?php echo (int) $docente['id']; ?>"
                                   data-uc-ids="<?php echo htmlspecialchars((string) ($docente['uc_ids'] ?? '')); ?>"
+                                  data-tem-escala="<?php echo (int) ($docente['tem_escala'] ?? 0); ?>"
                                   <?php echo $docente2Id === (int) $docente['id'] ? 'selected' : ''; ?>>
                                   <?php echo htmlspecialchars($docente['nome'] ?? ''); ?>
                                 </option>
@@ -528,42 +589,9 @@
       return;
     }
 
-    if (e.target.matches('select[name="unidade_curricular_id"], .quick-bloco-uc')) {
-      const form = e.target.closest("form");
-      const ucId = e.target.value;
-
-      if (form) {
-        const selects = e.target.classList.contains("quick-bloco-uc")
-          ? [e.target.parentElement.querySelector(".quick-bloco-docente")]
-          : [
-              form.querySelector('select[name="docente_principal_id"]'),
-              form.querySelector('select[name="docente_2_id"]')
-            ];
-
-        selects.forEach(function(select) {
-          if (!select) return;
-
-          let selecionadoValido = true;
-
-          select.querySelectorAll("option").forEach(function(option) {
-            if (!option.value) return;
-
-            const ucs = (option.dataset.ucIds || "").split(",").filter(Boolean);
-            const mostrar = ucId && ucs.includes(ucId);
-            option.hidden = !mostrar;
-
-            if (option.selected && !mostrar) {
-              selecionadoValido = false;
-            }
-          });
-
-          if (!selecionadoValido) {
-            select.value = "";
-          }
-        });
-
-        atualizarProfessor2(form);
-      }
+    if (e.target.matches('select[name="unidade_curricular_id"], .quick-bloco-uc') || e.target.classList.contains("quick-troca-escala")) {
+      atualizarDocentesDoFormulario(e.target.closest("form"));
+      atualizarProfessor2(e.target.closest("form"));
     }
 
     if (e.target.classList.contains("quick-divisao")) {
@@ -651,7 +679,7 @@
   });
 
   document.addEventListener("change", function(e) {
-    if (e.target.classList.contains("quick-ead")) {
+    if (e.target.classList.contains("quick-ead") || e.target.matches('input[name="visita_tecnica"]')) {
       atualizarObrigatoriedadeSala(e.target.closest("form"));
     }
   });
@@ -662,8 +690,51 @@
     const sala = form.querySelector('select[name="sala_id"]');
     const ead = form.querySelector('.quick-ead');
 
-    if (sala && ead) {
-      sala.required = !ead.checked;
+    const visita = form.querySelector('input[name="visita_tecnica"]');
+
+    if (sala) {
+      sala.required = !((ead && ead.checked) || (visita && visita.checked));
+    }
+  }
+
+  function atualizarDocentesDoFormulario(form) {
+    if (!form) return;
+
+    const trocaEscala = Boolean(form.querySelector('input[name="troca_escala"]:checked'));
+
+    form.querySelectorAll(".quick-bloco-uc").forEach(function(selectUc) {
+      const selectDocente = selectUc.parentElement.querySelector(".quick-bloco-docente");
+      filtrarDocentesPorUc(selectDocente, selectUc.value, trocaEscala);
+    });
+
+    const ucPrincipal = form.querySelector('select[name="unidade_curricular_id"]');
+    const ucId = ucPrincipal ? ucPrincipal.value : "";
+
+    filtrarDocentesPorUc(form.querySelector('select[name="docente_principal_id"]'), ucId, trocaEscala);
+    filtrarDocentesPorUc(form.querySelector('select[name="docente_2_id"]'), ucId, trocaEscala);
+  }
+
+  function filtrarDocentesPorUc(select, ucId, trocaEscala) {
+    if (!select) return;
+
+    let selecionadoValido = true;
+
+    select.querySelectorAll("option").forEach(function(option) {
+      if (!option.value) return;
+
+      const ucs = (option.dataset.ucIds || "").split(",").filter(Boolean);
+      const temEscala = option.dataset.temEscala === "1";
+      const mostrar = Boolean(ucId) && ucs.includes(ucId) && (temEscala || trocaEscala);
+
+      option.hidden = !mostrar;
+
+      if (option.selected && !mostrar) {
+        selecionadoValido = false;
+      }
+    });
+
+    if (!selecionadoValido) {
+      select.value = "";
     }
   }
 
@@ -678,6 +749,7 @@
 
     const principalId = principal.value;
     const ucId = uc ? uc.value : "";
+    const trocaEscala = Boolean(form.querySelector('input[name="troca_escala"]:checked'));
     let selecionadoValido = true;
 
     professor2.querySelectorAll("option").forEach(function(option) {
@@ -685,7 +757,8 @@
 
       const esconderPorPrincipal = principalId && option.value === principalId;
       const ucs = (option.dataset.ucIds || "").split(",").filter(Boolean);
-      const esconderPorUc = !ucId || !ucs.includes(ucId);
+      const temEscala = option.dataset.temEscala === "1";
+      const esconderPorUc = !ucId || !ucs.includes(ucId) || (!temEscala && !trocaEscala);
       option.hidden = esconderPorPrincipal || esconderPorUc;
 
       if (option.selected && option.hidden) {
@@ -701,3 +774,4 @@
 </body>
 
 </html>
+

@@ -21,8 +21,12 @@ class Curso
                 co.curso_modelo_id,
                 co.nome,
                 co.codigo_oferta,
+                co.integral,
                 co.hora_inicio,
                 co.hora_fim,
+                co.hora_inicio_tarde,
+                co.hora_fim_tarde,
+                co.participa_parada_pedagogica,
                 co.aula_segunda,
                 co.aula_terca,
                 co.aula_quarta,
@@ -98,8 +102,12 @@ class Curso
                 curso_modelo_id,
                 nome,
                 codigo_oferta,
+                integral,
                 hora_inicio,
                 hora_fim,
+                hora_inicio_tarde,
+                hora_fim_tarde,
+                participa_parada_pedagogica,
                 aula_segunda,
                 aula_terca,
                 aula_quarta,
@@ -224,11 +232,13 @@ class Curso
             return ['sucesso' => false, 'mensagem' => 'Data inicial invalida.'];
         }
 
-        $horaInicio = substr((string) $turma['hora_inicio'], 0, 5);
-        $horaFim = substr((string) $turma['hora_fim'], 0, 5);
-        $minutosDia = $this->minutosEntre($horaInicio, $horaFim);
+        $blocosHorario = $this->blocosHorarioTurma($turma);
+        $minutosDia = array_sum(array_map(
+            fn(array $bloco): int => $this->minutosEntre($bloco['inicio'], $bloco['fim']),
+            $blocosHorario
+        ));
 
-        if ($minutosDia <= 0) {
+        if (empty($blocosHorario) || $minutosDia <= 0) {
             return ['sucesso' => false, 'mensagem' => 'Horario da turma invalido.'];
         }
 
@@ -264,7 +274,7 @@ class Curso
             $ucIndex = 0;
             $minutosRestantesUc = 0;
             $aulasCriadas = 0;
-            $diasSemSala = 0;
+            $blocosSemSala = 0;
             $guard = 0;
 
             $this->avancarParaProximaUcPendente($ucs, $minutosLancados, $ucIndex, $minutosRestantesUc);
@@ -274,51 +284,64 @@ class Curso
 
                 if (
                     ! in_array((int) date('N', strtotime($dataAtual)), $diasPermitidos, true) ||
-                    $this->dataBloqueada($dataAtual) ||
-                    $this->turmaTemAulaNoDia($turmaId, $dataAtual, $horaInicio, $horaFim)
+                    $this->dataBloqueada($dataAtual, $turma) ||
+                    $this->turmaTemAulaEmAlgumBloco($turmaId, $dataAtual, $blocosHorario)
                 ) {
                     $dataAtual = date('Y-m-d', strtotime($dataAtual . ' +1 day'));
                     continue;
                 }
 
-                $salaDiaId = $this->salaDisponivelNoDia($salaPreferencialId, $dataAtual, $horaInicio, $horaFim, $turmaId)
-                    ? $salaPreferencialId
-                    : null;
-
-                if ($salaPreferencialId !== null && $salaDiaId === null) {
-                    $diasSemSala++;
-                }
-
-                $cursor = $horaInicio;
-                $minutosRestantesDia = $minutosDia;
-
-                while ($minutosRestantesDia > 0 && $ucIndex < count($ucs)) {
-                    if ($minutosRestantesUc <= 0) {
-                        $ucIndex++;
-                        $this->avancarParaProximaUcPendente($ucs, $minutosLancados, $ucIndex, $minutosRestantesUc);
-
-                        if ($ucIndex >= count($ucs)) {
-                            break;
-                        }
+                foreach ($blocosHorario as $blocoHorario) {
+                    if ($ucIndex >= count($ucs)) {
+                        break;
                     }
 
-                    $minutosBloco = min($minutosRestantesUc, $minutosRestantesDia);
-                    $fimBloco = $this->somarMinutos($cursor, $minutosBloco);
+                    $horaInicioBloco = $blocoHorario['inicio'];
+                    $horaFimBloco = $blocoHorario['fim'];
 
-                    $this->inserirAulaGerada([
-                        'curso_oferta_id' => $turmaId,
-                        'unidade_curricular_id' => (int) $ucs[$ucIndex]['id'],
-                        'sala_id' => $salaDiaId,
-                        'data_aula' => $dataAtual,
-                        'hora_inicio' => $cursor,
-                        'hora_fim' => $fimBloco,
-                        'divisao_por_hora' => $minutosBloco < $minutosDia ? 1 : 0,
-                    ]);
+                    if ($this->turmaTemAulaNoDia($turmaId, $dataAtual, $horaInicioBloco, $horaFimBloco)) {
+                        continue;
+                    }
 
-                    $aulasCriadas++;
-                    $cursor = $fimBloco;
-                    $minutosRestantesDia -= $minutosBloco;
-                    $minutosRestantesUc -= $minutosBloco;
+                    $salaBlocoId = $this->salaDisponivelNoDia($salaPreferencialId, $dataAtual, $horaInicioBloco, $horaFimBloco, $turmaId)
+                        ? $salaPreferencialId
+                        : null;
+
+                    if ($salaPreferencialId !== null && $salaBlocoId === null) {
+                        $blocosSemSala++;
+                    }
+
+                    $cursor = $horaInicioBloco;
+                    $minutosRestantesBloco = $this->minutosEntre($horaInicioBloco, $horaFimBloco);
+
+                    while ($minutosRestantesBloco > 0 && $ucIndex < count($ucs)) {
+                        if ($minutosRestantesUc <= 0) {
+                            $ucIndex++;
+                            $this->avancarParaProximaUcPendente($ucs, $minutosLancados, $ucIndex, $minutosRestantesUc);
+
+                            if ($ucIndex >= count($ucs)) {
+                                break;
+                            }
+                        }
+
+                        $minutosBloco = min($minutosRestantesUc, $minutosRestantesBloco);
+                        $fimBloco = $this->somarMinutos($cursor, $minutosBloco);
+
+                        $this->inserirAulaGerada([
+                            'curso_oferta_id' => $turmaId,
+                            'unidade_curricular_id' => (int) $ucs[$ucIndex]['id'],
+                            'sala_id' => $salaBlocoId,
+                            'data_aula' => $dataAtual,
+                            'hora_inicio' => $cursor,
+                            'hora_fim' => $fimBloco,
+                            'divisao_por_hora' => $minutosBloco < $minutosRestantesBloco ? 1 : 0,
+                        ]);
+
+                        $aulasCriadas++;
+                        $cursor = $fimBloco;
+                        $minutosRestantesBloco -= $minutosBloco;
+                        $minutosRestantesUc -= $minutosBloco;
+                    }
                 }
 
                 $dataAtual = date('Y-m-d', strtotime($dataAtual . ' +1 day'));
@@ -341,7 +364,7 @@ class Curso
 
             return [
                 'sucesso' => true,
-                'mensagem' => $aulasCriadas . ' aula(s) geradas para completar o restante do curso. Dias sem sala: ' . $diasSemSala . '. Previsao de termino: ' . date('d/m/Y', strtotime($dataAtual . ' -1 day')) . '.',
+                'mensagem' => $aulasCriadas . ' aula(s) geradas para completar o restante do curso. Blocos sem sala: ' . $blocosSemSala . '. Previsao de termino: ' . date('d/m/Y', strtotime($dataAtual . ' -1 day')) . '.',
             ];
         } catch (Throwable $e) {
             if ($this->conn->inTransaction()) {
@@ -360,8 +383,12 @@ class Curso
                     curso_modelo_id,
                     nome,
                     codigo_oferta,
+                    integral,
                     hora_inicio,
                     hora_fim,
+                    hora_inicio_tarde,
+                    hora_fim_tarde,
+                    participa_parada_pedagogica,
                     aula_segunda,
                     aula_terca,
                     aula_quarta,
@@ -374,8 +401,12 @@ class Curso
                     :curso_modelo_id,
                     :nome,
                     :codigo_oferta,
+                    :integral,
                     :hora_inicio,
                     :hora_fim,
+                    :hora_inicio_tarde,
+                    :hora_fim_tarde,
+                    :participa_parada_pedagogica,
                     :aula_segunda,
                     :aula_terca,
                     :aula_quarta,
@@ -393,8 +424,12 @@ class Curso
                 ':curso_modelo_id'     => $dados['curso_modelo_id'] ?: null,
                 ':nome'                => $dados['nome'],
                 ':codigo_oferta'       => $dados['codigo_oferta'],
+                ':integral'            => (int) $dados['integral'],
                 ':hora_inicio'         => $dados['hora_inicio'] ?: null,
                 ':hora_fim'            => $dados['hora_fim'] ?: null,
+                ':hora_inicio_tarde'   => ! empty($dados['integral']) ? ($dados['hora_inicio_tarde'] ?: null) : null,
+                ':hora_fim_tarde'      => ! empty($dados['integral']) ? ($dados['hora_fim_tarde'] ?: null) : null,
+                ':participa_parada_pedagogica' => (int) $dados['participa_parada_pedagogica'],
                 ':aula_segunda'        => (int) $dados['aula_segunda'],
                 ':aula_terca'          => (int) $dados['aula_terca'],
                 ':aula_quarta'         => (int) $dados['aula_quarta'],
@@ -597,20 +632,41 @@ class Curso
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    private function dataBloqueada(string $data): bool
+    private function turmaTemAulaEmAlgumBloco(int $turmaId, string $data, array $blocosHorario): bool
+    {
+        foreach ($blocosHorario as $bloco) {
+            if (! $this->turmaTemAulaNoDia($turmaId, $data, $bloco['inicio'], $bloco['fim'])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function dataBloqueada(string $data, array $turma): bool
     {
         $sql = "
-            SELECT id
+            SELECT tipo
             FROM calendario_bloqueios
-            WHERE data = :data
-              AND status = 'Ativo'
-            LIMIT 1
+            WHERE status = 'Ativo'
+              AND data <= :data
+              AND COALESCE(data_fim, data) >= :data
         ";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([':data' => $data]);
 
-        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $bloqueio) {
+            if (($bloqueio['tipo'] ?? '') !== 'Parada Pedagogica') {
+                return true;
+            }
+
+            if ((int) ($turma['participa_parada_pedagogica'] ?? 1) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function diasPermitidosTurma(array $turma): array
@@ -647,6 +703,28 @@ class Curso
         return (int) (($fim - $inicio) / 60);
     }
 
+    private function blocosHorarioTurma(array $turma): array
+    {
+        $blocos = [];
+        $horaInicio = substr((string) ($turma['hora_inicio'] ?? ''), 0, 5);
+        $horaFim = substr((string) ($turma['hora_fim'] ?? ''), 0, 5);
+
+        if ($this->minutosEntre($horaInicio, $horaFim) > 0) {
+            $blocos[] = ['inicio' => $horaInicio, 'fim' => $horaFim];
+        }
+
+        if ((int) ($turma['integral'] ?? 0) === 1) {
+            $horaInicioTarde = substr((string) ($turma['hora_inicio_tarde'] ?? ''), 0, 5);
+            $horaFimTarde = substr((string) ($turma['hora_fim_tarde'] ?? ''), 0, 5);
+
+            if ($this->minutosEntre($horaInicioTarde, $horaFimTarde) > 0) {
+                $blocos[] = ['inicio' => $horaInicioTarde, 'fim' => $horaFimTarde];
+            }
+        }
+
+        return $blocos;
+    }
+
     private function somarMinutos(string $hora, int $minutos): string
     {
         return date('H:i:s', strtotime($hora) + ($minutos * 60));
@@ -660,8 +738,12 @@ class Curso
                     curso_modelo_id = :curso_modelo_id,
                     nome = :nome,
                     codigo_oferta = :codigo_oferta,
+                    integral = :integral,
                     hora_inicio = :hora_inicio,
                     hora_fim = :hora_fim,
+                    hora_inicio_tarde = :hora_inicio_tarde,
+                    hora_fim_tarde = :hora_fim_tarde,
+                    participa_parada_pedagogica = :participa_parada_pedagogica,
                     aula_segunda = :aula_segunda,
                     aula_terca = :aula_terca,
                     aula_quarta = :aula_quarta,
@@ -680,8 +762,12 @@ class Curso
                 ':curso_modelo_id'     => $dados['curso_modelo_id'] ?: null,
                 ':nome'                => $dados['nome'],
                 ':codigo_oferta'       => $dados['codigo_oferta'],
+                ':integral'            => (int) $dados['integral'],
                 ':hora_inicio'         => $dados['hora_inicio'] ?: null,
                 ':hora_fim'            => $dados['hora_fim'] ?: null,
+                ':hora_inicio_tarde'   => ! empty($dados['integral']) ? ($dados['hora_inicio_tarde'] ?: null) : null,
+                ':hora_fim_tarde'      => ! empty($dados['integral']) ? ($dados['hora_fim_tarde'] ?: null) : null,
+                ':participa_parada_pedagogica' => (int) $dados['participa_parada_pedagogica'],
                 ':aula_segunda'        => (int) $dados['aula_segunda'],
                 ':aula_terca'          => (int) $dados['aula_terca'],
                 ':aula_quarta'         => (int) $dados['aula_quarta'],

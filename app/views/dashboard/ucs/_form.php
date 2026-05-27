@@ -34,7 +34,7 @@
     </div>
 
     <div class="col-12 col-md-3">
-      <label for="carga_horaria" class="form-label">Carga horaria</label>
+      <label for="carga_horaria" class="form-label">Carga horária</label>
       <div class="input-group">
         <span class="input-group-text app-input-icon">
           <i class="bi bi-hourglass-split"></i>
@@ -42,7 +42,7 @@
         <input type="number" class="form-control" id="carga_horaria" name="carga_horaria" min="1" step="1"
           placeholder="Ex.: 80" value="<?php echo htmlspecialchars($ucForm['carga_horaria'] ?? ''); ?>" required>
         <span class="input-group-text">h</span>
-        <div class="invalid-feedback">Informe a carga horaria.</div>
+        <div class="invalid-feedback">Informe a carga horária.</div>
       </div>
     </div>
 

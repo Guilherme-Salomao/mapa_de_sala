@@ -12,7 +12,7 @@ class Docente
         $this->conn = $database->connect();
     }
 
-    public function listar(string $busca = '', string $status = 'todos'): array
+    public function listar(string $busca = '', string $status = 'todos', array $escopo = ['tipo' => 'todos', 'ids' => []]): array
     {
         $sql = "
             SELECT
@@ -27,6 +27,7 @@ class Docente
                 u.email AS usuario_email
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
+            LEFT JOIN areas a ON a.nome = d.area_atuacao
             WHERE 1 = 1
         ";
 
@@ -41,6 +42,8 @@ class Docente
             $sql .= " AND d.status = :status";
             $params[':status'] = $status;
         }
+
+        $this->aplicarEscopo($sql, $params, $escopo);
 
         $sql .= " ORDER BY u.nome ASC";
 
@@ -50,12 +53,13 @@ class Docente
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function contar(string $busca = '', string $status = 'todos'): int
+    public function contar(string $busca = '', string $status = 'todos', array $escopo = ['tipo' => 'todos', 'ids' => []]): int
     {
         $sql = "
             SELECT COUNT(*) AS total
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
+            LEFT JOIN areas a ON a.nome = d.area_atuacao
             WHERE 1 = 1
         ";
 
@@ -71,6 +75,8 @@ class Docente
             $params[':status'] = $status;
         }
 
+        $this->aplicarEscopo($sql, $params, $escopo);
+
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
         $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -78,7 +84,7 @@ class Docente
         return (int) ($resultado['total'] ?? 0);
     }
 
-    public function buscarPorId(int $id): ?array
+    public function buscarPorId(int $id, array $escopo = ['tipo' => 'todos', 'ids' => []]): ?array
     {
         $sql = "
             SELECT
@@ -92,12 +98,16 @@ class Docente
                 u.email AS usuario_email
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
+            LEFT JOIN areas a ON a.nome = d.area_atuacao
             WHERE d.id = :id
-            LIMIT 1
         ";
 
+        $params = [':id' => $id];
+        $this->aplicarEscopo($sql, $params, $escopo);
+        $sql .= " LIMIT 1";
+
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([':id' => $id]);
+        $stmt->execute($params);
 
         $docente = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -239,6 +249,32 @@ class Docente
                 ':observacoes'    => $dados['observacoes'],
             ]);
 
+            if (! empty($dados['usuario_nome']) && ! empty($dados['usuario_email'])) {
+                $stmtUsuario = $this->conn->prepare("
+                    UPDATE usuarios
+                    SET nome = :nome,
+                        email = :email
+                    WHERE id = :id
+                ");
+                $stmtUsuario->execute([
+                    ':id' => $dados['usuario_id'],
+                    ':nome' => $dados['usuario_nome'],
+                    ':email' => $dados['usuario_email'],
+                ]);
+            }
+
+            if (! empty($dados['senha_hash'])) {
+                $stmtSenha = $this->conn->prepare("
+                    UPDATE usuarios
+                    SET senha = :senha
+                    WHERE id = :id
+                ");
+                $stmtSenha->execute([
+                    ':id' => $dados['usuario_id'],
+                    ':senha' => $dados['senha_hash'],
+                ]);
+            }
+
             $this->removerEscala((int) $dados['id']);
             $this->salvarEscala((int) $dados['id'], $dados['escala'] ?? []);
             $this->salvarUcsDocente((int) $dados['id'], $dados['unidades_curriculares'] ?? []);
@@ -307,17 +343,19 @@ class Docente
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function listarAreas(): array
+    public function listarAreas(array $escopo = ['tipo' => 'todos', 'ids' => []]): array
     {
         $sql = "
             SELECT id, nome, status
             FROM areas
             WHERE status = 'Ativa'
-            ORDER BY nome ASC
         ";
+        $params = [];
+        $this->aplicarEscopoAreas($sql, $params, $escopo);
+        $sql .= " ORDER BY nome ASC";
 
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -425,5 +463,55 @@ class Docente
         $sql = "DELETE FROM docente_escala WHERE docente_id = :docente_id";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([':docente_id' => $docenteId]);
+    }
+
+    private function aplicarEscopo(string &$sql, array &$params, array $escopo): void
+    {
+        $tipo = $escopo['tipo'] ?? 'todos';
+        $ids = array_values(array_filter(array_map('intval', $escopo['ids'] ?? [])));
+
+        if ($tipo === 'todos') {
+            return;
+        }
+
+        if ($tipo !== 'areas' || empty($ids)) {
+            $sql .= " AND 1 = 0";
+            return;
+        }
+
+        $placeholders = [];
+
+        foreach ($ids as $index => $id) {
+            $placeholder = ':escopo_docente_area_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $id;
+        }
+
+        $sql .= " AND a.id IN (" . implode(',', $placeholders) . ")";
+    }
+
+    private function aplicarEscopoAreas(string &$sql, array &$params, array $escopo): void
+    {
+        $tipo = $escopo['tipo'] ?? 'todos';
+        $ids = array_values(array_filter(array_map('intval', $escopo['ids'] ?? [])));
+
+        if ($tipo === 'todos') {
+            return;
+        }
+
+        if ($tipo !== 'areas' || empty($ids)) {
+            $sql .= " AND 1 = 0";
+            return;
+        }
+
+        $placeholders = [];
+
+        foreach ($ids as $index => $id) {
+            $placeholder = ':escopo_area_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $id;
+        }
+
+        $sql .= " AND id IN (" . implode(',', $placeholders) . ")";
     }
 }

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -18,8 +18,7 @@
     $registroForm = $registroForm ?? null;
 
     $formEdicao = ! empty($registroForm);
-    $formAction = $formEdicao
-        ? '/mapa_de_sala/public/?page=educacao_corporativa&action=atualizar'
+    $formAction = $formEdicao ? '/mapa_de_sala/public/?page=educacao_corporativa&action=atualizar'
         : '/mapa_de_sala/public/?page=educacao_corporativa&action=salvar';
 
     $formDocenteId = (int) ($registroForm['docente_id'] ?? ($_GET['docente_id'] ?? 0));
@@ -40,7 +39,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Educacao Corporativa - Sistema de Controle de Salas</title>
+  <title>Educacao Corporativa - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -181,7 +180,7 @@
                     <th>Data</th>
                     <th>Curso</th>
                     <th>Status</th>
-                    <th class="text-end">Acoes</th>
+                    <th class="text-end">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -202,14 +201,14 @@
                       </span>
                     </td>
                     <td class="text-end">
-                      <div class="d-flex justify-content-end gap-2">
+                      <div class="app-actions">
                         <a href="/mapa_de_sala/public/?page=educacao_corporativa&action=editar&id=<?php echo (int) $registro['id']; ?>"
-                          class="btn btn-sm btn-outline-primary">
+                          class="btn btn-sm btn-outline-primary app-action-btn">
                           <i class="bi bi-pencil"></i> Editar
                         </a>
                         <form method="POST" action="/mapa_de_sala/public/?page=educacao_corporativa&action=excluir">
                           <input type="hidden" name="id" value="<?php echo (int) $registro['id']; ?>">
-                          <button type="submit" class="btn btn-sm btn-outline-danger">
+                          <button type="submit" class="btn btn-sm btn-outline-danger app-action-btn">
                             <i class="bi bi-trash"></i> Excluir
                           </button>
                         </form>
@@ -252,3 +251,5 @@
 </body>
 
 </html>
+
+

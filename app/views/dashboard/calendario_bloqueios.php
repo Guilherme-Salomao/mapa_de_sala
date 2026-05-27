@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -17,20 +17,25 @@
     $bloqueioForm = $bloqueioForm ?? null;
 
     $formEdicao = ! empty($bloqueioForm);
-    $formAction = $formEdicao
-        ? '/mapa_de_sala/public/?page=calendario&action=atualizar'
+    $formAction = $formEdicao ? '/mapa_de_sala/public/?page=calendario&action=atualizar'
         : '/mapa_de_sala/public/?page=calendario&action=salvar';
 
     $formData = $bloqueioForm['data'] ?? ($_GET['data'] ?? '');
+    $formDataFim = $bloqueioForm['data_fim'] ?? ($_GET['data_fim'] ?? '');
     $formTitulo = $bloqueioForm['titulo'] ?? ($_GET['titulo'] ?? '');
-    $formTipo = $bloqueioForm['tipo'] ?? ($_GET['tipo_bloqueio'] ?? 'Evento');
+    $formTipo = $bloqueioForm['tipo'] ?? ($_GET['tipo_bloqueio'] ?? 'Feriado');
     $formDescricao = $bloqueioForm['descricao'] ?? ($_GET['descricao'] ?? '');
     $formStatus = $bloqueioForm['status'] ?? ($_GET['status_bloqueio'] ?? 'Ativo');
 
     $tituloPagina = 'Calendario';
-    $subtituloPagina = 'Cadastre feriados, recessos e eventos que bloqueiam lancamento de aula';
+    $subtituloPagina = 'Cadastre feriados, recessos e paradas pedagogicas';
     $botaoTopoTexto = '';
     $botaoTopoLink = '';
+
+    function labelTipoBloqueio(string $tipo): string
+    {
+        return $tipo === 'Parada Pedagogica' ? 'Parada Pedagógica' : $tipo;
+    }
 ?>
 
 <!doctype html>
@@ -39,7 +44,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calendario - Sistema de Controle de Salas</title>
+  <title>Calendario - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -81,12 +86,18 @@
               <?php endif; ?>
 
               <div class="col-12 col-md-2">
-                <label class="form-label">Data</label>
+                <label class="form-label">Data inicial</label>
                 <input type="date" name="data" class="form-control"
                   value="<?php echo htmlspecialchars($formData); ?>" required>
               </div>
 
-              <div class="col-12 col-md-5">
+              <div class="col-12 col-md-2 calendario-data-fim">
+                <label class="form-label">Data final</label>
+                <input type="date" name="data_fim" class="form-control"
+                  value="<?php echo htmlspecialchars($formDataFim); ?>">
+              </div>
+
+              <div class="col-12 col-md-3">
                 <label class="form-label">Titulo</label>
                 <input type="text" name="titulo" class="form-control" maxlength="150"
                   value="<?php echo htmlspecialchars($formTitulo); ?>" required>
@@ -95,9 +106,9 @@
               <div class="col-6 col-md-2">
                 <label class="form-label">Tipo</label>
                 <select name="tipo" class="form-select" required>
-                  <?php foreach (['Feriado', 'Evento', 'Recesso', 'Outro'] as $tipoOpcao): ?>
+                  <?php foreach (['Feriado', 'Recesso', 'Parada Pedagogica'] as $tipoOpcao): ?>
                   <option value="<?php echo $tipoOpcao; ?>" <?php echo $formTipo === $tipoOpcao ? 'selected' : ''; ?>>
-                    <?php echo $tipoOpcao; ?>
+                    <?php echo htmlspecialchars(labelTipoBloqueio($tipoOpcao)); ?>
                   </option>
                   <?php endforeach; ?>
                 </select>
@@ -178,7 +189,7 @@
                     <th>Data</th>
                     <th>Tipo</th>
                     <th>Status</th>
-                    <th class="text-end">Acoes</th>
+                    <th class="text-end">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -193,22 +204,25 @@
                     </td>
                     <td>
                       <?php echo htmlspecialchars(date('d/m/Y', strtotime($bloqueio['data']))); ?>
+                      <?php if (! empty($bloqueio['data_fim'])): ?>
+                      <div class="small text-muted">ate <?php echo htmlspecialchars(date('d/m/Y', strtotime($bloqueio['data_fim']))); ?></div>
+                      <?php endif; ?>
                     </td>
-                    <td><?php echo htmlspecialchars($bloqueio['tipo'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars(labelTipoBloqueio($bloqueio['tipo'] ?? '')); ?></td>
                     <td>
                       <span class="badge <?php echo ($bloqueio['status'] ?? '') === 'Ativo' ? 'text-bg-success' : 'text-bg-secondary'; ?>">
                         <?php echo htmlspecialchars($bloqueio['status'] ?? ''); ?>
                       </span>
                     </td>
                     <td class="text-end">
-                      <div class="d-flex justify-content-end gap-2">
+                      <div class="app-actions">
                         <a href="/mapa_de_sala/public/?page=calendario&action=editar&id=<?php echo (int) $bloqueio['id']; ?>"
-                          class="btn btn-sm btn-outline-primary">
+                          class="btn btn-sm btn-outline-primary app-action-btn">
                           <i class="bi bi-pencil"></i> Editar
                         </a>
                         <form method="POST" action="/mapa_de_sala/public/?page=calendario&action=excluir">
                           <input type="hidden" name="id" value="<?php echo (int) $bloqueio['id']; ?>">
-                          <button type="submit" class="btn btn-sm btn-outline-danger">
+                          <button type="submit" class="btn btn-sm btn-outline-danger app-action-btn">
                             <i class="bi bi-trash"></i> Excluir
                           </button>
                         </form>
@@ -247,7 +261,24 @@
       window.location.href = "/mapa_de_sala/public/?page=logout";
     }
   });
+
+  const tipoCalendario = document.querySelector('select[name="tipo"]');
+  const campoDataFim = document.querySelector(".calendario-data-fim");
+  const inputDataFim = document.querySelector('input[name="data_fim"]');
+
+  function atualizarDataFimCalendario() {
+    const mostrar = tipoCalendario && tipoCalendario.value === "Recesso";
+    if (campoDataFim) campoDataFim.classList.toggle("d-none", !mostrar);
+    if (inputDataFim) inputDataFim.required = !!mostrar;
+  }
+
+  if (tipoCalendario) {
+    tipoCalendario.addEventListener("change", atualizarDataFimCalendario);
+    atualizarDataFimCalendario();
+  }
   </script>
 </body>
 
 </html>
+
+
