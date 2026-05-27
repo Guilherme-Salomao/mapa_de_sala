@@ -1,3 +1,4 @@
+app/config/config.php
 assets/config/config.php
 .env
 .DS_Store
