@@ -16,10 +16,12 @@ class RelatorioTurmaController
     {
         $this->exigirLogin();
 
-        $turmas = $this->relatorioModel->listarTurmas((new AccessControl())->escopo());
+        $escopo = (new AccessControl())->escopo();
+        $turmas = $this->relatorioModel->listarTurmas($escopo);
+        $resumoTurmas = $this->relatorioModel->resumoTurmas($escopo);
         $turmaId = (int) ($_GET['turma_id'] ?? 0);
 
-        $turmaSelecionada = $turmaId > 0 ? $this->relatorioModel->buscarTurma($turmaId) : null;
+        $turmaSelecionada = $turmaId > 0 ? $this->relatorioModel->buscarTurma($turmaId, $escopo) : null;
         $linhas = $turmaSelecionada ? $this->relatorioModel->relatorioPorUc($turmaId) : [];
         $datasTurma = $turmaSelecionada ? $this->relatorioModel->datasTurma($turmaId) : ['data_inicial' => null, 'data_final' => null];
 

@@ -10,6 +10,7 @@
 
     $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuario';
     $turmas = $turmas ?? [];
+    $resumoTurmas = $resumoTurmas ?? [];
     $turmaId = (int) ($turmaId ?? 0);
     $linhas = $linhas ?? [];
     $datasTurma = $datasTurma ?? ['data_inicial' => null, 'data_final' => null];
@@ -31,6 +32,10 @@
     $turmaConcluida = $totalCarga > 0 && $totalLancadas >= $totalCarga;
     $corDataFinal = $turmaConcluida ? '#198754' : '#f97316';
     $totalDadas = $totalLancadas;
+
+    $formatarDataTurma = static function (?string $data): string {
+        return ! empty($data) ? date('d/m/Y', strtotime($data)) : '-';
+    };
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -73,6 +78,24 @@
   .horas-pendente {
     background: #fff3cd !important;
   }
+
+  .relatorio-turma-resumo th {
+    background: #0d6efd;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  .relatorio-turma-resumo td {
+    vertical-align: middle;
+  }
+
+  .badge-concluida {
+    background: #198754;
+  }
+
+  .badge-andamento {
+    background: #f97316;
+  }
   </style>
 
   <script>
@@ -96,6 +119,74 @@
 
         <section class="col-12 col-md-9 col-lg-10 p-3 p-md-4 app-content">
           <?php require_once __DIR__ . '/../components/page_header.php'; ?>
+
+          <div class="app-card p-3 mb-3">
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-3">
+              <div>
+                <h2 class="h5 mb-1">Início e fim das turmas</h2>
+                <div class="text-muted small">
+                  A data final só aparece quando a turma atingiu a carga horária total do curso.
+                </div>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-bordered relatorio-turma-resumo mb-0">
+                <thead>
+                  <tr>
+                    <th>Turma</th>
+                    <th>Curso</th>
+                    <th>Área</th>
+                    <th class="text-center">Carga Total</th>
+                    <th class="text-center">Horas Lançadas</th>
+                    <th class="text-center">A Lançar</th>
+                    <th class="text-center">Data Inicial</th>
+                    <th class="text-center">Data Final</th>
+                    <th class="text-center">Situação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php if (! empty($resumoTurmas)): ?>
+                  <?php foreach ($resumoTurmas as $resumo): ?>
+                  <?php
+                      $cargaResumo = (float) ($resumo['carga_horaria_total'] ?? 0);
+                      $lancadasResumo = round((float) ($resumo['horas_lancadas'] ?? 0), 2);
+                      $faltantesResumo = max($cargaResumo - $lancadasResumo, 0);
+                      $concluidaResumo = $cargaResumo > 0 && $lancadasResumo >= $cargaResumo;
+                      $dataFimResumo = $concluidaResumo ? ($resumo['ultima_aula'] ?? null) : null;
+                  ?>
+                  <tr>
+                    <td>
+                      <strong><?php echo htmlspecialchars($resumo['nome'] ?? ''); ?></strong><br>
+                      <span class="small text-muted"><?php echo htmlspecialchars($resumo['codigo_oferta'] ?? ''); ?></span>
+                    </td>
+                    <td><?php echo htmlspecialchars($resumo['curso_nome'] ?? '-'); ?></td>
+                    <td><?php echo htmlspecialchars($resumo['area_nome'] ?? '-'); ?></td>
+                    <td class="text-center"><?php echo number_format($cargaResumo, 0, ',', '.'); ?>h</td>
+                    <td class="text-center"><?php echo number_format($lancadasResumo, 1, ',', '.'); ?>h</td>
+                    <td class="text-center"><?php echo number_format($faltantesResumo, 1, ',', '.'); ?>h</td>
+                    <td class="text-center"><?php echo htmlspecialchars($formatarDataTurma($resumo['data_inicio'] ?? null)); ?></td>
+                    <td class="text-center fw-bold <?php echo $concluidaResumo ? 'text-success' : 'text-warning'; ?>">
+                      <?php echo htmlspecialchars($formatarDataTurma($dataFimResumo)); ?>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge <?php echo $concluidaResumo ? 'badge-concluida' : 'badge-andamento'; ?>">
+                        <?php echo $concluidaResumo ? 'Carga atingida' : 'Em andamento'; ?>
+                      </span>
+                    </td>
+                  </tr>
+                  <?php endforeach; ?>
+                  <?php else: ?>
+                  <tr>
+                    <td colspan="9" class="text-center text-muted py-4">
+                      Nenhuma turma encontrada para sua área.
+                    </td>
+                  </tr>
+                  <?php endif; ?>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
           <div class="app-card p-3 mb-3">
             <form method="GET" action="/mapa_de_sala/public/" class="row g-2 align-items-end">
@@ -139,9 +230,9 @@
                 </strong>
               </div>
               <div class="small flex-shrink-0">
-                Data prevista para termino:
+                Data final:
                 <strong style="color: <?php echo $corDataFinal; ?>;">
-                  <?php echo ! empty($datasTurma['data_final']) ? htmlspecialchars(date('d/m/Y', strtotime($datasTurma['data_final'])))  : '-'; ?>
+                  <?php echo $turmaConcluida && ! empty($datasTurma['data_final']) ? htmlspecialchars(date('d/m/Y', strtotime($datasTurma['data_final'])))  : '-'; ?>
                 </strong>
               </div>
             </div>

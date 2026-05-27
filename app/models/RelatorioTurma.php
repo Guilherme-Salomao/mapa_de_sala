@@ -34,7 +34,60 @@ class RelatorioTurma
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function buscarTurma(int $id): ?array
+    public function resumoTurmas(array $escopo = ['tipo' => 'todos', 'ids' => []]): array
+    {
+        $sql = "
+            SELECT
+                co.id,
+                co.nome,
+                co.codigo_oferta,
+                co.status,
+                cm.nome AS curso_nome,
+                a.nome AS area_nome,
+                COALESCE(
+                    NULLIF(cm.carga_horaria_total, 0),
+                    (
+                        SELECT COALESCE(SUM(uc_total.carga_horaria), 0)
+                        FROM unidades_curriculares uc_total
+                        WHERE uc_total.curso_modelo_id = cm.id
+                          AND uc_total.status = 'Ativa'
+                    )
+                ) AS carga_horaria_total,
+                COALESCE(SUM(
+                    CASE
+                        WHEN qh.id IS NULL THEN 0
+                        ELSE TIME_TO_SEC(TIMEDIFF(qh.hora_fim, qh.hora_inicio)) / 3600
+                    END
+                ), 0) AS horas_lancadas,
+                MIN(qh.data_aula) AS data_inicio,
+                MAX(qh.data_aula) AS ultima_aula
+            FROM cursos_ofertas co
+            LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
+            LEFT JOIN areas a ON a.id = cm.area_id
+            LEFT JOIN quadro_horario qh
+                ON qh.curso_oferta_id = co.id
+                AND qh.status = 'Ativa'
+            WHERE 1 = 1
+        ";
+
+        $params = [];
+        $this->aplicarEscopo($sql, $params, $escopo);
+
+        $sql .= "
+            GROUP BY co.id, co.nome, co.codigo_oferta, co.status, cm.nome, a.nome, cm.carga_horaria_total, cm.id
+            ORDER BY
+                CASE co.status WHEN 'Em andamento' THEN 0 ELSE 1 END,
+                co.nome ASC,
+                co.codigo_oferta ASC
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function buscarTurma(int $id, array $escopo = ['tipo' => 'todos', 'ids' => []]): ?array
     {
         $sql = "
             SELECT
@@ -49,11 +102,14 @@ class RelatorioTurma
             FROM cursos_ofertas co
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             WHERE co.id = :id
-            LIMIT 1
         ";
 
+        $params = [':id' => $id];
+        $this->aplicarEscopo($sql, $params, $escopo);
+        $sql .= " LIMIT 1";
+
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([':id' => $id]);
+        $stmt->execute($params);
         $turma = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $turma ?: null;
