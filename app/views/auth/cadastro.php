@@ -1,4 +1,4 @@
-﻿<?php
+<?php
     $mensagem = $_GET['msg'] ?? ($mensagem ?? '');
     $tipo = $_GET['tipo'] ?? ($tipo ?? '');
     $nome = $_GET['nome'] ?? '';
@@ -36,7 +36,7 @@
 
         <?php require_once __DIR__ . '/../components/alert.php'; ?>
 
-        <form action="/mapa_de_sala/public/?page=cadastro" method="POST" novalidate>
+        <form action="./?page=cadastro" method="POST" novalidate>
           <div class="mb-3">
             <label for="nome" class="form-label">Nome</label>
             <div class="input-group">
@@ -104,7 +104,7 @@
 
           <div class="text-center">
             <span class="small text-muted">Ja possui conta</span>
-            <a href="/mapa_de_sala/public/" class="small fw-semibold text-decoration-none">
+            <a href="./" class="small fw-semibold text-decoration-none">
               <i class="bi bi-box-arrow-in-right"></i> Entrar
             </a>
           </div>

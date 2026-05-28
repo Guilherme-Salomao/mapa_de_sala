@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
     session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-    header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
     exit;
     }
 
@@ -23,7 +23,7 @@
     $tituloPagina    = 'Manutenção de Salas';
     $subtituloPagina = 'Cadastre, consulte e gerencie as salas do sistema';
     $botaoTopoTexto  = 'Nova Sala';
-    $botaoTopoLink   = '/mapa_de_sala/public/?page=salas&action=cadastrar';
+    $botaoTopoLink   = './?page=salas&action=cadastrar';
     $botaoTopoClasse = 'app-btn-primary';
     $botaoTopoIcone  = 'bi-plus-circle';
 ?>
@@ -172,7 +172,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
   </script>

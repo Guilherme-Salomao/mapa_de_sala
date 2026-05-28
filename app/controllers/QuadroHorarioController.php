@@ -63,48 +63,48 @@ class QuadroHorarioController
         $queryBase = $this->queryRetorno($dados);
 
         if (! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha os campos obrigatorios da aula.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha os campos obrigatorios da aula.'));
         }
 
         $erroDia = $this->validarDiaPermitido($dados);
 
         if ($erroDia !== null) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode($erroDia));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode($erroDia));
         }
 
         $blocos = $this->montarBlocos($dados['hora_inicio'], $dados['hora_fim'], $dados['divisao_por_hora'] === 1);
 
         if (empty($blocos)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Horario invalido para a aula.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Horario invalido para a aula.'));
         }
 
         if ($dados['divisao_por_hora'] !== 1 && ! $this->quadroModel->unidadePertenceOferta($dados['unidade_curricular_id'], $dados['curso_oferta_id'])) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('A UC selecionada nao pertence ao curso da turma.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('A UC selecionada nao pertence ao curso da turma.'));
         }
 
         $erroBlocos = $this->aplicarDadosPorBloco($dados, $blocos);
 
         if ($erroBlocos !== null) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode($erroBlocos));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode($erroBlocos));
         }
 
         $erroDocenteUc = $this->validarDocentesPorUc($dados, $blocos);
 
         if ($erroDocenteUc !== null) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode($erroDocenteUc));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode($erroDocenteUc));
         }
 
         $conflito = $this->validarConflitos($dados, $blocos);
 
         if ($conflito !== null) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode($conflito));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode($conflito));
         }
 
         if ($this->quadroModel->salvarAulas($dados, $blocos)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=quadro_horario&curso_oferta_id=' . $dados['curso_oferta_id'] . '&mes=' . $dados['mes'] . '&ano=' . $dados['ano']);
+            $this->redirecionar('./?page=quadro_horario&curso_oferta_id=' . $dados['curso_oferta_id'] . '&mes=' . $dados['mes'] . '&ano=' . $dados['ano']);
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel cadastrar a aula.'));
+        $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel cadastrar a aula.'));
     }
 
     public function atualizar(): void
@@ -116,41 +116,41 @@ class QuadroHorarioController
         $queryBase = $this->queryRetorno($dados);
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
         $erroDia = $this->validarDiaPermitido($dados);
 
         if ($erroDia !== null) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode($erroDia));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode($erroDia));
         }
 
         if ($dados['divisao_por_hora'] === 1) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('A edicao de uma aula existente nao divide em novos blocos. Cadastre uma nova aula com divisao por hora.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('A edicao de uma aula existente nao divide em novos blocos. Cadastre uma nova aula com divisao por hora.'));
         }
 
         if (! $this->quadroModel->unidadePertenceOferta($dados['unidade_curricular_id'], $dados['curso_oferta_id'])) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('A UC selecionada nao pertence ao curso da turma.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('A UC selecionada nao pertence ao curso da turma.'));
         }
 
         $blocos = $this->montarBlocos($dados['hora_inicio'], $dados['hora_fim'], false);
         $erroDocenteUc = $this->validarDocentesPorUc($dados, $blocos);
 
         if ($erroDocenteUc !== null) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode($erroDocenteUc));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode($erroDocenteUc));
         }
 
         $conflito = $this->validarConflitos($dados, $blocos, $dados['id']);
 
         if ($conflito !== null) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode($conflito));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode($conflito));
         }
 
         if ($this->quadroModel->atualizarAula($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=quadro_horario&curso_oferta_id=' . $dados['curso_oferta_id'] . '&mes=' . $dados['mes'] . '&ano=' . $dados['ano']);
+            $this->redirecionar('./?page=quadro_horario&curso_oferta_id=' . $dados['curso_oferta_id'] . '&mes=' . $dados['mes'] . '&ano=' . $dados['ano']);
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar a aula.'));
+        $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar a aula.'));
     }
 
     public function excluir(): void
@@ -163,14 +163,14 @@ class QuadroHorarioController
         $ano = (int) ($_POST['ano'] ?? date('Y'));
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=quadro_horario&tipo=erro&msg=' . urlencode('Aula invalida.'));
+            $this->redirecionar('./?page=quadro_horario&tipo=erro&msg=' . urlencode('Aula invalida.'));
         }
 
         if ($this->quadroModel->excluirAula($id)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=quadro_horario&curso_oferta_id=' . $cursoOfertaId . '&mes=' . $mes . '&ano=' . $ano);
+            $this->redirecionar('./?page=quadro_horario&curso_oferta_id=' . $cursoOfertaId . '&mes=' . $mes . '&ano=' . $ano);
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=quadro_horario&curso_oferta_id=' . $cursoOfertaId . '&mes=' . $mes . '&ano=' . $ano . '&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a aula.'));
+        $this->redirecionar('./?page=quadro_horario&curso_oferta_id=' . $cursoOfertaId . '&mes=' . $mes . '&ano=' . $ano . '&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a aula.'));
     }
 
     private function exigirLogin(): void
@@ -180,7 +180,7 @@ class QuadroHorarioController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            $this->redirecionar('/mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+            $this->redirecionar('./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         }
     }
 

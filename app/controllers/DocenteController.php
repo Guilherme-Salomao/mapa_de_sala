@@ -24,10 +24,10 @@ class DocenteController
             $docenteId = $access->docenteId();
 
             if ($docenteId === null) {
-                $this->redirecionar('/mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Seu usuario ainda nao esta vinculado a um cadastro docente.'));
+                $this->redirecionar('./?page=home&tipo=erro&msg=' . urlencode('Seu usuario ainda nao esta vinculado a um cadastro docente.'));
             }
 
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&action=editar&id=' . $docenteId);
+            $this->redirecionar('./?page=docentes&action=editar&id=' . $docenteId);
         }
 
         $busca  = trim($_GET['busca'] ?? '');
@@ -59,29 +59,29 @@ class DocenteController
         $this->bloquearProfessor();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Método inválido.'));
+            $this->redirecionar('./?page=docentes&tipo=erro&msg=' . urlencode('Método inválido.'));
         }
 
         $dados = $this->obterDadosPost();
         $queryBase = $this->montarQueryCadastro($dados);
 
         if (! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
         }
 
         if (! $this->docenteModel->usuarioExiste($dados['usuario_id'])) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Usuário informado não foi encontrado.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Usuário informado não foi encontrado.'));
         }
 
         if ($this->docenteModel->usuarioJaVinculado($dados['usuario_id'])) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Este usuário já está vinculado a um docente.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Este usuário já está vinculado a um docente.'));
         }
 
         if ($this->docenteModel->salvar($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=sucesso&msg=' . urlencode('Docente cadastrado com sucesso.'));
+            $this->redirecionar('./?page=docentes&tipo=sucesso&msg=' . urlencode('Docente cadastrado com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Não foi possível cadastrar o docente.'));
+        $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Não foi possível cadastrar o docente.'));
     }
 
     public function editar(): void
@@ -93,18 +93,18 @@ class DocenteController
         $id = (int) ($_GET['id'] ?? 0);
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Docente inválido.'));
+            $this->redirecionar('./?page=docentes&tipo=erro&msg=' . urlencode('Docente inválido.'));
         }
 
         if ($cadastroProprioDocente && $access->docenteId() !== $id) {
-            $this->redirecionar('/mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Voce so pode acessar o seu proprio cadastro docente.'));
+            $this->redirecionar('./?page=home&tipo=erro&msg=' . urlencode('Voce so pode acessar o seu proprio cadastro docente.'));
         }
 
         $escopoDocentes = $cadastroProprioDocente ? ['tipo' => 'todos', 'ids' => []] : $access->escopoAreaAtuacao();
         $docenteForm = $this->docenteModel->buscarPorId($id, $escopoDocentes);
 
         if (! $docenteForm) {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Docente não encontrado.'));
+            $this->redirecionar('./?page=docentes&tipo=erro&msg=' . urlencode('Docente não encontrado.'));
         }
 
         $usuariosDisponiveis = $this->docenteModel->listarUsuariosDisponiveis((int) $docenteForm['usuario_id']);
@@ -122,7 +122,7 @@ class DocenteController
         $access = new AccessControl();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Método inválido.'));
+            $this->redirecionar('./?page=docentes&tipo=erro&msg=' . urlencode('Método inválido.'));
         }
 
         $dados = $this->obterDadosPost();
@@ -132,7 +132,7 @@ class DocenteController
 
         if ($access->nivel() === 'Professor') {
             if (! $docenteAtual || $access->docenteId() !== $dados['id']) {
-                $this->redirecionar('/mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Voce so pode alterar o seu proprio cadastro docente.'));
+                $this->redirecionar('./?page=home&tipo=erro&msg=' . urlencode('Voce so pode alterar o seu proprio cadastro docente.'));
             }
 
             $dados['usuario_id'] = (int) $docenteAtual['usuario_id'];
@@ -142,37 +142,37 @@ class DocenteController
             $erroPerfil = $this->validarPerfilProprio($dados);
 
             if ($erroPerfil !== null) {
-                $this->redirecionar('/mapa_de_sala/public/?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode($erroPerfil));
+                $this->redirecionar('./?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode($erroPerfil));
             }
         }
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Dados inválidos para atualização.'));
+            $this->redirecionar('./?page=docentes&tipo=erro&msg=' . urlencode('Dados inválidos para atualização.'));
         }
 
         if (! $docenteAtual) {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Docente não encontrado.'));
+            $this->redirecionar('./?page=docentes&tipo=erro&msg=' . urlencode('Docente não encontrado.'));
         }
 
         if (! $this->docenteModel->usuarioExiste($dados['usuario_id'])) {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Usuário informado não foi encontrado.'));
+            $this->redirecionar('./?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Usuário informado não foi encontrado.'));
         }
 
         if ($this->docenteModel->usuarioJaVinculado($dados['usuario_id'], $dados['id'])) {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Este usuário já está vinculado a outro docente.'));
+            $this->redirecionar('./?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Este usuário já está vinculado a outro docente.'));
         }
 
         if ($this->docenteModel->atualizar($dados)) {
             if ($access->nivel() === 'Professor') {
                 $_SESSION['usuario']['nome'] = $dados['usuario_nome'];
                 $_SESSION['usuario']['email'] = $dados['usuario_email'];
-                $this->redirecionar('/mapa_de_sala/public/?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=sucesso&msg=' . urlencode('Cadastro atualizado com sucesso.'));
+                $this->redirecionar('./?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=sucesso&msg=' . urlencode('Cadastro atualizado com sucesso.'));
             }
 
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=sucesso&msg=' . urlencode('Docente atualizado com sucesso.'));
+            $this->redirecionar('./?page=docentes&tipo=sucesso&msg=' . urlencode('Docente atualizado com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Não foi possível atualizar o docente.'));
+        $this->redirecionar('./?page=docentes&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Não foi possível atualizar o docente.'));
     }
 
     public function excluir(): void
@@ -184,18 +184,18 @@ class DocenteController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Docente inválido.'));
+            $this->redirecionar('./?page=docentes&tipo=erro&msg=' . urlencode('Docente inválido.'));
         }
 
         if (! $this->docenteModel->buscarPorId($id, $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Docente nao encontrado na sua area de atuacao.'));
+            $this->redirecionar('./?page=docentes&tipo=erro&msg=' . urlencode('Docente nao encontrado na sua area de atuacao.'));
         }
 
         if ($this->docenteModel->excluir($id)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=sucesso&msg=' . urlencode('Docente excluído com sucesso.'));
+            $this->redirecionar('./?page=docentes&tipo=sucesso&msg=' . urlencode('Docente excluído com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=docentes&tipo=erro&msg=' . urlencode('Não foi possível excluir o docente.'));
+        $this->redirecionar('./?page=docentes&tipo=erro&msg=' . urlencode('Não foi possível excluir o docente.'));
     }
 
     private function exigirLogin(): void
@@ -205,14 +205,14 @@ class DocenteController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            $this->redirecionar('/mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            $this->redirecionar('./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
         }
     }
 
     private function bloquearProfessor(): void
     {
         if ((new AccessControl())->nivel() === 'Professor') {
-            $this->redirecionar('/mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Voce nao tem permissao para esta acao.'));
+            $this->redirecionar('./?page=home&tipo=erro&msg=' . urlencode('Voce nao tem permissao para esta acao.'));
         }
     }
 

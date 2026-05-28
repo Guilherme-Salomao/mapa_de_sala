@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+        header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         exit;
     }
 
@@ -98,7 +98,7 @@
 
           <?php if ($dashboardGestor): ?>
           <div class="app-card p-3 mb-3">
-            <form method="GET" action="/mapa_de_sala/public/" class="row g-2 align-items-end">
+            <form method="GET" action="./" class="row g-2 align-items-end">
               <input type="hidden" name="page" value="home">
               <div class="col-12 col-md-4 col-lg-3">
                 <label for="data_gestor" class="form-label">Data</label>
@@ -112,7 +112,7 @@
               </div>
               <?php foreach ($atalhosSemanaGestor as $atalhoGestor): ?>
               <div class="col-12 col-md-auto">
-                <a href="/mapa_de_sala/public/?page=home&data=<?php echo htmlspecialchars($atalhoGestor['data']); ?>"
+                <a href="./?page=home&data=<?php echo htmlspecialchars($atalhoGestor['data']); ?>"
                   class="btn <?php echo $dataHoje === $atalhoGestor['data'] ? 'app-btn-primary' : 'btn-outline-secondary'; ?>">
                   <i class="bi <?php echo htmlspecialchars($atalhoGestor['icone']); ?>"></i>
                   <?php echo htmlspecialchars($atalhoGestor['label']); ?>
@@ -232,7 +232,7 @@
           </div>
           <?php elseif (! $dashboardDocente): ?>
           <div class="app-card p-3 mb-3">
-            <form method="GET" action="/mapa_de_sala/public/" class="row g-2 align-items-end">
+            <form method="GET" action="./" class="row g-2 align-items-end">
               <input type="hidden" name="page" value="home">
               <div class="col-12 col-md-4 col-lg-3">
                 <label for="data" class="form-label">Data</label>
@@ -245,21 +245,21 @@
                 </button>
               </div>
               <div class="col-12 col-md-auto">
-                <a href="/mapa_de_sala/public/?page=home&data=<?php echo htmlspecialchars($dataAtualAtalho); ?>"
+                <a href="./?page=home&data=<?php echo htmlspecialchars($dataAtualAtalho); ?>"
                   class="btn <?php echo $dataHoje === $dataAtualAtalho ? 'app-btn-primary' : 'btn-outline-secondary'; ?>">
                   <i class="bi bi-calendar-event"></i> Hoje
                 </a>
               </div>
               <?php if ($isApoioHome): ?>
               <div class="col-12 col-md-auto">
-                <a href="/mapa_de_sala/public/?page=home&data=<?php echo htmlspecialchars($dataAmanhaAtalho); ?>"
+                <a href="./?page=home&data=<?php echo htmlspecialchars($dataAmanhaAtalho); ?>"
                   class="btn <?php echo $dataHoje === $dataAmanhaAtalho ? 'app-btn-primary' : 'btn-outline-secondary'; ?>">
                   <i class="bi bi-calendar-plus"></i>
                   <?php echo htmlspecialchars(date('d/m/Y', strtotime($dataAmanhaAtalho))); ?>
                 </a>
               </div>
               <div class="col-12 col-md-auto">
-                <a href="/mapa_de_sala/public/?page=home&data=<?php echo htmlspecialchars($dataDepoisAmanhaAtalho); ?>"
+                <a href="./?page=home&data=<?php echo htmlspecialchars($dataDepoisAmanhaAtalho); ?>"
                   class="btn <?php echo $dataHoje === $dataDepoisAmanhaAtalho ? 'app-btn-primary' : 'btn-outline-secondary'; ?>">
                   <i class="bi bi-calendar-plus"></i>
                   <?php echo htmlspecialchars(date('d/m/Y', strtotime($dataDepoisAmanhaAtalho))); ?>
@@ -508,7 +508,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
   </script>

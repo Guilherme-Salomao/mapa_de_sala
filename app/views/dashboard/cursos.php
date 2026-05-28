@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+        header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         exit;
     }
 
@@ -19,7 +19,7 @@
     $tituloPagina    = 'Manutenção de Turmas';
     $subtituloPagina = 'Gerencie turmas, ofertas e carga horária';
     $botaoTopoTexto  = 'Nova Turma';
-    $botaoTopoLink   = '/mapa_de_sala/public/?page=turmas&action=cadastrar';
+    $botaoTopoLink   = './?page=turmas&action=cadastrar';
     $botaoTopoClasse = 'app-btn-primary';
     $botaoTopoIcone  = 'bi-plus-circle';
 
@@ -249,7 +249,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
   </script>

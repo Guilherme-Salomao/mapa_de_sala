@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
     session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-    header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
     exit;
     }
 
@@ -12,7 +12,7 @@
     $mensagem      = $_GET['msg'] ?? '';
     $tipo          = $_GET['tipo'] ?? '';
 
-    $formAction = $formAction ?? '/mapa_de_sala/public/?page=salas&action=atualizar';
+    $formAction = $formAction ?? './?page=salas&action=atualizar';
     $botaoTexto = $botaoTexto ?? 'Atualizar Sala';
     $modoEdicao = true;
 
@@ -31,7 +31,7 @@
     $tituloPagina    = 'Editar Sala';
     $subtituloPagina = 'Atualize os dados da sala selecionada';
     $botaoTopoTexto  = 'Voltar';
-    $botaoTopoLink   = '/mapa_de_sala/public/?page=salas';
+    $botaoTopoLink   = './?page=salas';
     $botaoTopoClasse = 'btn-outline-secondary';
     $botaoTopoIcone  = 'bi-arrow-left';
 ?>
@@ -109,7 +109,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
   </script>

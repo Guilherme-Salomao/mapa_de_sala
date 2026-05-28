@@ -43,13 +43,13 @@ class CursoModeloController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Curso invalido.'));
+            $this->redirecionar('./?page=cursos&tipo=erro&msg=' . urlencode('Curso invalido.'));
         }
 
         $cursoForm = $this->cursoModel->buscarPorId($id);
 
         if (! $cursoForm || ! $this->cursoModel->cursoPertenceEscopo($id, $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Curso nao encontrado.'));
+            $this->redirecionar('./?page=cursos&tipo=erro&msg=' . urlencode('Curso nao encontrado.'));
         }
 
         $areas = $this->cursoModel->listarAreas($escopo);
@@ -66,22 +66,22 @@ class CursoModeloController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if (! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
         }
 
         if (! $this->cursoModel->areaExiste($dados['area_id'], $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Area selecionada nao foi encontrada.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Area selecionada nao foi encontrada.'));
         }
 
         if ($this->cursoModel->nomeExiste($dados['nome'])) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Ja existe um curso com este nome.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Ja existe um curso com este nome.'));
         }
 
         if ($this->cursoModel->salvar($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=sucesso&msg=' . urlencode('Curso cadastrado com sucesso.'));
+            $this->redirecionar('./?page=cursos&tipo=sucesso&msg=' . urlencode('Curso cadastrado com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel cadastrar o curso.'));
+        $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel cadastrar o curso.'));
     }
 
     public function atualizar(): void
@@ -93,26 +93,26 @@ class CursoModeloController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
+            $this->redirecionar('./?page=cursos&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
         if (! $this->cursoModel->areaExiste($dados['area_id'], $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=cursos&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Area selecionada nao foi encontrada.'));
+            $this->redirecionar('./?page=cursos&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Area selecionada nao foi encontrada.'));
         }
 
         if (! $this->cursoModel->buscarPorId($dados['id']) || ! $this->cursoModel->cursoPertenceEscopo($dados['id'], $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Curso nao encontrado.'));
+            $this->redirecionar('./?page=cursos&tipo=erro&msg=' . urlencode('Curso nao encontrado.'));
         }
 
         if ($this->cursoModel->nomeExiste($dados['nome'], $dados['id'])) {
-            $this->redirecionar('/mapa_de_sala/public/?page=cursos&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Ja existe outro curso com este nome.'));
+            $this->redirecionar('./?page=cursos&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Ja existe outro curso com este nome.'));
         }
 
         if ($this->cursoModel->atualizar($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=sucesso&msg=' . urlencode('Curso atualizado com sucesso.'));
+            $this->redirecionar('./?page=cursos&tipo=sucesso&msg=' . urlencode('Curso atualizado com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=cursos&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar o curso.'));
+        $this->redirecionar('./?page=cursos&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar o curso.'));
     }
 
     public function excluir(): void
@@ -123,14 +123,14 @@ class CursoModeloController
         $id = (int) ($_POST['id'] ?? 0);
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Curso invalido.'));
+            $this->redirecionar('./?page=cursos&tipo=erro&msg=' . urlencode('Curso invalido.'));
         }
 
         if ($this->cursoModel->excluir($id)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=sucesso&msg=' . urlencode('Curso excluido com sucesso.'));
+            $this->redirecionar('./?page=cursos&tipo=sucesso&msg=' . urlencode('Curso excluido com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Nao foi possivel excluir o curso. Verifique se existem UCs ou turmas vinculadas.'));
+        $this->redirecionar('./?page=cursos&tipo=erro&msg=' . urlencode('Nao foi possivel excluir o curso. Verifique se existem UCs ou turmas vinculadas.'));
     }
 
     private function exigirLogin(): void
@@ -140,14 +140,14 @@ class CursoModeloController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            $this->redirecionar('/mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+            $this->redirecionar('./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         }
     }
 
     private function bloquearProfessor(): void
     {
         if ((new AccessControl())->nivel() === 'Professor') {
-            $this->redirecionar('/mapa_de_sala/public/?page=cursos&tipo=erro&msg=' . urlencode('Professor pode cadastrar curso, mas nao pode editar ou excluir cursos existentes.'));
+            $this->redirecionar('./?page=cursos&tipo=erro&msg=' . urlencode('Professor pode cadastrar curso, mas nao pode editar ou excluir cursos existentes.'));
         }
     }
 

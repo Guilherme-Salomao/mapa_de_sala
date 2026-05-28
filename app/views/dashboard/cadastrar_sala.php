@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
     session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-    header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
     exit;
     }
 
@@ -17,7 +17,7 @@
     $salaModel           = new Sala();
     $recursosDisponiveis = $salaModel->listarRecursos();
 
-    $formAction = '/mapa_de_sala/public/?page=salas&action=salvar';
+    $formAction = './?page=salas&action=salvar';
     $botaoTexto = 'Salvar Sala';
     $modoEdicao = false;
 
@@ -33,7 +33,7 @@
     $tituloPagina    = 'Cadastrar Sala';
     $subtituloPagina = 'Preencha os dados para criar uma nova sala';
     $botaoTopoTexto  = 'Voltar';
-    $botaoTopoLink   = '/mapa_de_sala/public/?page=salas';
+    $botaoTopoLink   = './?page=salas';
     $botaoTopoClasse = 'btn-outline-secondary';
     $botaoTopoIcone  = 'bi-arrow-left';
 ?>
@@ -111,7 +111,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
   </script>

@@ -25,11 +25,15 @@ class Database
                 $this->connection = new PDO(
                     "mysql:host={$this->host};dbname={$this->dbname};charset=utf8mb4",
                     $this->user,
-                    $this->pass
+                    $this->pass,
+                    [
+                        PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
+                    ]
                 );
 
                 $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 $this->connection->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+                $this->connection->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
             } catch (PDOException $e) {
                 die('Erro ao conectar com o banco de dados.');
             }

@@ -1,15 +1,15 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+        header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
         exit;
     }
 
     if (! isset($usuario) || empty($usuario)) {
-        header('Location: /mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Usuário não encontrado.'));
+        header('Location: ./?page=home&tipo=erro&msg=' . urlencode('Usuário não encontrado.'));
         exit;
     }
 
@@ -17,7 +17,7 @@
     $mensagem = $_GET['msg'] ?? '';
     $tipo = $_GET['tipo'] ?? '';
 
-    $formAction = '/mapa_de_sala/public/?page=perfil&action=atualizar';
+    $formAction = './?page=perfil&action=atualizar';
     $botaoTexto = 'Salvar Dados';
     $modoEdicao = true;
     $perfilProprio = true;
@@ -28,7 +28,7 @@
     $tituloPagina = 'Meu Cadastro';
     $subtituloPagina = 'Atualize seu nome, e-mail ou senha';
     $botaoTopoTexto = 'Voltar';
-    $botaoTopoLink = '/mapa_de_sala/public/?page=home';
+    $botaoTopoLink = './?page=home';
     $botaoTopoClasse = 'btn-outline-secondary';
     $botaoTopoIcone = 'bi-arrow-left';
 ?>
@@ -126,7 +126,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
   </script>

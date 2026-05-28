@@ -3,13 +3,13 @@
 ?>
 
 <div class="app-actions">
-  <a href="/mapa_de_sala/public/?page=docentes&action=editar&id=<?php echo $docenteId; ?>"
+  <a href="./?page=docentes&action=editar&id=<?php echo $docenteId; ?>"
     class="btn btn-sm btn-outline-primary app-action-btn" title="Editar docente">
     <i class="bi bi-pencil"></i>
     Editar
   </a>
 
-  <form method="POST" action="/mapa_de_sala/public/?page=docentes&action=excluir" class="d-inline"
+  <form method="POST" action="./?page=docentes&action=excluir" class="d-inline"
     onsubmit="return confirm('Deseja realmente excluir este docente');">
     <input type="hidden" name="id" value="<?php echo $docenteId; ?>">
 

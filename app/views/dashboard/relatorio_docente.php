@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+        header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         exit;
     }
 
@@ -174,7 +174,7 @@
           <?php require_once __DIR__ . '/../components/page_header.php'; ?>
 
           <div class="app-card p-3 mb-3">
-            <form method="GET" action="/mapa_de_sala/public/" class="row g-2 align-items-end">
+            <form method="GET" action="./" class="row g-2 align-items-end">
               <input type="hidden" name="page" value="relatorio_docente">
 
               <div class="col-12 col-lg-5">
@@ -346,7 +346,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
   </script>

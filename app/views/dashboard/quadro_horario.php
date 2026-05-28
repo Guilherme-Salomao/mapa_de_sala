@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+        header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         exit;
     }
 
@@ -238,7 +238,7 @@
 
                       <?php if ($permiteLancamento): ?>
                       <div class="collapse mb-2" id="quickAdd_<?php echo $dataId; ?>">
-                        <form method="POST" action="/mapa_de_sala/public/?page=quadro_horario&action=salvar"
+                        <form method="POST" action="./?page=quadro_horario&action=salvar"
                           class="border rounded p-2 bg-body-tertiary">
                           <input type="hidden" name="curso_oferta_id" value="<?php echo $cursoOfertaId; ?>">
                           <input type="hidden" name="mes" value="<?php echo $mes; ?>">
@@ -430,7 +430,7 @@
                             data-bs-target="#<?php echo $editId; ?>" aria-expanded="false" title="Editar aula">
                             <i class="bi bi-pencil"></i>
                           </button>
-                          <form method="POST" action="/mapa_de_sala/public/?page=quadro_horario&action=excluir">
+                          <form method="POST" action="./?page=quadro_horario&action=excluir">
                             <input type="hidden" name="id" value="<?php echo (int) $aula['id']; ?>">
                             <input type="hidden" name="curso_oferta_id" value="<?php echo $cursoOfertaId; ?>">
                             <input type="hidden" name="mes" value="<?php echo $mes; ?>">
@@ -442,7 +442,7 @@
                         </div>
 
                         <div class="collapse mt-2" id="<?php echo $editId; ?>">
-                          <form method="POST" action="/mapa_de_sala/public/?page=quadro_horario&action=atualizar"
+                          <form method="POST" action="./?page=quadro_horario&action=atualizar"
                             class="border rounded p-2 bg-body-tertiary">
                             <input type="hidden" name="id" value="<?php echo (int) $aula['id']; ?>">
                             <input type="hidden" name="curso_oferta_id" value="<?php echo $cursoOfertaId; ?>">
@@ -579,7 +579,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
 

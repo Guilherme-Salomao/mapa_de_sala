@@ -39,7 +39,7 @@ class RelatorioSalaController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
     }

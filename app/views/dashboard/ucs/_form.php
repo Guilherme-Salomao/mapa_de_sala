@@ -61,7 +61,7 @@
   <hr class="my-4" />
 
   <div class="d-flex flex-wrap gap-2 justify-content-end">
-    <a href="/mapa_de_sala/public/?page=ucs" class="btn btn-outline-secondary">
+    <a href="./?page=ucs" class="btn btn-outline-secondary">
       <i class="bi bi-x-circle"></i> Cancelar
     </a>
     <button type="submit" class="btn app-btn-primary">

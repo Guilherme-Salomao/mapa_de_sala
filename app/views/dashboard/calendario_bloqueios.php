@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+        header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         exit;
     }
 
@@ -17,8 +17,8 @@
     $bloqueioForm = $bloqueioForm ?? null;
 
     $formEdicao = ! empty($bloqueioForm);
-    $formAction = $formEdicao ? '/mapa_de_sala/public/?page=calendario&action=atualizar'
-        : '/mapa_de_sala/public/?page=calendario&action=salvar';
+    $formAction = $formEdicao ? './?page=calendario&action=atualizar'
+        : './?page=calendario&action=salvar';
 
     $formData = $bloqueioForm['data'] ?? ($_GET['data'] ?? '');
     $formDataFim = $bloqueioForm['data_fim'] ?? ($_GET['data_fim'] ?? '');
@@ -129,7 +129,7 @@
 
               <div class="col-12 d-flex gap-2 justify-content-end">
                 <?php if ($formEdicao): ?>
-                <a href="/mapa_de_sala/public/?page=calendario" class="btn btn-outline-secondary">
+                <a href="./?page=calendario" class="btn btn-outline-secondary">
                   <i class="bi bi-x-circle"></i> Cancelar
                 </a>
                 <?php endif; ?>
@@ -143,7 +143,7 @@
           </div>
 
           <div class="app-card p-3 mb-3">
-            <form method="GET" action="/mapa_de_sala/public/" class="row g-2 align-items-center">
+            <form method="GET" action="./" class="row g-2 align-items-center">
               <input type="hidden" name="page" value="calendario">
 
               <div class="col-12 col-md-7">
@@ -168,7 +168,7 @@
                 <button type="submit" class="btn app-btn-primary w-100">
                   <i class="bi bi-funnel"></i> Filtrar
                 </button>
-                <a href="/mapa_de_sala/public/?page=calendario" class="btn btn-outline-secondary">
+                <a href="./?page=calendario" class="btn btn-outline-secondary">
                   <i class="bi bi-arrow-counterclockwise"></i>
                 </a>
               </div>
@@ -216,11 +216,11 @@
                     </td>
                     <td class="text-end">
                       <div class="app-actions">
-                        <a href="/mapa_de_sala/public/?page=calendario&action=editar&id=<?php echo (int) $bloqueio['id']; ?>"
+                        <a href="./?page=calendario&action=editar&id=<?php echo (int) $bloqueio['id']; ?>"
                           class="btn btn-sm btn-outline-primary app-action-btn">
                           <i class="bi bi-pencil"></i> Editar
                         </a>
-                        <form method="POST" action="/mapa_de_sala/public/?page=calendario&action=excluir">
+                        <form method="POST" action="./?page=calendario&action=excluir">
                           <input type="hidden" name="id" value="<?php echo (int) $bloqueio['id']; ?>">
                           <button type="submit" class="btn btn-sm btn-outline-danger app-action-btn">
                             <i class="bi bi-trash"></i> Excluir
@@ -258,7 +258,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
 

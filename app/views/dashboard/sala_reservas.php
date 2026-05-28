@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+        header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         exit;
     }
 
@@ -67,7 +67,7 @@
           <?php endif; ?>
 
           <div class="app-card p-3 mb-3">
-            <form method="GET" action="/mapa_de_sala/public/" class="row g-2 align-items-end">
+            <form method="GET" action="./" class="row g-2 align-items-end">
               <input type="hidden" name="page" value="gestao_salas">
               <div class="col-6 col-lg-2">
                 <label class="form-label">Data inicial</label>
@@ -117,7 +117,7 @@
             <div class="col-12 col-xl-6">
               <div class="app-card p-3 h-100">
                 <div class="fw-bold mb-3">Reservar ou Manutenção</div>
-                <form method="POST" action="/mapa_de_sala/public/?page=gestao_salas&action=salvar" class="row g-2">
+                <form method="POST" action="./?page=gestao_salas&action=salvar" class="row g-2">
                   <div class="col-12 col-md-7">
                     <label class="form-label">Sala</label>
                     <select name="sala_id" class="form-select" required>
@@ -182,7 +182,7 @@
             <div class="col-12 col-xl-6">
               <div class="app-card p-3 h-100">
                 <div class="fw-bold mb-3">Trocar Sala</div>
-                <form method="POST" action="/mapa_de_sala/public/?page=gestao_salas&action=trocar_sala" class="row g-2">
+                <form method="POST" action="./?page=gestao_salas&action=trocar_sala" class="row g-2">
                   <div class="col-12">
                     <label class="form-label">Aula</label>
                     <select name="aula_id" class="form-select" required>
@@ -258,7 +258,7 @@
                     <td><?php echo htmlspecialchars($reserva['status'] ?? ''); ?></td>
                     <td class="text-end">
                       <?php if (($reserva['status'] ?? '') === 'Ativo'): ?>
-                      <form method="POST" action="/mapa_de_sala/public/?page=gestao_salas&action=excluir" class="app-actions">
+                      <form method="POST" action="./?page=gestao_salas&action=excluir" class="app-actions">
                         <input type="hidden" name="id" value="<?php echo (int) $reserva['id']; ?>">
                         <button type="submit" class="btn btn-sm btn-outline-danger app-action-btn">
                           <i class="bi bi-x-circle"></i> Inativar

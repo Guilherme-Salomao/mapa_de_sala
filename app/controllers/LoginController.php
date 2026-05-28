@@ -58,7 +58,7 @@ class LoginController
 
         $this->usuarioModel->atualizarUltimoLogin((int) $usuario['id']);
 
-        header('Location: /mapa_de_sala/public/?page=home');
+        header('Location: ./?page=home');
         exit;
     }
 
@@ -71,7 +71,7 @@ class LoginController
         $_SESSION = [];
         session_destroy();
 
-        header('Location: /mapa_de_sala/public/?tipo=sucesso&msg=' . urlencode('Logout realizado com sucesso.'));
+        header('Location: ./?tipo=sucesso&msg=' . urlencode('Logout realizado com sucesso.'));
         exit;
     }
 
@@ -86,7 +86,7 @@ class LoginController
     public function cadastrar(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /mapa_de_sala/public/?page=cadastro&tipo=erro&msg=' . urlencode('Metodo invalido.'));
+            header('Location: ./?page=cadastro&tipo=erro&msg=' . urlencode('Metodo invalido.'));
             exit;
         }
 
@@ -104,32 +104,32 @@ class LoginController
         ]);
 
         if ($nome === '' || $email === '' || $nivelAcesso === '' || $senha === '' || $confirmarSenha === '') {
-            header('Location: /mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos.'));
             exit;
         }
 
         if (! in_array($nivelAcesso, ['Gestor', 'Professor', 'Apoio'], true)) {
-            header('Location: /mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Selecione um nivel de acesso valido.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Selecione um nivel de acesso valido.'));
             exit;
         }
 
         if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            header('Location: /mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Informe um e-mail valido.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Informe um e-mail valido.'));
             exit;
         }
 
         if (strlen($senha) < 4) {
-            header('Location: /mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('A senha deve ter no minimo 4 caracteres.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('A senha deve ter no minimo 4 caracteres.'));
             exit;
         }
 
         if ($senha !== $confirmarSenha) {
-            header('Location: /mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('As senhas nao conferem.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('As senhas nao conferem.'));
             exit;
         }
 
         if ($this->usuarioModel->emailExiste($email)) {
-            header('Location: /mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Ja existe uma conta com este e-mail.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Ja existe uma conta com este e-mail.'));
             exit;
         }
 
@@ -142,11 +142,11 @@ class LoginController
                 'nivel_acesso' => $nivelAcesso,
             ]);
 
-            header('Location: /mapa_de_sala/public/?tipo=sucesso&msg=' . urlencode('Cadastro realizado com sucesso. Aguarde o administrador validar seus dados e liberar o acesso ao sistema.'));
+            header('Location: ./?tipo=sucesso&msg=' . urlencode('Cadastro realizado com sucesso. Aguarde o administrador validar seus dados e liberar o acesso ao sistema.'));
             exit;
         }
 
-        header('Location: /mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel criar a conta.'));
+        header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel criar a conta.'));
         exit;
     }
 
@@ -162,7 +162,7 @@ class LoginController
         $emailRecuperacao = $_SESSION['reset_senha_email'] ?? '';
 
         if ($etapa === 'redefinir' && empty($_SESSION['reset_senha_usuario_id'])) {
-            header('Location: /mapa_de_sala/public/?page=esqueci_senha&tipo=erro&msg=' . urlencode('Informe o e-mail antes de alterar a senha.'));
+            header('Location: ./?page=esqueci_senha&tipo=erro&msg=' . urlencode('Informe o e-mail antes de alterar a senha.'));
             exit;
         }
 
@@ -178,21 +178,21 @@ class LoginController
         $email = trim($_POST['email'] ?? '');
 
         if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            header('Location: /mapa_de_sala/public/?page=esqueci_senha&tipo=erro&msg=' . urlencode('Informe um e-mail valido.'));
+            header('Location: ./?page=esqueci_senha&tipo=erro&msg=' . urlencode('Informe um e-mail valido.'));
             exit;
         }
 
         $usuario = $this->usuarioModel->buscarPorEmail($email);
 
         if (! $usuario) {
-            header('Location: /mapa_de_sala/public/?page=esqueci_senha&tipo=erro&msg=' . urlencode('E-mail nao encontrado no sistema.'));
+            header('Location: ./?page=esqueci_senha&tipo=erro&msg=' . urlencode('E-mail nao encontrado no sistema.'));
             exit;
         }
 
         $_SESSION['reset_senha_usuario_id'] = (int) $usuario['id'];
         $_SESSION['reset_senha_email'] = $usuario['email'];
 
-        header('Location: /mapa_de_sala/public/?page=esqueci_senha&etapa=redefinir&tipo=sucesso&msg=' . urlencode('E-mail localizado. Informe a nova senha.'));
+        header('Location: ./?page=esqueci_senha&etapa=redefinir&tipo=sucesso&msg=' . urlencode('E-mail localizado. Informe a nova senha.'));
         exit;
     }
 
@@ -207,17 +207,17 @@ class LoginController
         $confirmarSenha = trim($_POST['confirmar_senha'] ?? '');
 
         if ($usuarioId <= 0) {
-            header('Location: /mapa_de_sala/public/?page=esqueci_senha&tipo=erro&msg=' . urlencode('Informe o e-mail antes de alterar a senha.'));
+            header('Location: ./?page=esqueci_senha&tipo=erro&msg=' . urlencode('Informe o e-mail antes de alterar a senha.'));
             exit;
         }
 
         if (strlen($senha) < 4) {
-            header('Location: /mapa_de_sala/public/?page=esqueci_senha&etapa=redefinir&tipo=erro&msg=' . urlencode('A senha deve ter no minimo 4 caracteres.'));
+            header('Location: ./?page=esqueci_senha&etapa=redefinir&tipo=erro&msg=' . urlencode('A senha deve ter no minimo 4 caracteres.'));
             exit;
         }
 
         if ($senha !== $confirmarSenha) {
-            header('Location: /mapa_de_sala/public/?page=esqueci_senha&etapa=redefinir&tipo=erro&msg=' . urlencode('As senhas nao conferem.'));
+            header('Location: ./?page=esqueci_senha&etapa=redefinir&tipo=erro&msg=' . urlencode('As senhas nao conferem.'));
             exit;
         }
 
@@ -235,17 +235,17 @@ class LoginController
 
             unset($_SESSION['reset_senha_usuario_id'], $_SESSION['reset_senha_email']);
 
-            header('Location: /mapa_de_sala/public/?tipo=sucesso&msg=' . urlencode('Senha alterada com sucesso. Seu cadastro ficou inativo e aguardara validacao do administrador para liberacao do acesso.'));
+            header('Location: ./?tipo=sucesso&msg=' . urlencode('Senha alterada com sucesso. Seu cadastro ficou inativo e aguardara validacao do administrador para liberacao do acesso.'));
             exit;
         }
 
-        header('Location: /mapa_de_sala/public/?page=esqueci_senha&etapa=redefinir&tipo=erro&msg=' . urlencode('Nao foi possivel alterar a senha.'));
+        header('Location: ./?page=esqueci_senha&etapa=redefinir&tipo=erro&msg=' . urlencode('Nao foi possivel alterar a senha.'));
         exit;
     }
 
     private function redirecionarComMensagem(string $mensagem, string $tipo = 'erro'): void
     {
-        header('Location: /mapa_de_sala/public/?tipo=' . urlencode($tipo) . '&msg=' . urlencode($mensagem));
+        header('Location: ./?tipo=' . urlencode($tipo) . '&msg=' . urlencode($mensagem));
         exit;
     }
 }

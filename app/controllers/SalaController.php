@@ -18,7 +18,7 @@ class SalaController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
@@ -39,12 +39,12 @@ class SalaController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /mapa_de_sala/public/?page=salas&tipo=erro&msg=' . urlencode('Método inválido.'));
+            header('Location: ./?page=salas&tipo=erro&msg=' . urlencode('Método inválido.'));
             exit;
         }
 
@@ -67,12 +67,12 @@ class SalaController
         ]);
 
         if (empty($nome) || empty($tipo) || $capacidade <= 0 || ! $this->statusValido($status)) {
-            header('Location: /mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
             exit;
         }
 
         if ($this->salaModel->nomeExiste($nome)) {
-            header('Location: /mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Já existe uma sala cadastrada com esse nome.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Já existe uma sala cadastrada com esse nome.'));
             exit;
         }
 
@@ -88,11 +88,11 @@ class SalaController
         $salvou = $this->salaModel->salvar($dados);
 
         if ($salvou) {
-            header('Location: /mapa_de_sala/public/?page=salas&tipo=sucesso&msg=' . urlencode('Sala cadastrada com sucesso.'));
+            header('Location: ./?page=salas&tipo=sucesso&msg=' . urlencode('Sala cadastrada com sucesso.'));
             exit;
         }
 
-        header('Location: /mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Não foi possível cadastrar a sala.'));
+        header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Não foi possível cadastrar a sala.'));
         exit;
     }
 
@@ -103,27 +103,27 @@ class SalaController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
         $id = (int) ($_GET['id'] ?? 0);
 
         if ($id <= 0) {
-            header('Location: /mapa_de_sala/public/?page=salas&tipo=erro&msg=' . urlencode('Sala não encontrada.'));
+            header('Location: ./?page=salas&tipo=erro&msg=' . urlencode('Sala não encontrada.'));
             exit;
         }
 
         $salaForm = $this->salaModel->buscarPorId($id);
 
         if (! $salaForm) {
-            header('Location: /mapa_de_sala/public/?page=salas&tipo=erro&msg=' . urlencode('Sala não encontrada.'));
+            header('Location: ./?page=salas&tipo=erro&msg=' . urlencode('Sala não encontrada.'));
             exit;
         }
 
         $recursosDisponiveis = $this->salaModel->listarRecursos();
 
-        $formAction = '/mapa_de_sala/public/?page=salas&action=atualizar';
+        $formAction = './?page=salas&action=atualizar';
         $botaoTexto = 'Atualizar Sala';
         $modoEdicao = true;
 
@@ -137,7 +137,7 @@ class SalaController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
@@ -160,18 +160,18 @@ class SalaController
             $dados['capacidade'] <= 0 ||
             ! $this->statusValido($dados['status'])
         ) {
-            header('Location: /mapa_de_sala/public/?page=salas&tipo=erro&msg=' . urlencode('Dados inválidos para atualização.'));
+            header('Location: ./?page=salas&tipo=erro&msg=' . urlencode('Dados inválidos para atualização.'));
             exit;
         }
 
         $atualizado = $this->salaModel->atualizar($dados);
 
         if ($atualizado) {
-            header('Location: /mapa_de_sala/public/?page=salas&tipo=sucesso&msg=' . urlencode('Sala atualizada com sucesso.'));
+            header('Location: ./?page=salas&tipo=sucesso&msg=' . urlencode('Sala atualizada com sucesso.'));
             exit;
         }
 
-        header('Location: /mapa_de_sala/public/?page=salas&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('Erro ao atualizar sala.'));
+        header('Location: ./?page=salas&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('Erro ao atualizar sala.'));
         exit;
     }
 
@@ -182,25 +182,25 @@ class SalaController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
         $id = (int) ($_POST['id'] ?? 0);
 
         if ($id <= 0) {
-            header('Location: /mapa_de_sala/public/?page=salas&tipo=erro&msg=' . urlencode('Sala inválida.'));
+            header('Location: ./?page=salas&tipo=erro&msg=' . urlencode('Sala inválida.'));
             exit;
         }
 
         $excluido = $this->salaModel->excluir($id);
 
         if ($excluido) {
-            header('Location: /mapa_de_sala/public/?page=salas&tipo=sucesso&msg=' . urlencode('Sala excluída com sucesso.'));
+            header('Location: ./?page=salas&tipo=sucesso&msg=' . urlencode('Sala excluída com sucesso.'));
             exit;
         }
 
-        header('Location: /mapa_de_sala/public/?page=salas&tipo=erro&msg=' . urlencode('Erro ao excluir sala.'));
+        header('Location: ./?page=salas&tipo=erro&msg=' . urlencode('Erro ao excluir sala.'));
         exit;
     }
 

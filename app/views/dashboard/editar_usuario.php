@@ -1,15 +1,15 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
     session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-    header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
     exit;
     }
 
     if (! isset($usuario) || empty($usuario)) {
-    header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Usuário não encontrado.'));
+    header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Usuário não encontrado.'));
     exit;
     }
 
@@ -17,7 +17,7 @@
     $mensagem      = $_GET['msg'] ?? '';
     $tipo          = $_GET['tipo'] ?? '';
 
-    $formAction  = '/mapa_de_sala/public/?page=usuarios&action=atualizar';
+    $formAction  = './?page=usuarios&action=atualizar';
     $botaoTexto  = 'Atualizar Usuário';
     $modoEdicao  = true;
     $usuarioForm = $usuario;
@@ -27,7 +27,7 @@
     $tituloPagina    = 'Editar Usuário';
     $subtituloPagina = 'Atualize os dados do usuário selecionado (Obs.: Caso a senha não seja preenchida, a senha atual será mantida)';
     $botaoTopoTexto  = 'Voltar';
-    $botaoTopoLink   = '/mapa_de_sala/public/?page=usuarios';
+    $botaoTopoLink   = './?page=usuarios';
     $botaoTopoClasse = 'btn-outline-secondary';
     $botaoTopoIcone  = 'bi-arrow-left';
     $botaoTexto      = 'Atualizar Usuário';
@@ -128,7 +128,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
   </script>

@@ -45,13 +45,13 @@ class UnidadeCurricularController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('UC invalida.'));
+            $this->redirecionar('./?page=ucs&tipo=erro&msg=' . urlencode('UC invalida.'));
         }
 
         $ucForm = $this->ucModel->buscarPorId($id);
 
         if (! $ucForm || ! $this->ucModel->ucPertenceEscopo($id, $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
+            $this->redirecionar('./?page=ucs&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
         }
 
         $cursoModelos = $this->ucModel->listarCursoModelosPorEscopo($escopo);
@@ -68,22 +68,22 @@ class UnidadeCurricularController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if (! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
         }
 
         if (! $this->ucModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Modelo de curso nao encontrado.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Modelo de curso nao encontrado.'));
         }
 
         if ($this->ucModel->codigoExiste($dados['curso_modelo_id'], $dados['codigo'])) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Ja existe uma UC com este codigo para o modelo selecionado.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Ja existe uma UC com este codigo para o modelo selecionado.'));
         }
 
         if ($this->ucModel->salvar($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=sucesso&msg=' . urlencode('UC cadastrada com sucesso.'));
+            $this->redirecionar('./?page=ucs&tipo=sucesso&msg=' . urlencode('UC cadastrada com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel cadastrar a UC.'));
+        $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel cadastrar a UC.'));
     }
 
     public function atualizar(): void
@@ -95,26 +95,26 @@ class UnidadeCurricularController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
+            $this->redirecionar('./?page=ucs&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
         if (! $this->ucModel->buscarPorId($dados['id']) || ! $this->ucModel->ucPertenceEscopo($dados['id'], $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
+            $this->redirecionar('./?page=ucs&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
         }
 
         if (! $this->ucModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=ucs&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Modelo de curso nao encontrado.'));
+            $this->redirecionar('./?page=ucs&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Modelo de curso nao encontrado.'));
         }
 
         if ($this->ucModel->codigoExiste($dados['curso_modelo_id'], $dados['codigo'], $dados['id'])) {
-            $this->redirecionar('/mapa_de_sala/public/?page=ucs&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Ja existe outra UC com este codigo para o modelo selecionado.'));
+            $this->redirecionar('./?page=ucs&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Ja existe outra UC com este codigo para o modelo selecionado.'));
         }
 
         if ($this->ucModel->atualizar($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=sucesso&msg=' . urlencode('UC atualizada com sucesso.'));
+            $this->redirecionar('./?page=ucs&tipo=sucesso&msg=' . urlencode('UC atualizada com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=ucs&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar a UC.'));
+        $this->redirecionar('./?page=ucs&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar a UC.'));
     }
 
     public function excluir(): void
@@ -125,18 +125,18 @@ class UnidadeCurricularController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('UC invalida.'));
+            $this->redirecionar('./?page=ucs&tipo=erro&msg=' . urlencode('UC invalida.'));
         }
 
         if (! $this->ucModel->ucPertenceEscopo($id, $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
+            $this->redirecionar('./?page=ucs&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
         }
 
         if ($this->ucModel->excluir($id)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=sucesso&msg=' . urlencode('UC excluida com sucesso.'));
+            $this->redirecionar('./?page=ucs&tipo=sucesso&msg=' . urlencode('UC excluida com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=ucs&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a UC.'));
+        $this->redirecionar('./?page=ucs&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a UC.'));
     }
 
     private function exigirLogin(): void
@@ -146,7 +146,7 @@ class UnidadeCurricularController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            $this->redirecionar('/mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+            $this->redirecionar('./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         }
     }
 

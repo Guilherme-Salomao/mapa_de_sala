@@ -132,7 +132,7 @@
   <hr class="my-4" />
 
   <div class="d-flex flex-wrap gap-2 justify-content-end">
-    <a href="<?php echo $perfilProprio ? '/mapa_de_sala/public/?page=home' : '/mapa_de_sala/public/?page=usuarios'; ?>" class="btn btn-outline-secondary">
+    <a href="<?php echo $perfilProprio ? './?page=home' : './?page=usuarios'; ?>" class="btn btn-outline-secondary">
       <i class="bi bi-x-circle"></i> Cancelar
     </a>
 

@@ -1,4 +1,4 @@
-<form method="GET" action="/mapa_de_sala/public/" class="row g-2 align-items-center">
+<form method="GET" action="./" class="row g-2 align-items-center">
 
   <input type="hidden" name="page" value="salas">
 
@@ -71,7 +71,7 @@
       <i class="bi bi-funnel"></i> Filtrar
     </button>
 
-    <a href="/mapa_de_sala/public/?page=salas" class="btn btn-outline-secondary">
+    <a href="./?page=salas" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-counterclockwise"></i>
     </a>
   </div>

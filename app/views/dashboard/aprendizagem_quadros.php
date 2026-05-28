@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+        header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         exit;
     }
 
@@ -74,7 +74,7 @@
           <?php endif; ?>
 
           <div class="app-card p-3 mb-3">
-            <form method="POST" action="/mapa_de_sala/public/?page=aceleracao&action=salvar" class="row g-2 align-items-end">
+            <form method="POST" action="./?page=aceleracao&action=salvar" class="row g-2 align-items-end">
               <div class="col-12 col-lg-4">
                 <label class="form-label">Turma</label>
                 <select name="curso_oferta_id" id="aprendizagemTurma" class="form-select" required>
@@ -157,7 +157,7 @@
           </div>
 
           <div class="app-card p-3 mb-3">
-            <form method="GET" action="/mapa_de_sala/public/" class="row g-2 align-items-center">
+            <form method="GET" action="./" class="row g-2 align-items-center">
               <input type="hidden" name="page" value="aceleracao">
 
               <div class="col-12 col-md-7">
@@ -182,7 +182,7 @@
                 <button type="submit" class="btn app-btn-primary w-100">
                   <i class="bi bi-funnel"></i> Filtrar
                 </button>
-                <a href="/mapa_de_sala/public/?page=aceleracao" class="btn btn-outline-secondary">
+                <a href="./?page=aceleracao" class="btn btn-outline-secondary">
                   <i class="bi bi-arrow-counterclockwise"></i>
                 </a>
               </div>
@@ -226,7 +226,7 @@
                     </td>
                     <td><?php echo (int) ($registro['aulas_geradas'] ?? 0); ?></td>
                     <td class="text-end">
-                      <form method="POST" action="/mapa_de_sala/public/?page=aceleracao&action=excluir" class="app-actions">
+                      <form method="POST" action="./?page=aceleracao&action=excluir" class="app-actions">
                         <input type="hidden" name="id" value="<?php echo (int) $registro['id']; ?>">
                         <button type="submit" class="btn btn-sm btn-outline-danger app-action-btn">
                           <i class="bi bi-trash"></i> Excluir

@@ -3,7 +3,7 @@
 ?>
 
 <div class="app-actions">
-  <a href="/mapa_de_sala/public/?page=turmas&action=editar&id=<?php echo $cursoId; ?>"
+  <a href="./?page=turmas&action=editar&id=<?php echo $cursoId; ?>"
     class="btn btn-sm btn-outline-primary app-action-btn" title="Editar turma">
     <i class="bi bi-pencil"></i>
     Editar
@@ -15,7 +15,7 @@
     Gerar
   </button>
 
-  <form method="POST" action="/mapa_de_sala/public/?page=turmas&action=excluir" class="d-inline"
+  <form method="POST" action="./?page=turmas&action=excluir" class="d-inline"
     onsubmit="return confirm('Deseja realmente excluir esta turma');">
     <input type="hidden" name="id" value="<?php echo $cursoId; ?>">
 
@@ -29,7 +29,7 @@
 <div class="modal fade" id="gerarQuadro_<?php echo $cursoId; ?>" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <form method="POST" action="/mapa_de_sala/public/?page=turmas&action=gerar_quadro">
+      <form method="POST" action="./?page=turmas&action=gerar_quadro">
         <div class="modal-header">
           <h5 class="modal-title">Gerar quadro horário</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>

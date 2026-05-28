@@ -36,7 +36,7 @@ class RelatorioDocenteController
             $docenteId = $access->docenteId();
 
             if ($docenteId === null) {
-                $this->redirecionar('/mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Seu usuario ainda nao esta vinculado a um docente ativo.'));
+                $this->redirecionar('./?page=home&tipo=erro&msg=' . urlencode('Seu usuario ainda nao esta vinculado a um docente ativo.'));
             }
 
             $docenteSelecionado = $this->relatorioModel->buscarDocente($docenteId);
@@ -355,8 +355,8 @@ class RelatorioDocenteController
     {
         $texto = strtolower($texto);
         $texto = str_replace(
-            ['á', 'à', 'ã', 'â', 'ä', 'é', 'ê', 'í', 'ó', 'õ', 'ô', 'ú', 'ç', '‡', ' ', 'æ', 'Æ'],
-            ['a', 'a', 'a', 'a', 'a', 'e', 'e', 'i', 'o', 'o', 'o', 'u', 'c', 'c', 'a', 'a', 'a'],
+            ['á', 'à', 'ã', 'â', 'ä', 'é', 'ê', 'í', 'ó', 'õ', 'ô', 'ú', 'ç', ' ', 'æ', 'Æ'],
+            ['a', 'a', 'a', 'a', 'a', 'e', 'e', 'i', 'o', 'o', 'o', 'u', 'c', 'a', 'a', 'a'],
             $texto
         );
 
@@ -370,7 +370,7 @@ class RelatorioDocenteController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
             exit;
         }
     }

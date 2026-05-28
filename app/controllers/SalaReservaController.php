@@ -44,13 +44,13 @@ class SalaReservaController
         $dados = $this->obterDadosPost();
 
         if (! $this->validarReserva($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=gestao_salas&tipo=erro&msg=' . urlencode('Preencha os dados da reserva corretamente.'));
+            $this->redirecionar('./?page=gestao_salas&tipo=erro&msg=' . urlencode('Preencha os dados da reserva corretamente.'));
         }
 
         $resultado = $this->reservaModel->salvar($dados);
         $tipo = ! empty($resultado['sucesso']) ? 'sucesso' : 'erro';
 
-        $this->redirecionar('/mapa_de_sala/public/?page=gestao_salas&tipo=' . $tipo . '&msg=' . urlencode($resultado['mensagem'] ?? 'Processo concluido.'));
+        $this->redirecionar('./?page=gestao_salas&tipo=' . $tipo . '&msg=' . urlencode($resultado['mensagem'] ?? 'Processo concluido.'));
     }
 
     public function excluir(): void
@@ -60,14 +60,14 @@ class SalaReservaController
         $id = (int) ($_POST['id'] ?? 0);
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=gestao_salas&tipo=erro&msg=' . urlencode('Registro invalido.'));
+            $this->redirecionar('./?page=gestao_salas&tipo=erro&msg=' . urlencode('Registro invalido.'));
         }
 
         if ($this->reservaModel->excluir($id)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=gestao_salas&tipo=sucesso&msg=' . urlencode('Registro inativado com sucesso.'));
+            $this->redirecionar('./?page=gestao_salas&tipo=sucesso&msg=' . urlencode('Registro inativado com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=gestao_salas&tipo=erro&msg=' . urlencode('Nao foi possivel inativar o registro.'));
+        $this->redirecionar('./?page=gestao_salas&tipo=erro&msg=' . urlencode('Nao foi possivel inativar o registro.'));
     }
 
     public function trocarSala(): void
@@ -81,7 +81,7 @@ class SalaReservaController
         $resultado = $this->reservaModel->trocarSala($aulaId, $salaDestinoId, $permitirPermuta);
         $tipo = ! empty($resultado['sucesso']) ? 'sucesso' : 'erro';
 
-        $this->redirecionar('/mapa_de_sala/public/?page=gestao_salas&tipo=' . $tipo . '&msg=' . urlencode($resultado['mensagem'] ?? 'Processo concluido.'));
+        $this->redirecionar('./?page=gestao_salas&tipo=' . $tipo . '&msg=' . urlencode($resultado['mensagem'] ?? 'Processo concluido.'));
     }
 
     private function obterDadosPost(): array
@@ -120,7 +120,7 @@ class SalaReservaController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            $this->redirecionar('/mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+            $this->redirecionar('./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         }
     }
 

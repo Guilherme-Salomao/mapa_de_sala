@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+        header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
         exit;
     }
 
@@ -12,7 +12,7 @@
     $mensagem      = $_GET['msg'] ?? '';
     $tipo          = $_GET['tipo'] ?? '';
 
-    $formAction = '/mapa_de_sala/public/?page=docentes&action=atualizar';
+    $formAction = './?page=docentes&action=atualizar';
     $botaoTexto = 'Atualizar Docente';
     $modoEdicao = true;
 
@@ -33,7 +33,7 @@
     $tituloPagina    = $cadastroProprioDocente ? 'Meu Cadastro' : 'Editar Docente';
     $subtituloPagina = $cadastroProprioDocente ? 'Atualize seus dados, escala e UCs' : 'Atualize os dados do docente selecionado';
     $botaoTopoTexto  = 'Voltar';
-    $botaoTopoLink   = $cadastroProprioDocente ? '/mapa_de_sala/public/?page=home' : '/mapa_de_sala/public/?page=docentes';
+    $botaoTopoLink   = $cadastroProprioDocente ? './?page=home' : './?page=docentes';
     $botaoTopoClasse = 'btn-outline-secondary';
     $botaoTopoIcone  = 'bi-arrow-left';
 ?>
@@ -109,7 +109,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
   </script>

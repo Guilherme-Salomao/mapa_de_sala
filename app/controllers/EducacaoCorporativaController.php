@@ -27,7 +27,7 @@ class EducacaoCorporativaController
             $registroForm = $id > 0 ? $this->educacaoModel->buscarPorId($id) : null;
 
             if (! $registroForm) {
-                $this->redirecionar('/mapa_de_sala/public/?page=educacao_corporativa&tipo=erro&msg=' . urlencode('Registro nao encontrado.'));
+                $this->redirecionar('./?page=educacao_corporativa&tipo=erro&msg=' . urlencode('Registro nao encontrado.'));
             }
         }
 
@@ -46,20 +46,20 @@ class EducacaoCorporativaController
         $queryBase = $this->queryCadastro($dados);
 
         if (! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha os campos obrigatorios.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha os campos obrigatorios.'));
         }
 
         $erro = $this->validarDisponibilidade($dados);
 
         if ($erro !== null) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode($erro));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode($erro));
         }
 
         if ($this->educacaoModel->salvar($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=educacao_corporativa&tipo=sucesso&msg=' . urlencode('Curso cadastrado com sucesso.'));
+            $this->redirecionar('./?page=educacao_corporativa&tipo=sucesso&msg=' . urlencode('Curso cadastrado com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel cadastrar o curso.'));
+        $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel cadastrar o curso.'));
     }
 
     public function atualizar(): void
@@ -70,20 +70,20 @@ class EducacaoCorporativaController
         $dados['id'] = (int) ($_POST['id'] ?? 0);
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=educacao_corporativa&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
+            $this->redirecionar('./?page=educacao_corporativa&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
         $erro = $this->validarDisponibilidade($dados, $dados['id']);
 
         if ($erro !== null) {
-            $this->redirecionar('/mapa_de_sala/public/?page=educacao_corporativa&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode($erro));
+            $this->redirecionar('./?page=educacao_corporativa&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode($erro));
         }
 
         if ($this->educacaoModel->atualizar($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=educacao_corporativa&tipo=sucesso&msg=' . urlencode('Curso atualizado com sucesso.'));
+            $this->redirecionar('./?page=educacao_corporativa&tipo=sucesso&msg=' . urlencode('Curso atualizado com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=educacao_corporativa&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar o curso.'));
+        $this->redirecionar('./?page=educacao_corporativa&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar o curso.'));
     }
 
     public function excluir(): void
@@ -93,14 +93,14 @@ class EducacaoCorporativaController
         $id = (int) ($_POST['id'] ?? 0);
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=educacao_corporativa&tipo=erro&msg=' . urlencode('Registro invalido.'));
+            $this->redirecionar('./?page=educacao_corporativa&tipo=erro&msg=' . urlencode('Registro invalido.'));
         }
 
         if ($this->educacaoModel->excluir($id)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=educacao_corporativa&tipo=sucesso&msg=' . urlencode('Curso excluido com sucesso.'));
+            $this->redirecionar('./?page=educacao_corporativa&tipo=sucesso&msg=' . urlencode('Curso excluido com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=educacao_corporativa&tipo=erro&msg=' . urlencode('Nao foi possivel excluir o curso.'));
+        $this->redirecionar('./?page=educacao_corporativa&tipo=erro&msg=' . urlencode('Nao foi possivel excluir o curso.'));
     }
 
     private function obterDadosPost(): array
@@ -168,7 +168,7 @@ class EducacaoCorporativaController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            $this->redirecionar('/mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+            $this->redirecionar('./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         }
     }
 

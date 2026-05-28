@@ -38,7 +38,7 @@ if (! in_array($page, ['login', 'cadastro', 'esqueci_senha'], true)) {
     $accessControl = new AccessControl();
 
     if (! $accessControl->podeAcessarPagina($page)) {
-        header('Location: /mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Voce nao tem permissao para acessar esta tela.'));
+        header('Location: ./?page=home&tipo=erro&msg=' . urlencode('Voce nao tem permissao para acessar esta tela.'));
         exit;
     }
 }

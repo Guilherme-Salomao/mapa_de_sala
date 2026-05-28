@@ -18,7 +18,7 @@ class RelatorioGestorController
         $access = new AccessControl();
 
         if ($access->nivel() === 'Professor') {
-            $this->redirecionar('/mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Voce nao tem permissao para acessar esta tela.'));
+            $this->redirecionar('./?page=home&tipo=erro&msg=' . urlencode('Voce nao tem permissao para acessar esta tela.'));
         }
 
         $mes = (int) ($_GET['mes'] ?? date('n'));
@@ -71,7 +71,7 @@ class RelatorioGestorController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            $this->redirecionar('/mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+            $this->redirecionar('./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         }
     }
 

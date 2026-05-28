@@ -36,13 +36,13 @@ class AprendizagemQuadroController
         $queryBase = $this->queryCadastro($dados);
 
         if (! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
         }
 
         $resultado = $this->aprendizagemModel->salvarEGerar($dados);
         $tipo = ! empty($resultado['sucesso']) ? 'sucesso' : 'erro';
 
-        $this->redirecionar('/mapa_de_sala/public/?page=aceleracao&tipo=' . $tipo . '&msg=' . urlencode($resultado['mensagem'] ?? 'Processo concluido.'));
+        $this->redirecionar('./?page=aceleracao&tipo=' . $tipo . '&msg=' . urlencode($resultado['mensagem'] ?? 'Processo concluido.'));
     }
 
     public function excluir(): void
@@ -52,14 +52,14 @@ class AprendizagemQuadroController
         $id = (int) ($_POST['id'] ?? 0);
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=aceleracao&tipo=erro&msg=' . urlencode('Registro invalido.'));
+            $this->redirecionar('./?page=aceleracao&tipo=erro&msg=' . urlencode('Registro invalido.'));
         }
 
         if ($this->aprendizagemModel->excluir($id)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=aceleracao&tipo=sucesso&msg=' . urlencode('Programação de Aceleração excluida do quadro horario.'));
+            $this->redirecionar('./?page=aceleracao&tipo=sucesso&msg=' . urlencode('Programação de Aceleração excluida do quadro horario.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=aceleracao&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a programação de Aceleração.'));
+        $this->redirecionar('./?page=aceleracao&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a programação de Aceleração.'));
     }
 
     private function obterDadosPost(): array
@@ -115,7 +115,7 @@ class AprendizagemQuadroController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            $this->redirecionar('/mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+            $this->redirecionar('./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         }
     }
 

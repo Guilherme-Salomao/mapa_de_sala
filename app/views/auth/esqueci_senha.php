@@ -1,4 +1,4 @@
-﻿<?php
+<?php
     $mensagem = $_GET['msg'] ?? ($mensagem ?? '');
     $tipo = $_GET['tipo'] ?? ($tipo ?? '');
     $etapa = $_GET['etapa'] ?? ($etapa ?? 'email');
@@ -36,7 +36,7 @@
         <?php require_once __DIR__ . '/../components/alert.php'; ?>
 
         <?php if ($etapa === 'redefinir'): ?>
-        <form action="/mapa_de_sala/public/?page=esqueci_senha&action=redefinir" method="POST" novalidate>
+        <form action="./?page=esqueci_senha&action=redefinir" method="POST" novalidate>
           <div class="mb-3">
             <label class="form-label">E-mail</label>
             <input type="email" class="form-control" value="<?php echo htmlspecialchars($emailRecuperacao); ?>" disabled>
@@ -69,7 +69,7 @@
           </div>
         </form>
         <?php else: ?>
-        <form action="/mapa_de_sala/public/?page=esqueci_senha&action=solicitar" method="POST" novalidate>
+        <form action="./?page=esqueci_senha&action=solicitar" method="POST" novalidate>
           <div class="mb-3">
             <label for="email" class="form-label">E-mail</label>
             <div class="input-group">
@@ -89,7 +89,7 @@
         <?php endif; ?>
 
         <div class="text-center">
-          <a href="/mapa_de_sala/public/" class="small fw-semibold text-decoration-none">
+          <a href="./" class="small fw-semibold text-decoration-none">
             <i class="bi bi-arrow-left"></i> Voltar ao login
           </a>
         </div>

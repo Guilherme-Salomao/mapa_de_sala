@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
     session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-    header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
     exit;
     }
 
@@ -18,7 +18,7 @@
     $tituloPagina    = 'Manutenção de Usuários';
     $subtituloPagina = 'Gerencie cadastro e níveis de acesso';
     $botaoTopoTexto  = 'Novo Usuário';
-    $botaoTopoLink   = '/mapa_de_sala/public/?page=usuarios&action=cadastrar';
+    $botaoTopoLink   = './?page=usuarios&action=cadastrar';
     $botaoTopoClasse = 'app-btn-primary';
     $botaoTopoIcone  = 'bi-person-plus';
 ?>
@@ -134,7 +134,7 @@
   <script>
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
   </script>

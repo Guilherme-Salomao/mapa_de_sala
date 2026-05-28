@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+        header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         exit;
     }
 
@@ -12,7 +12,7 @@
     $mensagem = $_GET['msg'] ?? '';
     $tipo = $_GET['tipo'] ?? '';
 
-    $formAction = '/mapa_de_sala/public/?page=cursos&action=salvar';
+    $formAction = './?page=cursos&action=salvar';
     $botaoTexto = 'Salvar Curso';
     $modoEdicao = false;
 
@@ -26,7 +26,7 @@
     $tituloPagina = 'Cadastrar Curso';
     $subtituloPagina = 'Preencha os dados do modelo de curso';
     $botaoTopoTexto = 'Voltar';
-    $botaoTopoLink = '/mapa_de_sala/public/?page=cursos';
+    $botaoTopoLink = './?page=cursos';
     $botaoTopoClasse = 'btn-outline-secondary';
     $botaoTopoIcone = 'bi-arrow-left';
 ?>

@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+        header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         exit;
     }
 
@@ -19,7 +19,7 @@
     $tituloPagina    = 'Manutenção de Docentes';
     $subtituloPagina = 'Gerencie docentes, carga horária e area de atuacao';
     $botaoTopoTexto  = 'Novo Docente';
-    $botaoTopoLink   = '/mapa_de_sala/public/?page=docentes&action=cadastrar';
+    $botaoTopoLink   = './?page=docentes&action=cadastrar';
     $botaoTopoClasse = 'app-btn-primary';
     $botaoTopoIcone  = 'bi-person-plus';
 ?>
@@ -139,7 +139,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
   </script>

@@ -18,7 +18,7 @@ class UsuarioController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
@@ -38,7 +38,7 @@ class UsuarioController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
@@ -54,12 +54,12 @@ class UsuarioController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Método inválido.'));
+            header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Método inválido.'));
             exit;
         }
 
@@ -79,22 +79,22 @@ class UsuarioController
             empty($senha) ||
             empty($confSenha)
         ) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&action=cadastrar&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
+            header('Location: ./?page=usuarios&action=cadastrar&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
             exit;
         }
 
         if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&action=cadastrar&tipo=erro&msg=' . urlencode('Informe um e-mail válido.'));
+            header('Location: ./?page=usuarios&action=cadastrar&tipo=erro&msg=' . urlencode('Informe um e-mail válido.'));
             exit;
         }
 
         if ($senha !== $confSenha) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&action=cadastrar&tipo=erro&msg=' . urlencode('As senhas não conferem.'));
+            header('Location: ./?page=usuarios&action=cadastrar&tipo=erro&msg=' . urlencode('As senhas não conferem.'));
             exit;
         }
 
         if ($this->usuarioModel->emailExiste($email)) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&action=cadastrar&tipo=erro&msg=' . urlencode('Já existe um usuário com este e-mail.'));
+            header('Location: ./?page=usuarios&action=cadastrar&tipo=erro&msg=' . urlencode('Já existe um usuário com este e-mail.'));
             exit;
         }
 
@@ -115,11 +115,11 @@ class UsuarioController
                 $this->usuarioModel->salvarAreasUsuario((int) $usuarioCriado['id'], $areasUsuario);
             }
 
-            header('Location: /mapa_de_sala/public/?page=usuarios&tipo=sucesso&msg=' . urlencode('Usuário cadastrado com sucesso.'));
+            header('Location: ./?page=usuarios&tipo=sucesso&msg=' . urlencode('Usuário cadastrado com sucesso.'));
             exit;
         }
 
-        header('Location: /mapa_de_sala/public/?page=usuarios&action=cadastrar&tipo=erro&msg=' . urlencode('Não foi possível cadastrar o usuário.'));
+        header('Location: ./?page=usuarios&action=cadastrar&tipo=erro&msg=' . urlencode('Não foi possível cadastrar o usuário.'));
         exit;
     }
 
@@ -130,21 +130,21 @@ class UsuarioController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
         $id = (int) ($_GET['id'] ?? 0);
 
         if ($id <= 0) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Usuário inválido.'));
+            header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Usuário inválido.'));
             exit;
         }
 
         $usuario = $this->usuarioModel->buscarPorId($id);
 
         if (! $usuario) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Usuário não encontrado.'));
+            header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Usuário não encontrado.'));
             exit;
         }
 
@@ -161,7 +161,7 @@ class UsuarioController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
@@ -169,7 +169,7 @@ class UsuarioController
         $usuario = $this->usuarioModel->buscarPorId($id);
 
         if (! $usuario) {
-            header('Location: /mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Seu usuário não foi encontrado.'));
+            header('Location: ./?page=home&tipo=erro&msg=' . urlencode('Seu usuário não foi encontrado.'));
             exit;
         }
 
@@ -186,12 +186,12 @@ class UsuarioController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Método inválido.'));
+            header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Método inválido.'));
             exit;
         }
 
@@ -211,24 +211,24 @@ class UsuarioController
             empty($nivelAcesso) ||
             empty($status)
         ) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
+            header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatórios.'));
             exit;
         }
 
         if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('Informe um e-mail válido.'));
+            header('Location: ./?page=usuarios&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('Informe um e-mail válido.'));
             exit;
         }
 
         if ($this->usuarioModel->emailExiste($email, $id)) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('Já existe outro usuário com este e-mail.'));
+            header('Location: ./?page=usuarios&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('Já existe outro usuário com este e-mail.'));
             exit;
         }
 
         $usuario = $this->usuarioModel->buscarPorId($id);
 
         if (! $usuario) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Usuário não encontrado.'));
+            header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Usuário não encontrado.'));
             exit;
         }
 
@@ -241,7 +241,7 @@ class UsuarioController
         );
 
         if (! $atualizou) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('Não foi possível atualizar o usuário.'));
+            header('Location: ./?page=usuarios&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('Não foi possível atualizar o usuário.'));
             exit;
         }
 
@@ -253,12 +253,12 @@ class UsuarioController
 
         if (! empty($senha) || ! empty($confSenha)) {
             if ($senha !== $confSenha) {
-                header('Location: /mapa_de_sala/public/?page=usuarios&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('As senhas não conferem.'));
+                header('Location: ./?page=usuarios&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('As senhas não conferem.'));
                 exit;
             }
 
             if (strlen($senha) < 4) {
-                header('Location: /mapa_de_sala/public/?page=usuarios&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('A nova senha deve ter no mínimo 4 caracteres.'));
+                header('Location: ./?page=usuarios&action=editar&id=' . $id . '&tipo=erro&msg=' . urlencode('A nova senha deve ter no mínimo 4 caracteres.'));
                 exit;
             }
 
@@ -266,7 +266,7 @@ class UsuarioController
             $this->usuarioModel->atualizarSenha($id, $senhaHash);
         }
 
-        header('Location: /mapa_de_sala/public/?page=usuarios&tipo=sucesso&msg=' . urlencode('Usuário atualizado com sucesso.'));
+        header('Location: ./?page=usuarios&tipo=sucesso&msg=' . urlencode('Usuário atualizado com sucesso.'));
         exit;
     }
 
@@ -277,12 +277,12 @@ class UsuarioController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('Método inválido.'));
+            header('Location: ./?page=perfil&tipo=erro&msg=' . urlencode('Método inválido.'));
             exit;
         }
 
@@ -293,24 +293,24 @@ class UsuarioController
         $confSenha = trim($_POST['confSenha'] ?? '');
 
         if ($id <= 0 || $nome === '' || $email === '') {
-            header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('Preencha nome e e-mail.'));
+            header('Location: ./?page=perfil&tipo=erro&msg=' . urlencode('Preencha nome e e-mail.'));
             exit;
         }
 
         if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('Informe um e-mail válido.'));
+            header('Location: ./?page=perfil&tipo=erro&msg=' . urlencode('Informe um e-mail válido.'));
             exit;
         }
 
         if ($this->usuarioModel->emailExiste($email, $id)) {
-            header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('Já existe outro usuário com este e-mail.'));
+            header('Location: ./?page=perfil&tipo=erro&msg=' . urlencode('Já existe outro usuário com este e-mail.'));
             exit;
         }
 
         $usuario = $this->usuarioModel->buscarPorId($id);
 
         if (! $usuario) {
-            header('Location: /mapa_de_sala/public/?page=home&tipo=erro&msg=' . urlencode('Seu usuário não foi encontrado.'));
+            header('Location: ./?page=home&tipo=erro&msg=' . urlencode('Seu usuário não foi encontrado.'));
             exit;
         }
 
@@ -323,18 +323,18 @@ class UsuarioController
         );
 
         if (! $atualizou) {
-            header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('Não foi possível atualizar seus dados.'));
+            header('Location: ./?page=perfil&tipo=erro&msg=' . urlencode('Não foi possível atualizar seus dados.'));
             exit;
         }
 
         if ($senha !== '' || $confSenha !== '') {
             if ($senha !== $confSenha) {
-                header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('As senhas não conferem.'));
+                header('Location: ./?page=perfil&tipo=erro&msg=' . urlencode('As senhas não conferem.'));
                 exit;
             }
 
             if (strlen($senha) < 4) {
-                header('Location: /mapa_de_sala/public/?page=perfil&tipo=erro&msg=' . urlencode('A nova senha deve ter no mínimo 4 caracteres.'));
+                header('Location: ./?page=perfil&tipo=erro&msg=' . urlencode('A nova senha deve ter no mínimo 4 caracteres.'));
                 exit;
             }
 
@@ -344,7 +344,7 @@ class UsuarioController
         $_SESSION['usuario']['nome'] = $nome;
         $_SESSION['usuario']['email'] = $email;
 
-        header('Location: /mapa_de_sala/public/?page=perfil&tipo=sucesso&msg=' . urlencode('Dados atualizados com sucesso.'));
+        header('Location: ./?page=perfil&tipo=sucesso&msg=' . urlencode('Dados atualizados com sucesso.'));
         exit;
     }
 
@@ -355,42 +355,42 @@ class UsuarioController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
             exit;
         }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Método inválido para exclusão.'));
+            header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Método inválido para exclusão.'));
             exit;
         }
 
         $id = (int) ($_POST['id'] ?? 0);
 
         if ($id <= 0) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Usuário inválido.'));
+            header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Usuário inválido.'));
             exit;
         }
 
         if ((int) $_SESSION['usuario']['id'] === $id) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Não é permitido excluir o próprio usuário logado.'));
+            header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Não é permitido excluir o próprio usuário logado.'));
             exit;
         }
 
         $usuario = $this->usuarioModel->buscarPorId($id);
 
         if (! $usuario) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Usuário não encontrado.'));
+            header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Usuário não encontrado.'));
             exit;
         }
 
         $sucesso = $this->usuarioModel->excluir($id);
 
         if ($sucesso) {
-            header('Location: /mapa_de_sala/public/?page=usuarios&tipo=sucesso&msg=' . urlencode('Usuário excluído com sucesso.'));
+            header('Location: ./?page=usuarios&tipo=sucesso&msg=' . urlencode('Usuário excluído com sucesso.'));
             exit;
         }
 
-        header('Location: /mapa_de_sala/public/?page=usuarios&tipo=erro&msg=' . urlencode('Não foi possível excluir o usuário.'));
+        header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Não foi possível excluir o usuário.'));
         exit;
     }
 

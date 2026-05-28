@@ -24,7 +24,7 @@ class CalendarioBloqueioController
             $bloqueioForm = $id > 0 ? $this->bloqueioModel->buscarPorId($id) : null;
 
             if (! $bloqueioForm) {
-                $this->redirecionar('/mapa_de_sala/public/?page=calendario&tipo=erro&msg=' . urlencode('Registro nao encontrado.'));
+                $this->redirecionar('./?page=calendario&tipo=erro&msg=' . urlencode('Registro nao encontrado.'));
             }
         }
 
@@ -42,14 +42,14 @@ class CalendarioBloqueioController
         $queryBase = $this->queryCadastro($dados);
 
         if (! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha os campos obrigatorios.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha os campos obrigatorios.'));
         }
 
         if ($this->bloqueioModel->salvar($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=calendario&tipo=sucesso&msg=' . urlencode('Data cadastrada com sucesso.'));
+            $this->redirecionar('./?page=calendario&tipo=sucesso&msg=' . urlencode('Data cadastrada com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel cadastrar a data.'));
+        $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel cadastrar a data.'));
     }
 
     public function atualizar(): void
@@ -60,14 +60,14 @@ class CalendarioBloqueioController
         $dados['id'] = (int) ($_POST['id'] ?? 0);
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=calendario&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
+            $this->redirecionar('./?page=calendario&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
         if ($this->bloqueioModel->atualizar($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=calendario&tipo=sucesso&msg=' . urlencode('Data atualizada com sucesso.'));
+            $this->redirecionar('./?page=calendario&tipo=sucesso&msg=' . urlencode('Data atualizada com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=calendario&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar a data.'));
+        $this->redirecionar('./?page=calendario&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar a data.'));
     }
 
     public function excluir(): void
@@ -77,14 +77,14 @@ class CalendarioBloqueioController
         $id = (int) ($_POST['id'] ?? 0);
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=calendario&tipo=erro&msg=' . urlencode('Registro invalido.'));
+            $this->redirecionar('./?page=calendario&tipo=erro&msg=' . urlencode('Registro invalido.'));
         }
 
         if ($this->bloqueioModel->excluir($id)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=calendario&tipo=sucesso&msg=' . urlencode('Data excluida com sucesso.'));
+            $this->redirecionar('./?page=calendario&tipo=sucesso&msg=' . urlencode('Data excluida com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=calendario&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a data.'));
+        $this->redirecionar('./?page=calendario&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a data.'));
     }
 
     private function obterDadosPost(): array
@@ -145,7 +145,7 @@ class CalendarioBloqueioController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            $this->redirecionar('/mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+            $this->redirecionar('./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         }
     }
 

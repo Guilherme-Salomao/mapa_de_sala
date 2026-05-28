@@ -44,13 +44,13 @@ class CursoController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Turma invalida.'));
+            $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Turma invalida.'));
         }
 
         $cursoForm = $this->cursoModel->buscarPorId($id);
 
         if (! $cursoForm || ! $this->cursoModel->turmaPertenceEscopo($id, $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Turma nao encontrada.'));
+            $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Turma nao encontrada.'));
         }
 
         $cursoModelos = $this->cursoModel->listarCursoModelos((new AccessControl())->escopoAreaAtuacao());
@@ -63,7 +63,7 @@ class CursoController
         $this->exigirLogin();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Metodo invalido.'));
+            $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Metodo invalido.'));
         }
 
         $dados = $this->obterDadosPost();
@@ -71,24 +71,24 @@ class CursoController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if (! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
         }
 
         if (! $this->cursoModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Curso selecionado nao foi encontrado.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Curso selecionado nao foi encontrado.'));
         }
 
         if ($this->cursoModel->codigoOfertaExiste($dados['codigo_oferta'])) {
-            $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Ja existe um curso com este codigo de oferta.'));
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Ja existe um curso com este codigo de oferta.'));
         }
 
         $turmaId = $this->cursoModel->salvar($dados);
 
         if ($turmaId) {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=sucesso&msg=' . urlencode('Turma cadastrada com sucesso.'));
+            $this->redirecionar('./?page=turmas&tipo=sucesso&msg=' . urlencode('Turma cadastrada com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel cadastrar a turma.'));
+        $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel cadastrar a turma.'));
     }
 
     public function atualizar(): void
@@ -96,7 +96,7 @@ class CursoController
         $this->exigirLogin();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Metodo invalido.'));
+            $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Metodo invalido.'));
         }
 
         $dados = $this->obterDadosPost();
@@ -104,26 +104,26 @@ class CursoController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
+            $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
         if (! $this->cursoModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Curso selecionado nao foi encontrado.'));
+            $this->redirecionar('./?page=turmas&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Curso selecionado nao foi encontrado.'));
         }
 
         if (! $this->cursoModel->buscarPorId($dados['id']) || ! $this->cursoModel->turmaPertenceEscopo($dados['id'], $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Turma nao encontrada.'));
+            $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Turma nao encontrada.'));
         }
 
         if ($this->cursoModel->codigoOfertaExiste($dados['codigo_oferta'], $dados['id'])) {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Ja existe outro curso com este codigo de oferta.'));
+            $this->redirecionar('./?page=turmas&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Ja existe outro curso com este codigo de oferta.'));
         }
 
         if ($this->cursoModel->atualizar($dados)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=sucesso&msg=' . urlencode('Turma atualizada com sucesso.'));
+            $this->redirecionar('./?page=turmas&tipo=sucesso&msg=' . urlencode('Turma atualizada com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=turmas&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar a turma.'));
+        $this->redirecionar('./?page=turmas&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar a turma.'));
     }
 
     public function excluir(): void
@@ -134,18 +134,18 @@ class CursoController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0) {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Turma invalida.'));
+            $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Turma invalida.'));
         }
 
         if (! $this->cursoModel->turmaPertenceEscopo($id, $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Turma nao encontrada.'));
+            $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Turma nao encontrada.'));
         }
 
         if ($this->cursoModel->excluir($id)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=sucesso&msg=' . urlencode('Turma excluida com sucesso.'));
+            $this->redirecionar('./?page=turmas&tipo=sucesso&msg=' . urlencode('Turma excluida com sucesso.'));
         }
 
-        $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a turma. Verifique se existe algum vinculo.'));
+        $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a turma. Verifique se existe algum vinculo.'));
     }
 
     public function gerarQuadro(): void
@@ -153,7 +153,7 @@ class CursoController
         $this->exigirLogin();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Metodo invalido.'));
+            $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Metodo invalido.'));
         }
 
         $id = (int) ($_POST['id'] ?? 0);
@@ -162,13 +162,13 @@ class CursoController
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0 || $dataInicio === '' || ! $this->cursoModel->turmaPertenceEscopo($id, $escopo)) {
-            $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=erro&msg=' . urlencode('Dados invalidos para gerar o quadro horario.'));
+            $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Dados invalidos para gerar o quadro horario.'));
         }
 
         $resultado = $this->cursoModel->gerarQuadroCompleto($id, $dataInicio, $salaId > 0 ? $salaId : null);
         $tipo = ! empty($resultado['sucesso']) ? 'sucesso' : 'erro';
 
-        $this->redirecionar('/mapa_de_sala/public/?page=turmas&tipo=' . $tipo . '&msg=' . urlencode($resultado['mensagem'] ?? 'Processo concluido.'));
+        $this->redirecionar('./?page=turmas&tipo=' . $tipo . '&msg=' . urlencode($resultado['mensagem'] ?? 'Processo concluido.'));
     }
 
     private function exigirLogin(): void
@@ -178,7 +178,7 @@ class CursoController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            $this->redirecionar('/mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+            $this->redirecionar('./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
         }
     }
 

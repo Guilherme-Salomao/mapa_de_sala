@@ -1,4 +1,4 @@
-<form method="GET" action="/mapa_de_sala/public/" class="row g-2 align-items-center">
+<form method="GET" action="./" class="row g-2 align-items-center">
   <input type="hidden" name="page" value="quadro_horario">
 
   <div class="col-6 col-md-2">

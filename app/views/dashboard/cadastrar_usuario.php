@@ -1,10 +1,10 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
     session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-    header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
     exit;
     }
 
@@ -12,7 +12,7 @@
     $mensagem      = $_GET['msg'] ?? '';
     $tipo          = $_GET['tipo'] ?? '';
 
-    $formAction = '/mapa_de_sala/public/?page=usuarios&action=salvar';
+    $formAction = './?page=usuarios&action=salvar';
     $botaoTexto = 'Salvar Usuário';
     $modoEdicao = false;
 
@@ -29,7 +29,7 @@
     $tituloPagina    = 'Cadastrar Usuário';
     $subtituloPagina = 'Preencha os dados para criar um novo usuário';
     $botaoTopoTexto  = 'Voltar';
-    $botaoTopoLink   = '/mapa_de_sala/public/?page=usuarios';
+    $botaoTopoLink   = './?page=usuarios';
     $botaoTopoClasse = 'btn-outline-secondary';
     $botaoTopoIcone  = 'bi-arrow-left';
     $botaoTexto      = 'Salvar Usuário';
@@ -125,7 +125,7 @@
 
   document.addEventListener("click", function(e) {
     if (e.target.closest("#btnLogout")) {
-      window.location.href = "/mapa_de_sala/public/?page=logout";
+      window.location.href = "./?page=logout";
     }
   });
   </script>

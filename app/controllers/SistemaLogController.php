@@ -34,7 +34,7 @@ class SistemaLogController
         }
 
         if (! isset($_SESSION['usuario'])) {
-            header('Location: /mapa_de_sala/public/?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+            header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
             exit;
         }
     }
