@@ -51,6 +51,98 @@
         return $titulo !== '';
     }
 
+    function bloqueioConflitaHorarioQuadro(array $bloqueio, string $horaInicio, string $horaFim): bool
+    {
+        $bloqueioInicio = normalizarHoraQuadro($bloqueio['hora_inicio'] ?? null);
+        $bloqueioFim = normalizarHoraQuadro($bloqueio['hora_fim'] ?? null);
+        $horaInicio = normalizarHoraQuadro($horaInicio);
+        $horaFim = normalizarHoraQuadro($horaFim);
+
+        if ($bloqueioInicio === '' || $bloqueioFim === '') {
+            return true;
+        }
+
+        return $bloqueioInicio < $horaFim && $bloqueioFim > $horaInicio;
+    }
+
+    function normalizarHoraQuadro(?string $hora): string
+    {
+        $hora = trim((string) $hora);
+
+        return $hora === '' ? '' : substr($hora, 0, 5);
+    }
+
+    function textoHorarioBloqueioQuadro(array $bloqueio): string
+    {
+        if (empty($bloqueio['hora_inicio']) || empty($bloqueio['hora_fim'])) {
+            return 'Dia inteiro';
+        }
+
+        return substr((string) $bloqueio['hora_inicio'], 0, 5) . ' até ' . substr((string) $bloqueio['hora_fim'], 0, 5);
+    }
+
+    function minutosEntreQuadro(string $horaInicio, string $horaFim): int
+    {
+        $inicio = strtotime($horaInicio);
+        $fim = strtotime($horaFim);
+
+        if ($inicio === false || $fim === false || $fim <= $inicio) {
+            return 0;
+        }
+
+        return (int) (($fim - $inicio) / 60);
+    }
+
+    function horarioLancamentoQuadro(array $bloqueios, string $horaInicio, string $horaFim): ?array
+    {
+        $inicioDisponivel = $horaInicio;
+        $fimDisponivel = $horaFim;
+
+        foreach ($bloqueios as $bloqueio) {
+            if (! bloqueioConflitaHorarioQuadro($bloqueio, $inicioDisponivel, $fimDisponivel)) {
+                continue;
+            }
+
+            $bloqueioInicio = substr((string) ($bloqueio['hora_inicio'] ?? ''), 0, 5);
+            $bloqueioFim = substr((string) ($bloqueio['hora_fim'] ?? ''), 0, 5);
+
+            if ($bloqueioInicio === '' || $bloqueioFim === '') {
+                return null;
+            }
+
+            if ($bloqueioInicio <= $inicioDisponivel && $bloqueioFim >= $fimDisponivel) {
+                return null;
+            }
+
+            if ($bloqueioInicio <= $inicioDisponivel && $bloqueioFim > $inicioDisponivel) {
+                $inicioDisponivel = max($inicioDisponivel, $bloqueioFim);
+                continue;
+            }
+
+            if ($bloqueioInicio < $fimDisponivel && $bloqueioFim >= $fimDisponivel) {
+                $fimDisponivel = min($fimDisponivel, $bloqueioInicio);
+                continue;
+            }
+
+            if ($bloqueioInicio > $inicioDisponivel && $bloqueioFim < $fimDisponivel) {
+                $minutosAntes = minutosEntreQuadro($inicioDisponivel, $bloqueioInicio);
+                $minutosDepois = minutosEntreQuadro($bloqueioFim, $fimDisponivel);
+
+                if ($minutosAntes >= $minutosDepois) {
+                    $fimDisponivel = $bloqueioInicio;
+                } else {
+                    $inicioDisponivel = $bloqueioFim;
+                }
+            }
+        }
+
+        if (strtotime($fimDisponivel) <= strtotime($inicioDisponivel)) {
+            return null;
+        }
+
+        return ['inicio' => $inicioDisponivel, 'fim' => $fimDisponivel];
+    }
+
     function periodoQuadroPorHorario(string $horaInicio, string $horaFim): string
     {
         if (empty($horaInicio) || empty($horaFim)) {
@@ -84,7 +176,7 @@
         return count($periodos) > 1 ? 'Integral' : ($periodos[0] ?? 'Não informado');
     }
 
-    $tituloPagina = 'Quadro Horario';
+    $tituloPagina = 'Quadro Horário';
     $subtituloPagina = 'Monte e acompanhe o quadro mensal da turma';
     $botaoTopoTexto = '';
     $botaoTopoLink = '';
@@ -109,7 +201,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quadro Horario - SIGHA</title>
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
+  <title>Quadro Horário - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -199,7 +292,10 @@
                         ][$coluna] ?? '';
                         $turmaTemAulaDia = $campoDiaOferta !== '' && (int) ($ofertaSelecionada[$campoDiaOferta] ?? 0) === 1;
                         $bloqueiosDia = $bloqueiosPorData[$dataIso] ?? [];
-                        $diaBloqueado = ! empty($bloqueiosDia);
+                        $horaInicioOfertaDia = substr((string) ($ofertaSelecionada['hora_inicio'] ?? ''), 0, 5);
+                        $horaFimOfertaDia = substr((string) ($ofertaSelecionada['hora_fim'] ?? ''), 0, 5);
+                        $horarioLancamentoDia = horarioLancamentoQuadro($bloqueiosDia, $horaInicioOfertaDia, $horaFimOfertaDia);
+                        $diaBloqueado = $horarioLancamentoDia === null && ! empty($bloqueiosDia);
                         $diaComLancamento = ! empty($aulasPorData[$dataIso] ?? []);
                         $permiteLancamento = $mostrarDia && $turmaTemAulaDia && ! $diaComLancamento && ! $diaBloqueado && $coluna !== 0 && ! ($coluna === 6 && $bloquearSabado);
                         $salasDisponiveisDia = $salasDisponiveisPorData[$dataIso] ?? [];
@@ -221,11 +317,13 @@
                         <?php endif; ?>
                       </div>
 
-                      <?php if ($diaBloqueado): ?>
                       <?php foreach ($bloqueiosDia as $bloqueioDia): ?>
                       <div class="border rounded p-2 mb-2 small bg-warning-subtle border-warning">
                         <div class="fw-semibold text-center">
                           <?php echo htmlspecialchars(textoPrincipalBloqueioQuadro($bloqueioDia)); ?>
+                        </div>
+                        <div class="text-center">
+                          <?php echo htmlspecialchars(textoHorarioBloqueioQuadro($bloqueioDia)); ?>
                         </div>
                         <?php if (mostrarTituloBloqueioQuadro($bloqueioDia)): ?>
                         <div class="text-center">
@@ -234,7 +332,6 @@
                         <?php endif; ?>
                       </div>
                       <?php endforeach; ?>
-                      <?php endif; ?>
 
                       <?php if ($permiteLancamento): ?>
                       <div class="collapse mb-2" id="quickAdd_<?php echo $dataId; ?>">
@@ -245,9 +342,9 @@
                           <input type="hidden" name="ano" value="<?php echo $ano; ?>">
                           <input type="hidden" name="data_aula" value="<?php echo $dataIso; ?>">
                           <input type="hidden" name="hora_inicio"
-                            value="<?php echo htmlspecialchars(substr($ofertaSelecionada['hora_inicio'] ?? '', 0, 5)); ?>">
+                            value="<?php echo htmlspecialchars($horarioLancamentoDia['inicio'] ?? $horaInicioOfertaDia); ?>">
                           <input type="hidden" name="hora_fim"
-                            value="<?php echo htmlspecialchars(substr($ofertaSelecionada['hora_fim'] ?? '', 0, 5)); ?>">
+                            value="<?php echo htmlspecialchars($horarioLancamentoDia['fim'] ?? $horaFimOfertaDia); ?>">
                           <input type="hidden" name="status" value="Ativa">
 
                           <div class="mb-2">
@@ -572,7 +669,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = "Quadro Horario";
+  if (pageTitle) pageTitle.textContent = "Quadro Horário";
 
   const userName = document.getElementById("userName");
   if (userName) userName.textContent = <?php echo json_encode($usuarioLogado); ?>;

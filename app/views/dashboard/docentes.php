@@ -8,7 +8,7 @@
         exit;
     }
 
-    $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuario';
+    $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuário';
     $mensagem      = $_GET['msg'] ?? '';
     $tipoMsg       = $_GET['tipo'] ?? '';
     $busca         = $busca ?? ($_GET['busca'] ?? '');
@@ -17,7 +17,7 @@
     $totalDocentes = $totalDocentes ?? count($docentes);
 
     $tituloPagina    = 'Manutenção de Docentes';
-    $subtituloPagina = 'Gerencie docentes, carga horária e area de atuacao';
+    $subtituloPagina = 'Gerencie docentes, carga horária e área de atuação';
     $botaoTopoTexto  = 'Novo Docente';
     $botaoTopoLink   = './?page=docentes&action=cadastrar';
     $botaoTopoClasse = 'app-btn-primary';
@@ -30,6 +30,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
   <title>Docentes - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -80,7 +81,7 @@
                 <thead class="small text-muted">
                   <tr>
                     <th>Docente</th>
-                    <th>Area de atuacao</th>
+                    <th>Área de atuação</th>
                     <th>Horas semanais</th>
                     <th>Status</th>
                     <th class="text-end">Ações</th>

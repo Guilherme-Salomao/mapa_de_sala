@@ -50,7 +50,7 @@ class AccessControl
         }
 
         if ($nivel === 'Professor') {
-            return in_array($pagina, ['home', 'quadro_horario', 'relatorio_docente', 'docentes', 'cursos', 'turmas', 'ucs', 'aprendizagem', 'aceleracao'], true);
+            return in_array($pagina, ['home', 'quadro_horario', 'relatorio_docente', 'relatorio_turma', 'docentes', 'cursos', 'turmas', 'ucs', 'aprendizagem', 'aceleracao'], true);
         }
 
         return false;

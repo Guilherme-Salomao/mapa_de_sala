@@ -270,10 +270,10 @@ class QuadroHorarioController
 
         $oferta = $this->quadroModel->buscarOferta((int) $dados['curso_oferta_id']);
 
-        return $this->mensagemDiaBloqueado($dados['data_aula'], $oferta);
+        return $this->mensagemDiaBloqueado($dados['data_aula'], $oferta, $dados['hora_inicio'] ?? null, $dados['hora_fim'] ?? null);
     }
 
-    private function mensagemDiaBloqueado(string $dataAula, ?array $oferta): ?string
+    private function mensagemDiaBloqueado(string $dataAula, ?array $oferta, ?string $horaInicio = null, ?string $horaFim = null): ?string
     {
         $timestamp = strtotime($dataAula);
 
@@ -300,10 +300,16 @@ class QuadroHorarioController
             return 'Turmas dos periodos Tarde e Noite nao permitem lancamento no sabado.';
         }
 
-        $bloqueio = $this->bloqueioModel->buscarAtivoPorData($dataAula, $oferta);
+        $bloqueio = $this->bloqueioModel->buscarAtivoPorData($dataAula, $oferta, $horaInicio, $horaFim);
 
         if ($bloqueio) {
-            return 'Data bloqueada: ' . ($bloqueio['titulo'] ?? 'calendario da unidade') . '.';
+            $horario = '';
+
+            if (! empty($bloqueio['hora_inicio']) && ! empty($bloqueio['hora_fim'])) {
+                $horario = ' de ' . substr((string) $bloqueio['hora_inicio'], 0, 5) . ' ate ' . substr((string) $bloqueio['hora_fim'], 0, 5);
+            }
+
+            return 'Data bloqueada' . $horario . ': ' . ($bloqueio['titulo'] ?? 'calendario da unidade') . '.';
         }
 
         return null;
@@ -413,22 +419,46 @@ class QuadroHorarioController
 
         for ($dia = 1; $dia <= $diasNoMes; $dia++) {
             $data = sprintf('%04d-%02d-%02d', $ano, $mes, $dia);
+            $timestamp = strtotime($data);
+            $diaSemana = $timestamp === false ? 0 : (int) date('w', $timestamp);
 
-            if ($this->mensagemDiaBloqueado($data, $oferta) !== null) {
+            if (
+                $diaSemana === 0
+                || ! $this->turmaTemAulaNoDia($oferta, $diaSemana)
+                || ($diaSemana === 6 && in_array(strtolower($this->periodoPorHorario($horaInicio, $horaFim)), ['tarde', 'noite'], true))
+            ) {
                 $salasPorData[$data] = [];
                 $docentesPorData[$data] = [];
                 $docentesPorBloco[$data] = [];
                 continue;
             }
 
-            $salasPorData[$data] = array_values(array_filter($salas, function (array $sala) use ($data, $horaInicio, $horaFim): bool {
-                return ! $this->quadroModel->encontrarConflitoSala((int) $sala['id'], $data, $horaInicio, $horaFim);
+            $intervaloDisponivel = $this->intervaloDisponivelPorBloqueios($data, $oferta, $horaInicio, $horaFim);
+
+            if ($intervaloDisponivel === null) {
+                $salasPorData[$data] = [];
+                $docentesPorData[$data] = [];
+                $docentesPorBloco[$data] = [];
+                continue;
+            }
+
+            $horaInicioDia = $intervaloDisponivel['inicio'];
+            $horaFimDia = $intervaloDisponivel['fim'];
+
+            $salasPorData[$data] = array_values(array_filter($salas, function (array $sala) use ($data, $horaInicioDia, $horaFimDia): bool {
+                return ! $this->quadroModel->encontrarConflitoSala((int) $sala['id'], $data, $horaInicioDia, $horaFimDia);
             }));
 
-            $docentesPorData[$data] = $this->docentesDisponiveisParaHorario($docentes, $data, $horaInicio, $horaFim);
+            $docentesPorData[$data] = $this->docentesDisponiveisParaHorario($docentes, $data, $horaInicioDia, $horaFimDia);
 
             foreach ($blocos as $bloco) {
                 $chaveBloco = $this->chaveBloco($bloco);
+
+                if ($this->mensagemDiaBloqueado($data, $oferta, $bloco['inicio'], $bloco['fim']) !== null) {
+                    $docentesPorBloco[$data][$chaveBloco] = [];
+                    continue;
+                }
+
                 $docentesPorBloco[$data][$chaveBloco] = $this->docentesDisponiveisParaHorario($docentes, $data, $bloco['inicio'], $bloco['fim']);
             }
         }
@@ -439,6 +469,73 @@ class QuadroHorarioController
             'docentes_por_bloco' => $docentesPorBloco,
             'blocos' => $blocos,
         ];
+    }
+
+    private function intervaloDisponivelPorBloqueios(string $data, ?array $oferta, string $horaInicio, string $horaFim): ?array
+    {
+        $inicioDisponivel = $horaInicio;
+        $fimDisponivel = $horaFim;
+        $bloqueios = $this->bloqueioModel->listarPorPeriodo($data, $data);
+
+        foreach ($bloqueios as $bloqueio) {
+            if (! $this->bloqueioModel->bloqueioAplicaTurma($bloqueio, $oferta)) {
+                continue;
+            }
+
+            if (! $this->bloqueioModel->bloqueioConflitaHorario($bloqueio, $inicioDisponivel, $fimDisponivel)) {
+                continue;
+            }
+
+            $bloqueioInicio = substr((string) ($bloqueio['hora_inicio'] ?? ''), 0, 5);
+            $bloqueioFim = substr((string) ($bloqueio['hora_fim'] ?? ''), 0, 5);
+
+            if ($bloqueioInicio === '' || $bloqueioFim === '') {
+                return null;
+            }
+
+            if ($bloqueioInicio <= $inicioDisponivel && $bloqueioFim >= $fimDisponivel) {
+                return null;
+            }
+
+            if ($bloqueioInicio <= $inicioDisponivel && $bloqueioFim > $inicioDisponivel) {
+                $inicioDisponivel = max($inicioDisponivel, $bloqueioFim);
+                continue;
+            }
+
+            if ($bloqueioInicio < $fimDisponivel && $bloqueioFim >= $fimDisponivel) {
+                $fimDisponivel = min($fimDisponivel, $bloqueioInicio);
+                continue;
+            }
+
+            if ($bloqueioInicio > $inicioDisponivel && $bloqueioFim < $fimDisponivel) {
+                $minutosAntes = $this->minutosEntre($inicioDisponivel, $bloqueioInicio);
+                $minutosDepois = $this->minutosEntre($bloqueioFim, $fimDisponivel);
+
+                if ($minutosAntes >= $minutosDepois) {
+                    $fimDisponivel = $bloqueioInicio;
+                } else {
+                    $inicioDisponivel = $bloqueioFim;
+                }
+            }
+        }
+
+        if (strtotime($inicioDisponivel) === false || strtotime($fimDisponivel) === false || strtotime($fimDisponivel) <= strtotime($inicioDisponivel)) {
+            return null;
+        }
+
+        return ['inicio' => $inicioDisponivel, 'fim' => $fimDisponivel];
+    }
+
+    private function minutosEntre(string $horaInicio, string $horaFim): int
+    {
+        $inicio = strtotime($horaInicio);
+        $fim = strtotime($horaFim);
+
+        if ($inicio === false || $fim === false || $fim <= $inicio) {
+            return 0;
+        }
+
+        return (int) (($fim - $inicio) / 60);
     }
 
     private function montarDisponibilidadeEdicao(array $aulas, array $salas, array $docentes): array

@@ -35,14 +35,14 @@
     </div>
 
     <div class="col-12 col-md-3">
-      <label for="hora_inicio" class="form-label">Inicio manha</label>
+      <label for="hora_inicio" class="form-label">Hora inicial</label>
       <input type="time" class="form-control" id="hora_inicio" name="hora_inicio"
         value="<?php echo htmlspecialchars(substr($cursoForm['hora_inicio'] ?? '', 0, 5)); ?>">
       <div class="form-text">Opcional.</div>
     </div>
 
     <div class="col-12 col-md-3">
-      <label for="hora_fim" class="form-label">Fim manha</label>
+      <label for="hora_fim" class="form-label">Hora final</label>
       <input type="time" class="form-control" id="hora_fim" name="hora_fim"
         value="<?php echo htmlspecialchars(substr($cursoForm['hora_fim'] ?? '', 0, 5)); ?>">
       <div class="form-text">Opcional.</div>
@@ -79,13 +79,13 @@
     </div>
 
     <div class="col-12 col-md-3 turma-integral-campo">
-      <label for="hora_inicio_tarde" class="form-label">Inicio tarde</label>
+      <label for="hora_inicio_tarde" class="form-label">2º turno - Hora inicial</label>
       <input type="time" class="form-control" id="hora_inicio_tarde" name="hora_inicio_tarde"
         value="<?php echo htmlspecialchars(substr($cursoForm['hora_inicio_tarde'] ?? '', 0, 5)); ?>">
     </div>
 
     <div class="col-12 col-md-3 turma-integral-campo">
-      <label for="hora_fim_tarde" class="form-label">Fim tarde</label>
+      <label for="hora_fim_tarde" class="form-label">2º turno - Hora final</label>
       <input type="time" class="form-control" id="hora_fim_tarde" name="hora_fim_tarde"
         value="<?php echo htmlspecialchars(substr($cursoForm['hora_fim_tarde'] ?? '', 0, 5)); ?>">
     </div>

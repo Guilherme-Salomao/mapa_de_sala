@@ -1,19 +1,19 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
     session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+    header('Location: ./?tipo=erro&msg=' . urlencode('FaÃ§a login para acessar o sistema.'));
     exit;
     }
 
-    $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuário';
+    $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'UsuÃ¡rio';
     $mensagem      = $_GET['msg'] ?? '';
     $tipo          = $_GET['tipo'] ?? '';
 
     $formAction = './?page=usuarios&action=salvar';
-    $botaoTexto = 'Salvar Usuário';
+    $botaoTexto = 'Salvar UsuÃ¡rio';
     $modoEdicao = false;
 
     $usuarioForm = [
@@ -26,13 +26,13 @@
     $areas = $areas ?? [];
     $areasUsuario = [];
 
-    $tituloPagina    = 'Cadastrar Usuário';
-    $subtituloPagina = 'Preencha os dados para criar um novo usuário';
+    $tituloPagina    = 'Cadastrar UsuÃ¡rio';
+    $subtituloPagina = 'Preencha os dados para criar um novo usuÃ¡rio';
     $botaoTopoTexto  = 'Voltar';
     $botaoTopoLink   = './?page=usuarios';
     $botaoTopoClasse = 'btn-outline-secondary';
     $botaoTopoIcone  = 'bi-arrow-left';
-    $botaoTexto      = 'Salvar Usuário';
+    $botaoTexto      = 'Salvar UsuÃ¡rio';
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -40,7 +40,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cadastrar Usuário - SIGHA</title>
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
+  <title>Cadastrar UsuÃ¡rio - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -85,7 +86,7 @@
 
   <script>
   const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = "Cadastrar Usuário";
+  if (pageTitle) pageTitle.textContent = "Cadastrar UsuÃ¡rio";
 
   const userName = document.getElementById("userName");
   if (userName) userName.textContent = <?php echo json_encode($usuarioLogado) ?>;
@@ -118,7 +119,7 @@
       if (senhaValor !== confSenhaValor) {
         e.preventDefault();
         form.classList.add("was-validated");
-        alert("As senhas não conferem.");
+        alert("As senhas nÃ£o conferem.");
       }
     });
   }

@@ -1,10 +1,10 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
     session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+    header('Location: ./?tipo=erro&msg=' . urlencode('FaÃ§a login para acessar o sistema.'));
     exit;
     }
 
@@ -28,6 +28,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
   <title>Usuários - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -76,9 +77,9 @@
                   <tr>
                     <th>Nome</th>
                     <th>E-mail</th>
-                    <th>Nível</th>
+                    <th>NÃ­vel</th>
                     <th>Status</th>
-                    <th>Último login</th>
+                    <th>Ãšltimo login</th>
                     <th class="text-end">Ações</th>
                   </tr>
                 </thead>
@@ -114,7 +115,7 @@
                   <?php else: ?>
                   <tr>
                     <td colspan="6" class="text-center text-muted py-4">
-                      Nenhum usuário encontrado.
+                      Nenhum usuÃ¡rio encontrado.
                     </td>
                   </tr>
                   <?php endif; ?>
@@ -141,4 +142,3 @@
 </body>
 
 </html>
-

@@ -11,6 +11,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
   <title>Cadastro - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -60,7 +61,7 @@
           </div>
 
           <div class="mb-3">
-            <label for="nivel_acesso" class="form-label">Nivel de acesso</label>
+            <label for="nivel_acesso" class="form-label">Nível de acesso</label>
             <div class="input-group">
               <span class="input-group-text app-input-icon">
                 <i class="bi bi-person-gear"></i>
@@ -80,7 +81,7 @@
               <span class="input-group-text app-input-icon">
                 <i class="bi bi-lock-fill"></i>
               </span>
-              <input type="password" class="form-control" id="senha" name="senha" placeholder="Minimo 4 caracteres"
+              <input type="password" class="form-control" id="senha" name="senha" placeholder="Mínimo 4 caracteres"
                 minlength="4" required />
             </div>
           </div>
@@ -103,7 +104,7 @@
           </div>
 
           <div class="text-center">
-            <span class="small text-muted">Ja possui conta</span>
+            <span class="small text-muted">Já possui conta</span>
             <a href="./" class="small fw-semibold text-decoration-none">
               <i class="bi bi-box-arrow-in-right"></i> Entrar
             </a>

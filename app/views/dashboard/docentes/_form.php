@@ -59,7 +59,7 @@
 
     <?php if (! $somenteVinculosUc): ?>
     <div class="col-12 col-lg-5">
-      <label for="usuario_id" class="form-label">Usuario vinculado</label>
+      <label for="usuario_id" class="form-label">Usuário vinculado</label>
       <?php if ($cadastroProprioDocente): ?>
       <input type="hidden" name="usuario_id" value="<?php echo (int) ($docenteForm['usuario_id'] ?? 0); ?>">
       <input type="text" class="form-control" id="usuario_id"
@@ -81,15 +81,15 @@
         </option>
         <?php endforeach; ?>
       </select>
-      <div class="invalid-feedback">Selecione o usuario vinculado ao docente.</div>
+      <div class="invalid-feedback">Selecione o usuário vinculado ao docente.</div>
       <?php if (empty($usuariosDisponiveis)): ?>
-      <div class="form-text text-danger">Cadastre um usuario ativo com nivel Professor antes de criar o docente.</div>
+      <div class="form-text text-danger">Cadastre um usuário ativo com nível Professor antes de criar o docente.</div>
       <?php endif; ?>
       <?php endif; ?>
     </div>
 
     <div class="col-12 col-md-6 col-lg-4">
-      <label for="area_atuacao" class="form-label">Area de atuacao</label>
+      <label for="area_atuacao" class="form-label">Área de atuação</label>
       <?php if ($cadastroProprioDocente): ?>
       <input type="hidden" name="area_atuacao"
         value="<?php echo htmlspecialchars($docenteForm['area_atuacao'] ?? ''); ?>">
@@ -107,7 +107,7 @@
         </option>
         <?php endforeach; ?>
       </select>
-      <div class="invalid-feedback">Selecione a area de atuacao.</div>
+      <div class="invalid-feedback">Selecione a área de atuação.</div>
       <?php endif; ?>
     </div>
 
@@ -133,7 +133,7 @@
 
     <?php if (! $somenteVinculosUc): ?>
     <div class="col-12">
-      <label for="observacoes" class="form-label">Observacoes</label>
+      <label for="observacoes" class="form-label">Observações</label>
       <textarea class="form-control" id="observacoes" name="observacoes" rows="3"
         placeholder="Informações adicionais sobre o docente..."><?php echo htmlspecialchars($docenteForm['observacoes'] ?? ''); ?></textarea>
     </div>
@@ -144,7 +144,7 @@
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
         <div>
           <div class="fw-semibold">Escala de trabalho</div>
-          <div class="small text-muted">Marque os periodos disponiveis e informe a quantidade de horas.</div>
+          <div class="small text-muted">Marque os períodos disponíveis e informe a quantidade de horas.</div>
         </div>
         <div class="small text-muted">
           Horas semanais: <span id="totalHorasEscala">0</span>h

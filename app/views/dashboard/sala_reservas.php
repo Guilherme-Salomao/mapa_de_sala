@@ -1,29 +1,29 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+    session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
-        exit;
+    header('Location: ./?tipo=erro&msg=' . urlencode('Faca login para acessar o sistema.'));
+    exit;
     }
 
-    $mensagem = $_GET['msg'] ?? '';
-    $tipoMsg = $_GET['tipo'] ?? '';
-    $salas = $salas ?? [];
-    $reservas = $reservas ?? [];
-    $aulas = $aulas ?? [];
-    $usuarios = $usuarios ?? [];
+    $mensagem   = $_GET['msg'] ?? '';
+    $tipoMsg    = $_GET['tipo'] ?? '';
+    $salas      = $salas ?? [];
+    $reservas   = $reservas ?? [];
+    $aulas      = $aulas ?? [];
+    $usuarios   = $usuarios ?? [];
     $dataInicio = $dataInicio ?? date('Y-m-d');
-    $dataFim = $dataFim ?? $dataInicio;
-    $salaId = (int) ($salaId ?? 0);
-    $tipo = $tipo ?? 'todos';
-    $status = $status ?? 'Ativo';
+    $dataFim    = $dataFim ?? $dataInicio;
+    $salaId     = (int) ($salaId ?? 0);
+    $tipo       = $tipo ?? 'todos';
+    $status     = $status ?? 'Ativo';
 
-    $tituloPagina = 'Gestão de Salas';
+    $tituloPagina    = 'Gestão de Salas';
     $subtituloPagina = 'Reserve, coloque em manutenção e reorganize salas';
-    $botaoTopoTexto = '';
-    $botaoTopoLink = '';
+    $botaoTopoTexto  = '';
+    $botaoTopoLink   = '';
 ?>
 
 <!doctype html>
@@ -32,6 +32,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
   <title>Gestão de Salas - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -71,18 +72,21 @@
               <input type="hidden" name="page" value="gestao_salas">
               <div class="col-6 col-lg-2">
                 <label class="form-label">Data inicial</label>
-                <input type="date" name="data_inicio" class="form-control" value="<?php echo htmlspecialchars($dataInicio); ?>">
+                <input type="date" name="data_inicio" class="form-control"
+                  value="<?php echo htmlspecialchars($dataInicio); ?>">
               </div>
               <div class="col-6 col-lg-2">
                 <label class="form-label">Data final</label>
-                <input type="date" name="data_fim" class="form-control" value="<?php echo htmlspecialchars($dataFim); ?>">
+                <input type="date" name="data_fim" class="form-control"
+                  value="<?php echo htmlspecialchars($dataFim); ?>">
               </div>
               <div class="col-12 col-lg-3">
                 <label class="form-label">Sala</label>
                 <select name="sala_id" class="form-select">
                   <option value="0">Todas</option>
                   <?php foreach ($salas as $sala): ?>
-                  <option value="<?php echo (int) $sala['id']; ?>" <?php echo $salaId === (int) $sala['id'] ? 'selected' : ''; ?>>
+                  <option value="<?php echo (int) $sala['id']; ?>"
+                    <?php echo $salaId === (int) $sala['id'] ? 'selected' : ''; ?>>
                     <?php echo htmlspecialchars($sala['nome'] ?? ''); ?>
                   </option>
                   <?php endforeach; ?>
@@ -92,7 +96,8 @@
                 <label class="form-label">Tipo</label>
                 <select name="tipo_reserva" class="form-select">
                   <?php foreach (['todos' => 'Todos', 'Reservada' => 'Reservada', 'Manutenção' => 'Manutenção'] as $valor => $label): ?>
-                  <option value="<?php echo htmlspecialchars($valor); ?>" <?php echo $tipo === $valor ? 'selected' : ''; ?>>
+                  <option value="<?php echo htmlspecialchars($valor); ?>"
+                    <?php echo $tipo === $valor ? 'selected' : ''; ?>>
                     <?php echo htmlspecialchars($label); ?>
                   </option>
                   <?php endforeach; ?>
@@ -123,7 +128,8 @@
                     <select name="sala_id" class="form-select" required>
                       <option value="">Selecione...</option>
                       <?php foreach ($salas as $sala): ?>
-                      <option value="<?php echo (int) $sala['id']; ?>"><?php echo htmlspecialchars($sala['nome'] ?? ''); ?></option>
+                      <option value="<?php echo (int) $sala['id']; ?>">
+                        <?php echo htmlspecialchars($sala['nome'] ?? ''); ?></option>
                       <?php endforeach; ?>
                     </select>
                   </div>
@@ -131,20 +137,23 @@
                     <label class="form-label">Tipo</label>
                     <select name="tipo_reserva" class="form-select" required>
                       <?php foreach (['Reservada' => 'Reservada', 'Manutenção' => 'Manutenção'] as $valor => $label): ?>
-                      <option value="<?php echo htmlspecialchars($valor); ?>"><?php echo htmlspecialchars($label); ?></option>
+                      <option value="<?php echo htmlspecialchars($valor); ?>"><?php echo htmlspecialchars($label); ?>
+                      </option>
                       <?php endforeach; ?>
                     </select>
                   </div>
                   <div class="col-6">
                     <label class="form-label">Data inicial</label>
-                    <input type="date" name="data_inicio" class="form-control" value="<?php echo htmlspecialchars($dataInicio); ?>" required>
+                    <input type="date" name="data_inicio" class="form-control"
+                      value="<?php echo htmlspecialchars($dataInicio); ?>" required>
                   </div>
                   <div class="col-6">
                     <label class="form-label">Data final</label>
-                    <input type="date" name="data_fim" class="form-control" value="<?php echo htmlspecialchars($dataFim); ?>" required>
+                    <input type="date" name="data_fim" class="form-control"
+                      value="<?php echo htmlspecialchars($dataFim); ?>" required>
                   </div>
                   <div class="col-6">
-                    <label class="form-label">Hora início</label>
+                    <label class="form-label">Hora inÃ­cio</label>
                     <input type="time" name="hora_inicio" class="form-control" required>
                   </div>
                   <div class="col-6">
@@ -199,14 +208,16 @@
                     <select name="sala_destino_id" class="form-select" required>
                       <option value="">Selecione...</option>
                       <?php foreach ($salas as $sala): ?>
-                      <option value="<?php echo (int) $sala['id']; ?>"><?php echo htmlspecialchars($sala['nome'] ?? ''); ?></option>
+                      <option value="<?php echo (int) $sala['id']; ?>">
+                        <?php echo htmlspecialchars($sala['nome'] ?? ''); ?></option>
                       <?php endforeach; ?>
                     </select>
                   </div>
                   <div class="col-12">
                     <label class="form-check">
                       <input class="form-check-input" type="checkbox" name="permitir_permuta" value="1">
-                      <span class="form-check-label">Permitir permuta se a sala destino estiver ocupada no mesmo horário</span>
+                      <span class="form-check-label">Permitir permuta se a sala destino estiver ocupada no mesmo
+                        horário</span>
                     </label>
                   </div>
                   <div class="col-12 d-flex justify-content-end">
@@ -221,7 +232,7 @@
 
           <div class="app-card p-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <div class="fw-bold">Reservas e manuten??es</div>
+              <div class="fw-bold">Reservas e manutenções</div>
               <div class="small text-muted"><?php echo count($reservas); ?> registro(s)</div>
             </div>
             <div class="table-responsive">
@@ -241,10 +252,14 @@
                   <?php foreach ($reservas as $reserva): ?>
                   <tr>
                     <td><?php echo htmlspecialchars($reserva['sala_nome'] ?? ''); ?></td>
-                    <td><?php echo htmlspecialchars(($reserva['tipo'] ?? '') === 'Manutenção' ? 'Manutenção' : ($reserva['tipo'] ?? '')); ?></td>
                     <td>
-                      <?php echo htmlspecialchars(date('d/m/Y', strtotime($reserva['data_inicio'])) . ' até ' . date('d/m/Y', strtotime($reserva['data_fim']))); ?>
-                      <div class="small text-muted"><?php echo htmlspecialchars(substr($reserva['hora_inicio'], 0, 5) . ' - ' . substr($reserva['hora_fim'], 0, 5)); ?></div>
+                      <?php echo htmlspecialchars(($reserva['tipo'] ?? '') === 'Manutenção' ? 'Manutenção' : ($reserva['tipo'] ?? '')); ?>
+                    </td>
+                    <td>
+                      <?php echo htmlspecialchars(date('d/m/Y', strtotime($reserva['data_inicio'])) . ' atÃ© ' . date('d/m/Y', strtotime($reserva['data_fim']))); ?>
+                      <div class="small text-muted">
+                        <?php echo htmlspecialchars(substr($reserva['hora_inicio'], 0, 5) . ' - ' . substr($reserva['hora_fim'], 0, 5)); ?>
+                      </div>
                     </td>
                     <td>
                       <?php echo htmlspecialchars($reserva['solicitante_nome'] ?? ($reserva['solicitante'] ?? '')); ?>
@@ -287,5 +302,3 @@
 </body>
 
 </html>
-
-

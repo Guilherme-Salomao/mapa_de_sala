@@ -86,7 +86,7 @@ class LoginController
     public function cadastrar(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ./?page=cadastro&tipo=erro&msg=' . urlencode('Metodo invalido.'));
+            header('Location: ./?page=cadastro&tipo=erro&msg=' . urlencode('Método inválido.'));
             exit;
         }
 
@@ -109,27 +109,27 @@ class LoginController
         }
 
         if (! in_array($nivelAcesso, ['Gestor', 'Professor', 'Apoio'], true)) {
-            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Selecione um nivel de acesso valido.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Selecione um nível de acesso válido.'));
             exit;
         }
 
         if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Informe um e-mail valido.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Informe um e-mail válido.'));
             exit;
         }
 
         if (strlen($senha) < 4) {
-            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('A senha deve ter no minimo 4 caracteres.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('A senha deve ter no mínimo 4 caracteres.'));
             exit;
         }
 
         if ($senha !== $confirmarSenha) {
-            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('As senhas nao conferem.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('As senhas não conferem.'));
             exit;
         }
 
         if ($this->usuarioModel->emailExiste($email)) {
-            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Ja existe uma conta com este e-mail.'));
+            header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Já existe uma conta com este e-mail.'));
             exit;
         }
 
@@ -146,7 +146,7 @@ class LoginController
             exit;
         }
 
-        header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Nao foi possivel criar a conta.'));
+        header('Location: ./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Não foi possível criar a conta.'));
         exit;
     }
 
@@ -178,14 +178,14 @@ class LoginController
         $email = trim($_POST['email'] ?? '');
 
         if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            header('Location: ./?page=esqueci_senha&tipo=erro&msg=' . urlencode('Informe um e-mail valido.'));
+            header('Location: ./?page=esqueci_senha&tipo=erro&msg=' . urlencode('Informe um e-mail válido.'));
             exit;
         }
 
         $usuario = $this->usuarioModel->buscarPorEmail($email);
 
         if (! $usuario) {
-            header('Location: ./?page=esqueci_senha&tipo=erro&msg=' . urlencode('E-mail nao encontrado no sistema.'));
+            header('Location: ./?page=esqueci_senha&tipo=erro&msg=' . urlencode('E-mail não encontrado no sistema.'));
             exit;
         }
 
@@ -212,12 +212,12 @@ class LoginController
         }
 
         if (strlen($senha) < 4) {
-            header('Location: ./?page=esqueci_senha&etapa=redefinir&tipo=erro&msg=' . urlencode('A senha deve ter no minimo 4 caracteres.'));
+            header('Location: ./?page=esqueci_senha&etapa=redefinir&tipo=erro&msg=' . urlencode('A senha deve ter no mínimo 4 caracteres.'));
             exit;
         }
 
         if ($senha !== $confirmarSenha) {
-            header('Location: ./?page=esqueci_senha&etapa=redefinir&tipo=erro&msg=' . urlencode('As senhas nao conferem.'));
+            header('Location: ./?page=esqueci_senha&etapa=redefinir&tipo=erro&msg=' . urlencode('As senhas não conferem.'));
             exit;
         }
 
@@ -235,11 +235,11 @@ class LoginController
 
             unset($_SESSION['reset_senha_usuario_id'], $_SESSION['reset_senha_email']);
 
-            header('Location: ./?tipo=sucesso&msg=' . urlencode('Senha alterada com sucesso. Seu cadastro ficou inativo e aguardara validacao do administrador para liberacao do acesso.'));
+            header('Location: ./?tipo=sucesso&msg=' . urlencode('Senha alterada com sucesso. Seu cadastro ficou inativo e aguardará validação do administrador para liberação do acesso.'));
             exit;
         }
 
-        header('Location: ./?page=esqueci_senha&etapa=redefinir&tipo=erro&msg=' . urlencode('Nao foi possivel alterar a senha.'));
+        header('Location: ./?page=esqueci_senha&etapa=redefinir&tipo=erro&msg=' . urlencode('Não foi possível alterar a senha.'));
         exit;
     }
 

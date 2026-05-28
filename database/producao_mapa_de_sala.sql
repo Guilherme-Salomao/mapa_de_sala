@@ -211,6 +211,8 @@ CREATE TABLE IF NOT EXISTS calendario_bloqueios (
   id INT AUTO_INCREMENT PRIMARY KEY,
   data DATE NOT NULL,
   data_fim DATE DEFAULT NULL,
+  hora_inicio TIME DEFAULT NULL,
+  hora_fim TIME DEFAULT NULL,
   titulo VARCHAR(150) NOT NULL,
   tipo ENUM('Feriado','Recesso','Parada Pedagogica') NOT NULL DEFAULT 'Feriado',
   descricao TEXT DEFAULT NULL,

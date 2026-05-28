@@ -62,6 +62,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
   <title>Dashboard - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -91,7 +92,7 @@
           <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
             <div>
               <h4 class="mb-0">Dashboard</h4>
-              <div class="small text-muted">Visão geral do quadro horario em <?php echo htmlspecialchars($dataHojeFormatada); ?></div>
+              <div class="small text-muted">Visão geral do quadro horário em <?php echo htmlspecialchars($dataHojeFormatada); ?></div>
             </div>
 
           </div>

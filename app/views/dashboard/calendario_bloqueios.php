@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -22,13 +22,16 @@
 
     $formData = $bloqueioForm['data'] ?? ($_GET['data'] ?? '');
     $formDataFim = $bloqueioForm['data_fim'] ?? ($_GET['data_fim'] ?? '');
+    $formHoraInicio = $bloqueioForm['hora_inicio'] ?? ($_GET['hora_inicio'] ?? '');
+    $formHoraFim = $bloqueioForm['hora_fim'] ?? ($_GET['hora_fim'] ?? '');
     $formTitulo = $bloqueioForm['titulo'] ?? ($_GET['titulo'] ?? '');
     $formTipo = $bloqueioForm['tipo'] ?? ($_GET['tipo_bloqueio'] ?? 'Feriado');
     $formDescricao = $bloqueioForm['descricao'] ?? ($_GET['descricao'] ?? '');
     $formStatus = $bloqueioForm['status'] ?? ($_GET['status_bloqueio'] ?? 'Ativo');
+    $formDiaInteiro = $formHoraInicio === '' && $formHoraFim === '';
 
-    $tituloPagina = 'Calendario';
-    $subtituloPagina = 'Cadastre feriados, recessos e paradas pedagogicas';
+    $tituloPagina = 'Calendário';
+    $subtituloPagina = 'Cadastre feriados, recessos e paradas pedagógicas';
     $botaoTopoTexto = '';
     $botaoTopoLink = '';
 
@@ -44,7 +47,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calendario - SIGHA</title>
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
+  <title>Calendário - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -98,7 +102,7 @@
               </div>
 
               <div class="col-12 col-md-3">
-                <label class="form-label">Titulo</label>
+                <label class="form-label">Título</label>
                 <input type="text" name="titulo" class="form-control" maxlength="150"
                   value="<?php echo htmlspecialchars($formTitulo); ?>" required>
               </div>
@@ -122,8 +126,28 @@
                 </select>
               </div>
 
+              <div class="col-12 col-md-2">
+                <div class="form-check mt-md-4 pt-md-2">
+                  <input class="form-check-input" type="checkbox" id="diaInteiro" name="dia_inteiro" value="1"
+                    <?php echo $formDiaInteiro ? 'checked' : ''; ?>>
+                  <label class="form-check-label" for="diaInteiro">Dia inteiro</label>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-2 calendario-horario">
+                <label class="form-label">Hora inicial</label>
+                <input type="time" name="hora_inicio" class="form-control"
+                  value="<?php echo htmlspecialchars(substr((string) $formHoraInicio, 0, 5)); ?>">
+              </div>
+
+              <div class="col-6 col-md-2 calendario-horario">
+                <label class="form-label">Hora final</label>
+                <input type="time" name="hora_fim" class="form-control"
+                  value="<?php echo htmlspecialchars(substr((string) $formHoraFim, 0, 5)); ?>">
+              </div>
+
               <div class="col-12">
-                <label class="form-label">Descricao</label>
+                <label class="form-label">Descrição</label>
                 <textarea name="descricao" class="form-control" rows="2"><?php echo htmlspecialchars($formDescricao); ?></textarea>
               </div>
 
@@ -136,7 +160,7 @@
 
                 <button type="submit" class="btn app-btn-primary">
                   <i class="bi bi-save"></i>
-                  <?php echo $formEdicao ? 'Salvar Alteracao' : 'Salvar Data'; ?>
+                  <?php echo $formEdicao ? 'Salvar Alteração' : 'Salvar Data'; ?>
                 </button>
               </div>
             </form>
@@ -151,7 +175,7 @@
                   <span class="input-group-text app-input-icon">
                     <i class="bi bi-search"></i>
                   </span>
-                  <input type="text" name="busca" class="form-control" placeholder="Buscar por titulo ou descricao..."
+                  <input type="text" name="busca" class="form-control" placeholder="Buscar por título ou descrição..."
                     value="<?php echo htmlspecialchars($busca); ?>">
                 </div>
               </div>
@@ -185,8 +209,9 @@
               <table class="table align-middle mb-0">
                 <thead class="small text-muted">
                   <tr>
-                    <th>Titulo</th>
+                    <th>Título</th>
                     <th>Data</th>
+                    <th>Horário</th>
                     <th>Tipo</th>
                     <th>Status</th>
                     <th class="text-end">Ações</th>
@@ -205,7 +230,16 @@
                     <td>
                       <?php echo htmlspecialchars(date('d/m/Y', strtotime($bloqueio['data']))); ?>
                       <?php if (! empty($bloqueio['data_fim'])): ?>
-                      <div class="small text-muted">ate <?php echo htmlspecialchars(date('d/m/Y', strtotime($bloqueio['data_fim']))); ?></div>
+                      <div class="small text-muted">até <?php echo htmlspecialchars(date('d/m/Y', strtotime($bloqueio['data_fim']))); ?></div>
+                      <?php endif; ?>
+                    </td>
+                    <td>
+                      <?php if (! empty($bloqueio['hora_inicio']) && ! empty($bloqueio['hora_fim'])): ?>
+                      <?php echo htmlspecialchars(substr((string) $bloqueio['hora_inicio'], 0, 5)); ?>
+                      até
+                      <?php echo htmlspecialchars(substr((string) $bloqueio['hora_fim'], 0, 5)); ?>
+                      <?php else: ?>
+                      Dia inteiro
                       <?php endif; ?>
                     </td>
                     <td><?php echo htmlspecialchars(labelTipoBloqueio($bloqueio['tipo'] ?? '')); ?></td>
@@ -232,7 +266,7 @@
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="5" class="text-center text-muted py-4">
+                    <td colspan="6" class="text-center text-muted py-4">
                       Nenhuma data encontrada.
                     </td>
                   </tr>
@@ -251,7 +285,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = "Calendario";
+  if (pageTitle) pageTitle.textContent = "Calendário";
 
   const userName = document.getElementById("userName");
   if (userName) userName.textContent = <?php echo json_encode($usuarioLogado); ?>;
@@ -265,6 +299,10 @@
   const tipoCalendario = document.querySelector('select[name="tipo"]');
   const campoDataFim = document.querySelector(".calendario-data-fim");
   const inputDataFim = document.querySelector('input[name="data_fim"]');
+  const diaInteiro = document.getElementById("diaInteiro");
+  const camposHorario = document.querySelectorAll(".calendario-horario");
+  const inputHoraInicio = document.querySelector('input[name="hora_inicio"]');
+  const inputHoraFim = document.querySelector('input[name="hora_fim"]');
 
   function atualizarDataFimCalendario() {
     const mostrar = tipoCalendario && tipoCalendario.value === "Recesso";
@@ -275,6 +313,18 @@
   if (tipoCalendario) {
     tipoCalendario.addEventListener("change", atualizarDataFimCalendario);
     atualizarDataFimCalendario();
+  }
+
+  function atualizarHorarioCalendario() {
+    const parcial = diaInteiro && !diaInteiro.checked;
+    camposHorario.forEach((campo) => campo.classList.toggle("d-none", !parcial));
+    if (inputHoraInicio) inputHoraInicio.required = !!parcial;
+    if (inputHoraFim) inputHoraFim.required = !!parcial;
+  }
+
+  if (diaInteiro) {
+    diaInteiro.addEventListener("change", atualizarHorarioCalendario);
+    atualizarHorarioCalendario();
   }
   </script>
 </body>

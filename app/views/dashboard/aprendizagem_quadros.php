@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -38,6 +38,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
   <title>Aceleração - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -143,7 +144,7 @@
               </div>
 
               <div class="col-12 col-lg-8">
-                <label class="form-label">Observacao</label>
+                <label class="form-label">Observação</label>
                 <input type="text" name="observacoes" class="form-control" maxlength="255"
                   value="<?php echo htmlspecialchars($formObservacoes); ?>">
               </div>
@@ -203,7 +204,7 @@
                     <th>Unidade Curricular</th>
                     <th>Sala</th>
                     <th>Docente</th>
-                    <th>Periodo</th>
+                    <th>Período</th>
                     <th>Aulas</th>
                     <th class="text-end">Ações</th>
                   </tr>
@@ -221,7 +222,7 @@
                     <td><?php echo htmlspecialchars($registro['docente_nome'] ?? ''); ?></td>
                     <td>
                       <?php echo htmlspecialchars(date('d/m/Y', strtotime($registro['data_inicio']))); ?>
-                      ate
+                      até
                       <?php echo htmlspecialchars(date('d/m/Y', strtotime($registro['data_fim']))); ?>
                     </td>
                     <td><?php echo (int) ($registro['aulas_geradas'] ?? 0); ?></td>
@@ -237,7 +238,7 @@
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="7" class="text-center text-muted py-4">Nenhuma programacao cadastrada.</td>
+                    <td colspan="7" class="text-center text-muted py-4">Nenhuma programação cadastrada.</td>
                   </tr>
                   <?php endif; ?>
                 </tbody>
@@ -258,7 +259,7 @@
 
     function filtrarUcs() {
       const turmaOption = turmaSelect.options[turmaSelect.selectedIndex];
-      const cursoModelo = turmaOption  turmaOption.getAttribute("data-curso-modelo") : "";
+      const cursoModelo = turmaOption ? turmaOption.getAttribute("data-curso-modelo") : "";
       let primeiraUc = "";
 
       Array.from(ucSelect.options).forEach((option) => {

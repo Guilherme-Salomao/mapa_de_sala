@@ -1,6 +1,6 @@
 <?php
     if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+        session_start();
     }
 
     $usuarioLogado = $_SESSION['usuario']['nome'] ?? null;
@@ -10,7 +10,7 @@
   <div class="container-fluid d-flex align-items-center justify-content-between py-2">
     <!-- Lado esquerdo -->
     <div class="d-flex align-items-center gap-3">
-      <!-- Botão menu mobile (para dashboard com sidebar futura) -->
+      <!-- Botão menu mobile -->
       <button class="btn btn-outline-light btn-sm d-md-none" type="button" id="btnToggleSidebar">
         <i class="bi bi-list"></i>
       </button>

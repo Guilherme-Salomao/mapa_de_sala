@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -15,7 +15,7 @@
     $linhas = $linhas ?? [];
     $datasTurma = $datasTurma ?? ['data_inicial' => null, 'data_final' => null];
 
-    $tituloPagina = 'Relatorio da Turma';
+    $tituloPagina = 'Relatório da Turma';
     $subtituloPagina = 'Acompanhamento de carga horária por unidade curricular';
     $botaoTopoTexto = '';
     $botaoTopoLink = '';
@@ -43,7 +43,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Relatorio da Turma - SIGHA</title>
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
+  <title>Relatório da Turma - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -245,8 +246,8 @@
                   <tr>
                     <th>Unidade Curricular</th>
                     <th class="text-center">Carga Horária</th>
-                    <th class="text-center">A Lancar</th>
-                    <th class="text-center">Horas Lancadas</th>
+                    <th class="text-center">A Lançar</th>
+                    <th class="text-center">Horas Lançadas</th>
                     <th class="text-center">Horas Dadas</th>
                     <th class="text-center">Data Inicial</th>
                     <th class="text-center">Data Final</th>
@@ -299,7 +300,7 @@
           </div>
           <?php else: ?>
           <div class="app-card p-4 text-center text-muted">
-            Selecione uma turma para visualizar o relatorio.
+            Selecione uma turma para visualizar o relatório.
           </div>
           <?php endif; ?>
         </section>
@@ -312,7 +313,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = "Relatorio da Turma";
+  if (pageTitle) pageTitle.textContent = "Relatório da Turma";
 
   const userName = document.getElementById("userName");
   if (userName) userName.textContent = <?php echo json_encode($usuarioLogado); ?>;

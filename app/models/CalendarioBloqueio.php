@@ -76,7 +76,7 @@ class CalendarioBloqueio
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function buscarAtivoPorData(string $data, ?array $turma = null): ?array
+    public function buscarAtivoPorData(string $data, ?array $turma = null, ?string $horaInicio = null, ?string $horaFim = null): ?array
     {
         $sql = "
             SELECT *
@@ -91,7 +91,10 @@ class CalendarioBloqueio
         $stmt->execute([':data' => $data]);
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $bloqueio) {
-            if ($this->bloqueioAplicaTurma($bloqueio, $turma)) {
+            if (
+                $this->bloqueioAplicaTurma($bloqueio, $turma) &&
+                $this->bloqueioConflitaHorario($bloqueio, $horaInicio, $horaFim)
+            ) {
                 return $bloqueio;
             }
         }
@@ -108,6 +111,31 @@ class CalendarioBloqueio
         return (int) ($turma['participa_parada_pedagogica'] ?? 1) === 1;
     }
 
+    public function bloqueioConflitaHorario(array $bloqueio, ?string $horaInicio, ?string $horaFim): bool
+    {
+        $bloqueioInicio = $this->normalizarHora($bloqueio['hora_inicio'] ?? null);
+        $bloqueioFim = $this->normalizarHora($bloqueio['hora_fim'] ?? null);
+        $horaInicio = $this->normalizarHora($horaInicio);
+        $horaFim = $this->normalizarHora($horaFim);
+
+        if ($bloqueioInicio === '' || $bloqueioFim === '') {
+            return true;
+        }
+
+        if ($horaInicio === null || $horaFim === null || $horaInicio === '' || $horaFim === '') {
+            return true;
+        }
+
+        return $bloqueioInicio < $horaFim && $bloqueioFim > $horaInicio;
+    }
+
+    private function normalizarHora(?string $hora): string
+    {
+        $hora = trim((string) $hora);
+
+        return $hora === '' ? '' : substr($hora, 0, 5);
+    }
+
     public function salvar(array $dados): bool
     {
         try {
@@ -115,6 +143,8 @@ class CalendarioBloqueio
                 INSERT INTO calendario_bloqueios (
                     data,
                     data_fim,
+                    hora_inicio,
+                    hora_fim,
                     titulo,
                     tipo,
                     descricao,
@@ -122,6 +152,8 @@ class CalendarioBloqueio
                 ) VALUES (
                     :data,
                     :data_fim,
+                    :hora_inicio,
+                    :hora_fim,
                     :titulo,
                     :tipo,
                     :descricao,
@@ -134,6 +166,8 @@ class CalendarioBloqueio
             return $stmt->execute([
                 ':data' => $dados['data'],
                 ':data_fim' => $dados['data_fim'] ?: null,
+                ':hora_inicio' => $dados['hora_inicio'] ?: null,
+                ':hora_fim' => $dados['hora_fim'] ?: null,
                 ':titulo' => $dados['titulo'],
                 ':tipo' => $dados['tipo'],
                 ':descricao' => $dados['descricao'],
@@ -151,6 +185,8 @@ class CalendarioBloqueio
                 UPDATE calendario_bloqueios SET
                     data = :data,
                     data_fim = :data_fim,
+                    hora_inicio = :hora_inicio,
+                    hora_fim = :hora_fim,
                     titulo = :titulo,
                     tipo = :tipo,
                     descricao = :descricao,
@@ -164,6 +200,8 @@ class CalendarioBloqueio
                 ':id' => $dados['id'],
                 ':data' => $dados['data'],
                 ':data_fim' => $dados['data_fim'] ?: null,
+                ':hora_inicio' => $dados['hora_inicio'] ?: null,
+                ':hora_fim' => $dados['hora_fim'] ?: null,
                 ':titulo' => $dados['titulo'],
                 ':tipo' => $dados['tipo'],
                 ':descricao' => $dados['descricao'],

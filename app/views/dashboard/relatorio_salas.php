@@ -1,66 +1,66 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+    session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
-        exit;
+    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+    exit;
     }
 
     $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuário';
-    $salas = $salas ?? [];
-    $totais = $totais ?? [];
-    $data = $data ?? date('Y-m-d');
-    $situacao = $situacao ?? 'todas';
+    $salas         = $salas ?? [];
+    $totais        = $totais ?? [];
+    $data          = $data ?? date('Y-m-d');
+    $situacao      = $situacao ?? 'todas';
     $dataFormatada = date('d/m/Y', strtotime($data));
 
-    $tituloPagina = 'Relatório de Salas';
-    $subtituloPagina = 'Consulte salas livres, ocupadas e em manutenção';
-    $botaoTopoTexto = '';
-    $botaoTopoLink = '';
+    $tituloPagina    = 'Relatórios de Salas';
+    $subtituloPagina = 'Consulte salas livres, ocupadas e em manumanutenção';
+    $botaoTopoTexto  = '';
+    $botaoTopoLink   = '';
     $botaoTopoClasse = 'app-btn-primary';
-    $botaoTopoIcone = 'bi-door-open';
+    $botaoTopoIcone  = 'bi-door-open';
 
     function labelSituacaoSala(string $situacao): string
     {
-        return [
-            'livre' => 'Livre',
-            'ocupada' => 'Ocupada',
-            'reservada' => 'Reservada',
-            'manutenção' => 'Manutenção',
-            'inativa' => 'Inativa',
-        ][$situacao] ?? 'Todas';
+    return [
+        'livre'      => 'Livre',
+        'ocupada'    => 'Ocupada',
+        'reservada'  => 'Reservada',
+        'Manutenção' => 'Manutenção',
+        'inativa'    => 'Inativa',
+    ][$situacao] ?? 'Todas';
     }
 
     function classeSituacaoSala(string $situacao): string
     {
-        return [
-            'livre' => 'text-bg-success',
-            'ocupada' => 'text-bg-primary',
-            'reservada' => 'text-bg-info',
-            'manutenção' => 'text-bg-warning',
-            'inativa' => 'text-bg-secondary',
-        ][$situacao] ?? 'text-bg-light';
+    return [
+        'livre'      => 'text-bg-success',
+        'ocupada'    => 'text-bg-primary',
+        'reservada'  => 'text-bg-info',
+        'Manutenção' => 'text-bg-warning',
+        'inativa'    => 'text-bg-secondary',
+    ][$situacao] ?? 'text-bg-light';
     }
 
     function detalhesTurnoSala(array $turno): array
     {
-        $detalhes = [];
+    $detalhes = [];
 
-        foreach ($turno['aulas'] ?? [] as $aula) {
-            $detalhes[] = trim(substr((string) ($aula['hora_inicio'] ?? ''), 0, 5) . ' - ' . substr((string) ($aula['hora_fim'] ?? ''), 0, 5) . ' - ' . ($aula['turma_nome'] ?? ''));
-        }
+    foreach ($turno['aulas'] ?? [] as $aula) {
+        $detalhes[] = trim(substr((string) ($aula['hora_inicio'] ?? ''), 0, 5) . ' - ' . substr((string) ($aula['hora_fim'] ?? ''), 0, 5) . ' - ' . ($aula['turma_nome'] ?? ''));
+    }
 
-        foreach ($turno['reservas'] ?? [] as $reserva) {
-            $titulo = ($reserva['tipo'] ?? '') === 'Manutenção'
-                 ? 'Manutenção'
-                : (($reserva['motivo'] ?? '') ?: 'Reserva');
-            $solicitante = ! empty($reserva['solicitante']) ? ' - ' . $reserva['solicitante'] : '';
-            $detalhes[] = trim(substr((string) ($reserva['hora_inicio'] ?? ''), 0, 5) . ' - ' . substr((string) ($reserva['hora_fim'] ?? ''), 0, 5) . ' - ' . $titulo . $solicitante);
-        }
+    foreach ($turno['reservas'] ?? [] as $reserva) {
+        $titulo = ($reserva['tipo'] ?? '') === 'Manutenção'
+            ? 'Manutenção'
+            : (($reserva['motivo'] ?? '') ?: 'Reserva');
+        $solicitante = ! empty($reserva['solicitante']) ? ' - ' . $reserva['solicitante'] : '';
+        $detalhes[]  = trim(substr((string) ($reserva['hora_inicio'] ?? ''), 0, 5) . ' - ' . substr((string) ($reserva['hora_fim'] ?? ''), 0, 5) . ' - ' . $titulo . $solicitante);
+    }
 
-        return $detalhes;
+    return $detalhes;
     }
 ?>
 <!doctype html>
@@ -69,7 +69,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Relatório de Salas - SIGHA</title>
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
+  <title>Relatórios de Salas - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -110,7 +111,8 @@
                 <label for="situacao" class="form-label">Situação</label>
                 <select class="form-select" id="situacao" name="situacao">
                   <?php foreach (['todas' => 'Todas', 'livre' => 'Livres', 'ocupada' => 'Ocupadas', 'reservada' => 'Reservadas', 'manutenção' => 'Em manutenção', 'inativa' => 'Inativas'] as $valor => $label): ?>
-                  <option value="<?php echo htmlspecialchars($valor); ?>" <?php echo $situacao === $valor ? 'selected' : ''; ?>>
+                  <option value="<?php echo htmlspecialchars($valor); ?>"
+                    <?php echo $situacao === $valor ? 'selected' : ''; ?>>
                     <?php echo htmlspecialchars($label); ?>
                   </option>
                   <?php endforeach; ?>
@@ -134,10 +136,10 @@
           <div class="row g-3 mb-3">
             <?php
                 $cardsRelatorio = [
-                    'todas' => ['label' => 'Salas', 'icone' => 'bi-door-open', 'classe' => 'kpi-icon--default'],
-                    'livre' => ['label' => 'Livres', 'icone' => 'bi-check-circle', 'classe' => 'kpi-icon--livre'],
-                    'ocupada' => ['label' => 'Ocupadas', 'icone' => 'bi-calendar-check', 'classe' => 'kpi-icon--uso'],
-                    'reservada' => ['label' => 'Reservadas', 'icone' => 'bi-bookmark-check', 'classe' => 'kpi-icon--uso'],
+                    'todas'      => ['label' => 'Salas', 'icone' => 'bi-door-open', 'classe' => 'kpi-icon--default'],
+                    'livre'      => ['label' => 'Livres', 'icone' => 'bi-check-circle', 'classe' => 'kpi-icon--livre'],
+                    'ocupada'    => ['label' => 'Ocupadas', 'icone' => 'bi-calendar-check', 'classe' => 'kpi-icon--uso'],
+                    'reservada'  => ['label' => 'Reservadas', 'icone' => 'bi-bookmark-check', 'classe' => 'kpi-icon--uso'],
                     'manutenção' => ['label' => 'Manutenção', 'icone' => 'bi-tools', 'classe' => 'kpi-icon--manut'],
                 ];
             ?>
@@ -149,7 +151,8 @@
                     <div class="small text-muted"><?php echo htmlspecialchars($card['label']); ?></div>
                     <div class="fs-3 fw-bold"><?php echo (int) ($totais[$chave] ?? 0); ?></div>
                   </div>
-                  <div class="app-icon-badge app-icon-badge--sm kpi-icon <?php echo htmlspecialchars($card['classe']); ?>">
+                  <div
+                    class="app-icon-badge app-icon-badge--sm kpi-icon <?php echo htmlspecialchars($card['classe']); ?>">
                     <i class="bi <?php echo htmlspecialchars($card['icone']); ?>"></i>
                   </div>
                 </div>
@@ -192,11 +195,12 @@
                     <td><?php echo (int) ($sala['capacidade'] ?? 0); ?></td>
                     <?php foreach (['Manha', 'Tarde', 'Noite'] as $turnoChave): ?>
                     <?php
-                        $turnoSala = $sala['turnos'][$turnoChave] ?? ['situacao' => 'inativa', 'aulas' => [], 'reservas' => []];
+                        $turnoSala     = $sala['turnos'][$turnoChave] ?? ['situacao' => 'inativa', 'aulas' => [], 'reservas' => []];
                         $detalhesTurno = detalhesTurnoSala($turnoSala);
                     ?>
                     <td class="small">
-                      <span class="badge <?php echo htmlspecialchars(classeSituacaoSala((string) $turnoSala['situacao'])); ?>">
+                      <span
+                        class="badge <?php echo htmlspecialchars(classeSituacaoSala((string) $turnoSala['situacao'])); ?>">
                         <?php echo htmlspecialchars(labelSituacaoSala((string) $turnoSala['situacao'])); ?>
                       </span>
                       <?php if (! empty($detalhesTurno)): ?>
@@ -247,4 +251,3 @@
 </body>
 
 </html>
-

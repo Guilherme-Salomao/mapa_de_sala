@@ -1,4 +1,4 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -27,8 +27,8 @@
     $formDescricao = $registroForm['descricao'] ?? ($_GET['descricao'] ?? '');
     $formStatus = $registroForm['status'] ?? ($_GET['status_registro'] ?? 'Ativo');
 
-    $tituloPagina = 'Educacao Corporativa';
-    $subtituloPagina = 'Registre os dias em que o docente esta em curso';
+    $tituloPagina = 'Educação Corporativa';
+    $subtituloPagina = 'Registre os dias em que o docente está em curso';
     $botaoTopoTexto = '';
     $botaoTopoLink = '';
 ?>
@@ -39,7 +39,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Educacao Corporativa - SIGHA</title>
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
+  <title>Educação Corporativa - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -114,7 +115,7 @@
               </div>
 
               <div class="col-12">
-                <label class="form-label">Observacao</label>
+                <label class="form-label">Observação</label>
                 <textarea name="descricao" class="form-control" rows="2"><?php echo htmlspecialchars($formDescricao); ?></textarea>
               </div>
 
@@ -127,7 +128,7 @@
 
                 <button type="submit" class="btn app-btn-primary">
                   <i class="bi bi-save"></i>
-                  <?php echo $formEdicao ? 'Salvar Alteracao' : 'Salvar Curso'; ?>
+                  <?php echo $formEdicao ? 'Salvar Alteração' : 'Salvar Curso'; ?>
                 </button>
               </div>
             </form>
@@ -237,7 +238,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = "Educacao Corporativa";
+  if (pageTitle) pageTitle.textContent = "Educação Corporativa";
 
   const userName = document.getElementById("userName");
   if (userName) userName.textContent = <?php echo json_encode($usuarioLogado); ?>;

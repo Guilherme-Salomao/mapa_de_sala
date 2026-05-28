@@ -284,7 +284,6 @@ class Curso
 
                 if (
                     ! in_array((int) date('N', strtotime($dataAtual)), $diasPermitidos, true) ||
-                    $this->dataBloqueada($dataAtual, $turma) ||
                     $this->turmaTemAulaEmAlgumBloco($turmaId, $dataAtual, $blocosHorario)
                 ) {
                     $dataAtual = date('Y-m-d', strtotime($dataAtual . ' +1 day'));
@@ -298,10 +297,18 @@ class Curso
 
                     $horaInicioBloco = $blocoHorario['inicio'];
                     $horaFimBloco = $blocoHorario['fim'];
+                    $intervaloDisponivel = $this->intervaloDisponivelPorBloqueios($dataAtual, $turma, $horaInicioBloco, $horaFimBloco);
 
                     if ($this->turmaTemAulaNoDia($turmaId, $dataAtual, $horaInicioBloco, $horaFimBloco)) {
                         continue;
                     }
+
+                    if ($intervaloDisponivel === null) {
+                        continue;
+                    }
+
+                    $horaInicioBloco = $intervaloDisponivel['inicio'];
+                    $horaFimBloco = $intervaloDisponivel['fim'];
 
                     $salaBlocoId = $this->salaDisponivelNoDia($salaPreferencialId, $dataAtual, $horaInicioBloco, $horaFimBloco, $turmaId)
                         ? $salaPreferencialId
@@ -643,30 +650,88 @@ class Curso
         return true;
     }
 
-    private function dataBloqueada(string $data, array $turma): bool
+    private function bloqueioConflitaHorario(array $bloqueio, string $horaInicio, string $horaFim): bool
     {
-        $sql = "
-            SELECT tipo
+        $bloqueioInicio = $this->normalizarHora($bloqueio['hora_inicio'] ?? null);
+        $bloqueioFim = $this->normalizarHora($bloqueio['hora_fim'] ?? null);
+        $horaInicio = $this->normalizarHora($horaInicio);
+        $horaFim = $this->normalizarHora($horaFim);
+
+        if ($bloqueioInicio === '' || $bloqueioFim === '') {
+            return true;
+        }
+
+        return $bloqueioInicio < $horaFim && $bloqueioFim > $horaInicio;
+    }
+
+    private function normalizarHora(?string $hora): string
+    {
+        $hora = trim((string) $hora);
+
+        return $hora === '' ? '' : substr($hora, 0, 5);
+    }
+
+    private function intervaloDisponivelPorBloqueios(string $data, array $turma, string $horaInicio, string $horaFim): ?array
+    {
+        $inicioDisponivel = $horaInicio;
+        $fimDisponivel = $horaFim;
+
+        $stmt = $this->conn->prepare("
+            SELECT tipo, hora_inicio, hora_fim
             FROM calendario_bloqueios
             WHERE status = 'Ativo'
               AND data <= :data
               AND COALESCE(data_fim, data) >= :data
-        ";
-
-        $stmt = $this->conn->prepare($sql);
+        ");
         $stmt->execute([':data' => $data]);
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $bloqueio) {
-            if (($bloqueio['tipo'] ?? '') !== 'Parada Pedagogica') {
-                return true;
+            if (! $this->bloqueioConflitaHorario($bloqueio, $inicioDisponivel, $fimDisponivel)) {
+                continue;
             }
 
-            if ((int) ($turma['participa_parada_pedagogica'] ?? 1) === 1) {
-                return true;
+            if (($bloqueio['tipo'] ?? '') === 'Parada Pedagogica' && (int) ($turma['participa_parada_pedagogica'] ?? 1) !== 1) {
+                continue;
+            }
+
+            $bloqueioInicio = substr((string) ($bloqueio['hora_inicio'] ?? ''), 0, 5);
+            $bloqueioFim = substr((string) ($bloqueio['hora_fim'] ?? ''), 0, 5);
+
+            if ($bloqueioInicio === '' || $bloqueioFim === '') {
+                return null;
+            }
+
+            if ($bloqueioInicio <= $inicioDisponivel && $bloqueioFim >= $fimDisponivel) {
+                return null;
+            }
+
+            if ($bloqueioInicio <= $inicioDisponivel && $bloqueioFim > $inicioDisponivel) {
+                $inicioDisponivel = max($inicioDisponivel, $bloqueioFim);
+                continue;
+            }
+
+            if ($bloqueioInicio < $fimDisponivel && $bloqueioFim >= $fimDisponivel) {
+                $fimDisponivel = min($fimDisponivel, $bloqueioInicio);
+                continue;
+            }
+
+            if ($bloqueioInicio > $inicioDisponivel && $bloqueioFim < $fimDisponivel) {
+                $minutosAntes = $this->minutosEntre($inicioDisponivel, $bloqueioInicio);
+                $minutosDepois = $this->minutosEntre($bloqueioFim, $fimDisponivel);
+
+                if ($minutosAntes >= $minutosDepois) {
+                    $fimDisponivel = $bloqueioInicio;
+                } else {
+                    $inicioDisponivel = $bloqueioFim;
+                }
             }
         }
 
-        return false;
+        if (strtotime($inicioDisponivel) === false || strtotime($fimDisponivel) === false || strtotime($fimDisponivel) <= strtotime($inicioDisponivel)) {
+            return null;
+        }
+
+        return ['inicio' => $inicioDisponivel, 'fim' => $fimDisponivel];
     }
 
     private function diasPermitidosTurma(array $turma): array

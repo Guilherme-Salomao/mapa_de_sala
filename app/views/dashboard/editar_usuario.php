@@ -1,36 +1,36 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
     session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+    header('Location: ./?tipo=erro&msg=' . urlencode('FaÃ§a login para acessar o sistema.'));
     exit;
     }
 
     if (! isset($usuario) || empty($usuario)) {
-    header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('Usuário não encontrado.'));
+    header('Location: ./?page=usuarios&tipo=erro&msg=' . urlencode('UsuÃ¡rio nÃ£o encontrado.'));
     exit;
     }
 
-    $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuário';
+    $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'UsuÃ¡rio';
     $mensagem      = $_GET['msg'] ?? '';
     $tipo          = $_GET['tipo'] ?? '';
 
     $formAction  = './?page=usuarios&action=atualizar';
-    $botaoTexto  = 'Atualizar Usuário';
+    $botaoTexto  = 'Atualizar UsuÃ¡rio';
     $modoEdicao  = true;
     $usuarioForm = $usuario;
     $areas = $areas ?? [];
     $areasUsuario = $areasUsuario ?? [];
 
-    $tituloPagina    = 'Editar Usuário';
-    $subtituloPagina = 'Atualize os dados do usuário selecionado (Obs.: Caso a senha não seja preenchida, a senha atual será mantida)';
+    $tituloPagina    = 'Editar UsuÃ¡rio';
+    $subtituloPagina = 'Atualize os dados do usuÃ¡rio selecionado (Obs.: Caso a senha nÃ£o seja preenchida, a senha atual serÃ¡ mantida)';
     $botaoTopoTexto  = 'Voltar';
     $botaoTopoLink   = './?page=usuarios';
     $botaoTopoClasse = 'btn-outline-secondary';
     $botaoTopoIcone  = 'bi-arrow-left';
-    $botaoTexto      = 'Atualizar Usuário';
+    $botaoTexto      = 'Atualizar UsuÃ¡rio';
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -38,7 +38,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Editar Usuário - SIGHA</title>
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
+  <title>Editar UsuÃ¡rio - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
@@ -88,7 +89,7 @@
 
   <script>
   const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = "Editar Usuário";
+  if (pageTitle) pageTitle.textContent = "Editar UsuÃ¡rio";
 
   const userName = document.getElementById("userName");
   if (userName) userName.textContent = <?php echo json_encode($usuarioLogado) ?>;
@@ -121,7 +122,7 @@
       if ((senhaValor || confSenhaValor) && senhaValor !== confSenhaValor) {
         e.preventDefault();
         form.classList.add("was-validated");
-        alert("As senhas não conferem.");
+        alert("As senhas nÃ£o conferem.");
       }
     });
   }

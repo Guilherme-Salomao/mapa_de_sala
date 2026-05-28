@@ -1,14 +1,14 @@
-<?php
+﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
     session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+    header('Location: ./?tipo=erro&msg=' . urlencode('FaÃ§a login para acessar o sistema.'));
     exit;
     }
 
-    $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuário';
+    $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'UsuÃ¡rio';
 
     $mensagem = $_GET['msg'] ?? '';
     $tipoMsg  = $_GET['tipo'] ?? '';
@@ -34,6 +34,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
   <title>Salas - SIGHA</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -179,4 +180,3 @@
 </body>
 
 </html>
-

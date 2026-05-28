@@ -90,10 +90,13 @@ class CalendarioBloqueioController
     private function obterDadosPost(): array
     {
         $tipo = trim($_POST['tipo'] ?? 'Feriado');
+        $diaInteiro = isset($_POST['dia_inteiro']) ? 1 : 0;
 
         return [
             'data' => trim($_POST['data'] ?? ''),
             'data_fim' => $tipo === 'Recesso' ? trim($_POST['data_fim'] ?? '') : '',
+            'hora_inicio' => $diaInteiro === 1 ? '' : trim($_POST['hora_inicio'] ?? ''),
+            'hora_fim' => $diaInteiro === 1 ? '' : trim($_POST['hora_fim'] ?? ''),
             'titulo' => trim($_POST['titulo'] ?? ''),
             'tipo' => $tipo,
             'descricao' => trim($_POST['descricao'] ?? ''),
@@ -116,6 +119,16 @@ class CalendarioBloqueioController
             return false;
         }
 
+        if (($dados['hora_inicio'] !== '' || $dados['hora_fim'] !== '') && (
+            $dados['hora_inicio'] === '' ||
+            $dados['hora_fim'] === '' ||
+            strtotime($dados['hora_inicio']) === false ||
+            strtotime($dados['hora_fim']) === false ||
+            strtotime($dados['hora_fim']) <= strtotime($dados['hora_inicio'])
+        )) {
+            return false;
+        }
+
         if ($dados['tipo'] !== 'Recesso') {
             return true;
         }
@@ -131,6 +144,8 @@ class CalendarioBloqueioController
             'page' => 'calendario',
             'data' => $dados['data'],
             'data_fim' => $dados['data_fim'],
+            'hora_inicio' => $dados['hora_inicio'],
+            'hora_fim' => $dados['hora_fim'],
             'titulo' => $dados['titulo'],
             'tipo_bloqueio' => $dados['tipo'],
             'descricao' => $dados['descricao'],

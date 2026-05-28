@@ -126,6 +126,7 @@ class AprendizagemQuadro
             INNER JOIN usuarios u ON u.id = d.usuario_id
             INNER JOIN docente_unidades_curriculares duc ON duc.docente_id = d.id
             WHERE d.status = 'Ativo'
+              AND d.area_atuacao = 'Aprendizagem'
             GROUP BY d.id, u.nome, d.area_atuacao
             ORDER BY u.nome ASC
         ";
@@ -147,6 +148,10 @@ class AprendizagemQuadro
 
         if (! $this->docenteVinculadoUc((int) $dados['docente_id'], (int) $dados['unidade_curricular_id'])) {
             return ['sucesso' => false, 'mensagem' => 'Docente sem vinculo com a UC selecionada.'];
+        }
+
+        if (! $this->docenteAreaAprendizagem((int) $dados['docente_id'])) {
+            return ['sucesso' => false, 'mensagem' => 'Docente precisa ser da area Aprendizagem para Aceleracao.'];
         }
 
         $horaInicio = substr((string) $turma['hora_inicio'], 0, 5);
@@ -352,7 +357,7 @@ class AprendizagemQuadro
 
     private function motivoBloqueio(int $turmaId, int $salaId, int $docenteId, string $data, string $horaInicio, string $horaFim): ?string
     {
-        if ($this->dataBloqueada($data, $turmaId)) {
+        if ($this->dataBloqueada($data, $turmaId, $horaInicio, $horaFim)) {
             return 'calendario bloqueado';
         }
 
@@ -379,12 +384,12 @@ class AprendizagemQuadro
         return null;
     }
 
-    private function dataBloqueada(string $data, int $turmaId): bool
+    private function dataBloqueada(string $data, int $turmaId, string $horaInicio, string $horaFim): bool
     {
         $turma = $this->buscarTurma($turmaId);
 
         $stmt = $this->conn->prepare("
-            SELECT tipo
+            SELECT tipo, hora_inicio, hora_fim
             FROM calendario_bloqueios
             WHERE status = 'Ativo'
               AND data <= :data
@@ -393,6 +398,10 @@ class AprendizagemQuadro
         $stmt->execute([':data' => $data]);
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $bloqueio) {
+            if (! $this->bloqueioConflitaHorario($bloqueio, $horaInicio, $horaFim)) {
+                continue;
+            }
+
             if (($bloqueio['tipo'] ?? '') !== 'Parada Pedagogica') {
                 return true;
             }
@@ -403,6 +412,18 @@ class AprendizagemQuadro
         }
 
         return false;
+    }
+
+    private function bloqueioConflitaHorario(array $bloqueio, string $horaInicio, string $horaFim): bool
+    {
+        $bloqueioInicio = (string) ($bloqueio['hora_inicio'] ?? '');
+        $bloqueioFim = (string) ($bloqueio['hora_fim'] ?? '');
+
+        if ($bloqueioInicio === '' || $bloqueioFim === '') {
+            return true;
+        }
+
+        return $bloqueioInicio < $horaFim && $bloqueioFim > $horaInicio;
     }
 
     private function turmaOcupada(int $turmaId, string $data, string $horaInicio, string $horaFim): bool
@@ -526,6 +547,21 @@ class AprendizagemQuadro
             ':docente_id' => $docenteId,
             ':uc_id' => $ucId,
         ]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function docenteAreaAprendizagem(int $docenteId): bool
+    {
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM docentes
+            WHERE id = :docente_id
+              AND status = 'Ativo'
+              AND area_atuacao = 'Aprendizagem'
+            LIMIT 1
+        ");
+        $stmt->execute([':docente_id' => $docenteId]);
 
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
