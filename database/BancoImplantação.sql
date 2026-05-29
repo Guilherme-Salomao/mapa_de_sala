@@ -268,7 +268,12 @@ CREATE TABLE IF NOT EXISTS sala_trocas (
   usuario_id INT DEFAULT NULL,
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_sala_trocas_aula (quadro_horario_id),
-  KEY idx_sala_trocas_salas (sala_origem_id, sala_destino_id)
+  KEY idx_sala_trocas_salas (sala_origem_id, sala_destino_id),
+  KEY idx_sala_trocas_usuario (usuario_id),
+  CONSTRAINT fk_sala_trocas_aula FOREIGN KEY (quadro_horario_id) REFERENCES quadro_horario(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_sala_trocas_origem FOREIGN KEY (sala_origem_id) REFERENCES salas(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_sala_trocas_destino FOREIGN KEY (sala_destino_id) REFERENCES salas(id) ON UPDATE CASCADE,
+  CONSTRAINT fk_sala_trocas_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS sistema_logs (
@@ -289,50 +294,5 @@ CREATE TABLE IF NOT EXISTS sistema_logs (
   KEY idx_sistema_logs_pagina_acao (pagina, acao),
   KEY idx_sistema_logs_criado_em (criado_em)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO areas (id, nome, status, criado_em, atualizado_em) VALUES
-(1, 'Tecnologia', 'Ativa', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(2, 'Saude', 'Ativa', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(3, 'Aprendizagem', 'Ativa', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(4, 'Gestao e Negocios', 'Ativa', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(5, 'Beleza e Estetica', 'Ativa', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON DUPLICATE KEY UPDATE nome = VALUES(nome), status = VALUES(status);
-
-INSERT INTO recursos (id, nome, descricao, criado_em) VALUES
-(1, 'Computadores', NULL, CURRENT_TIMESTAMP),
-(2, 'Projetor', NULL, CURRENT_TIMESTAMP),
-(3, 'Ar-condicionado', NULL, CURRENT_TIMESTAMP),
-(4, 'Lousa Digital', NULL, CURRENT_TIMESTAMP),
-(5, 'TV', NULL, CURRENT_TIMESTAMP),
-(6, 'Impressora 3D', NULL, CURRENT_TIMESTAMP),
-(7, 'Quadro branco', NULL, CURRENT_TIMESTAMP),
-(8, 'Sistema de som', NULL, CURRENT_TIMESTAMP)
-ON DUPLICATE KEY UPDATE nome = VALUES(nome), descricao = VALUES(descricao);
-
-INSERT INTO usuarios (
-  id,
-  nome,
-  email,
-  senha,
-  nivel_acesso,
-  status,
-  ultimo_login,
-  criado_em,
-  atualizado_em
-) VALUES (
-  1,
-  'Administrador',
-  'vitrineata@vitrineata.com.br',
-  '$2y$10$KUdIGr8ADlkQkfsUZrVCfuQRueTH0rHluh3bakFrKQja9TNMJ19yK',
-  'Admin',
-  'Ativo',
-  NULL,
-  CURRENT_TIMESTAMP,
-  CURRENT_TIMESTAMP
-)
-ON DUPLICATE KEY UPDATE
-  nome = VALUES(nome),
-  nivel_acesso = VALUES(nivel_acesso),
-  status = VALUES(status);
 
 SET FOREIGN_KEY_CHECKS = 1;

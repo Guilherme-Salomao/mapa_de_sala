@@ -75,7 +75,7 @@
     function textoHorarioBloqueioQuadro(array $bloqueio): string
     {
         if (empty($bloqueio['hora_inicio']) || empty($bloqueio['hora_fim'])) {
-            return 'Dia inteiro';
+            return '';
         }
 
         return substr((string) $bloqueio['hora_inicio'], 0, 5) . ' até ' . substr((string) $bloqueio['hora_fim'], 0, 5);
@@ -316,15 +316,17 @@
                         </button>
                         <?php endif; ?>
                       </div>
-
                       <?php foreach ($bloqueiosDia as $bloqueioDia): ?>
+                      <?php $textoHorarioBloqueio = textoHorarioBloqueioQuadro($bloqueioDia); ?>
                       <div class="border rounded p-2 mb-2 small bg-warning-subtle border-warning">
                         <div class="fw-semibold text-center">
                           <?php echo htmlspecialchars(textoPrincipalBloqueioQuadro($bloqueioDia)); ?>
                         </div>
+                        <?php if ($textoHorarioBloqueio !== ''): ?>
                         <div class="text-center">
-                          <?php echo htmlspecialchars(textoHorarioBloqueioQuadro($bloqueioDia)); ?>
+                          <?php echo htmlspecialchars($textoHorarioBloqueio); ?>
                         </div>
+                        <?php endif; ?>
                         <?php if (mostrarTituloBloqueioQuadro($bloqueioDia)): ?>
                         <div class="text-center">
                           <?php echo htmlspecialchars($bloqueioDia['titulo'] ?? 'Data bloqueada'); ?>

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -27,6 +27,7 @@
         'hora_inicio_tarde'   => '',
         'hora_fim_tarde'      => '',
         'participa_parada_pedagogica' => 1,
+        'participa_recesso_escolar' => 0,
         'aula_segunda'        => 1,
         'aula_terca'          => 1,
         'aula_quarta'         => 1,

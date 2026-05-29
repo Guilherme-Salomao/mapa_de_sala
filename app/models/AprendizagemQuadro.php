@@ -402,11 +402,15 @@ class AprendizagemQuadro
                 continue;
             }
 
-            if (($bloqueio['tipo'] ?? '') !== 'Parada Pedagogica') {
+            if (! in_array(($bloqueio['tipo'] ?? ''), ['Parada Pedagogica', 'Recesso'], true)) {
                 return true;
             }
 
-            if ((int) ($turma['participa_parada_pedagogica'] ?? 1) === 1) {
+            if (($bloqueio['tipo'] ?? '') === 'Parada Pedagogica' && (int) ($turma['participa_parada_pedagogica'] ?? 1) === 1) {
+                return true;
+            }
+
+            if (($bloqueio['tipo'] ?? '') === 'Recesso' && (int) ($turma['participa_recesso_escolar'] ?? 0) === 1) {
                 return true;
             }
         }
@@ -575,6 +579,7 @@ class AprendizagemQuadro
                 hora_inicio,
                 hora_fim,
                 participa_parada_pedagogica,
+                participa_recesso_escolar,
                 aula_segunda,
                 aula_terca,
                 aula_quarta,

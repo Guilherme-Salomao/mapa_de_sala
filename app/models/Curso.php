@@ -27,6 +27,7 @@ class Curso
                 co.hora_inicio_tarde,
                 co.hora_fim_tarde,
                 co.participa_parada_pedagogica,
+                co.participa_recesso_escolar,
                 co.aula_segunda,
                 co.aula_terca,
                 co.aula_quarta,
@@ -108,6 +109,7 @@ class Curso
                 hora_inicio_tarde,
                 hora_fim_tarde,
                 participa_parada_pedagogica,
+                participa_recesso_escolar,
                 aula_segunda,
                 aula_terca,
                 aula_quarta,
@@ -396,6 +398,7 @@ class Curso
                     hora_inicio_tarde,
                     hora_fim_tarde,
                     participa_parada_pedagogica,
+                    participa_recesso_escolar,
                     aula_segunda,
                     aula_terca,
                     aula_quarta,
@@ -414,6 +417,7 @@ class Curso
                     :hora_inicio_tarde,
                     :hora_fim_tarde,
                     :participa_parada_pedagogica,
+                    :participa_recesso_escolar,
                     :aula_segunda,
                     :aula_terca,
                     :aula_quarta,
@@ -437,6 +441,7 @@ class Curso
                 ':hora_inicio_tarde'   => ! empty($dados['integral']) ? ($dados['hora_inicio_tarde'] ?: null) : null,
                 ':hora_fim_tarde'      => ! empty($dados['integral']) ? ($dados['hora_fim_tarde'] ?: null) : null,
                 ':participa_parada_pedagogica' => (int) $dados['participa_parada_pedagogica'],
+                ':participa_recesso_escolar' => (int) $dados['participa_recesso_escolar'],
                 ':aula_segunda'        => (int) $dados['aula_segunda'],
                 ':aula_terca'          => (int) $dados['aula_terca'],
                 ':aula_quarta'         => (int) $dados['aula_quarta'],
@@ -694,6 +699,10 @@ class Curso
                 continue;
             }
 
+            if (($bloqueio['tipo'] ?? '') === 'Recesso' && (int) ($turma['participa_recesso_escolar'] ?? 0) !== 1) {
+                continue;
+            }
+
             $bloqueioInicio = substr((string) ($bloqueio['hora_inicio'] ?? ''), 0, 5);
             $bloqueioFim = substr((string) ($bloqueio['hora_fim'] ?? ''), 0, 5);
 
@@ -809,6 +818,7 @@ class Curso
                     hora_inicio_tarde = :hora_inicio_tarde,
                     hora_fim_tarde = :hora_fim_tarde,
                     participa_parada_pedagogica = :participa_parada_pedagogica,
+                    participa_recesso_escolar = :participa_recesso_escolar,
                     aula_segunda = :aula_segunda,
                     aula_terca = :aula_terca,
                     aula_quarta = :aula_quarta,
@@ -833,6 +843,7 @@ class Curso
                 ':hora_inicio_tarde'   => ! empty($dados['integral']) ? ($dados['hora_inicio_tarde'] ?: null) : null,
                 ':hora_fim_tarde'      => ! empty($dados['integral']) ? ($dados['hora_fim_tarde'] ?: null) : null,
                 ':participa_parada_pedagogica' => (int) $dados['participa_parada_pedagogica'],
+                ':participa_recesso_escolar' => (int) $dados['participa_recesso_escolar'],
                 ':aula_segunda'        => (int) $dados['aula_segunda'],
                 ':aula_terca'          => (int) $dados['aula_terca'],
                 ':aula_quarta'         => (int) $dados['aula_quarta'],

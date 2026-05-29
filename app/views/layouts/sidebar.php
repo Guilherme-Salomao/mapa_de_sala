@@ -70,6 +70,14 @@
       <span>Educação Corporativa</span>
     </a>
 
+    <?php if ($isProfessorMenu): ?>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_turma' ? 'active' : '' ?>"
+      href="./?page=relatorio_turma">
+      <i class="bi bi-table"></i>
+      <span>Relatório Turma</span>
+    </a>
+    <?php endif; ?>
+
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'cursos' ? 'active' : '' ?>"
       href="./?page=cursos">
       <i class="bi bi-journal-bookmark"></i>
@@ -213,6 +221,14 @@
       <i class="bi bi-clipboard-data"></i>
       <span>Relatório Docente</span>
     </a>
+
+    <?php if ($isProfessorMenu): ?>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_turma' ? 'active' : '' ?>"
+      href="./?page=relatorio_turma">
+      <i class="bi bi-table"></i>
+      <span>Relatório Turma</span>
+    </a>
+    <?php endif; ?>
 
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'cursos' ? 'active' : '' ?>"
       href="./?page=cursos">

@@ -78,6 +78,14 @@
       </label>
     </div>
 
+    <div class="col-12">
+      <label class="form-check border rounded p-2 d-flex align-items-center gap-2">
+        <input class="form-check-input m-0" type="checkbox" name="participa_recesso_escolar" value="1"
+          <?php echo((int) ($cursoForm['participa_recesso_escolar'] ?? 0) === 1) ? 'checked' : ''; ?>>
+        <span class="fw-semibold">Participa de recesso escolar</span>
+      </label>
+    </div>
+
     <div class="col-12 col-md-3 turma-integral-campo">
       <label for="hora_inicio_tarde" class="form-label">2º turno - Hora inicial</label>
       <input type="time" class="form-control" id="hora_inicio_tarde" name="hora_inicio_tarde"

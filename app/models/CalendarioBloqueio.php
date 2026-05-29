@@ -104,11 +104,17 @@ class CalendarioBloqueio
 
     public function bloqueioAplicaTurma(array $bloqueio, ?array $turma = null): bool
     {
-        if (($bloqueio['tipo'] ?? '') !== 'Parada Pedagogica') {
-            return true;
+        $tipo = $bloqueio['tipo'] ?? '';
+
+        if ($tipo === 'Parada Pedagogica') {
+            return (int) ($turma['participa_parada_pedagogica'] ?? 1) === 1;
         }
 
-        return (int) ($turma['participa_parada_pedagogica'] ?? 1) === 1;
+        if ($tipo === 'Recesso') {
+            return (int) ($turma['participa_recesso_escolar'] ?? 0) === 1;
+        }
+
+        return true;
     }
 
     public function bloqueioConflitaHorario(array $bloqueio, ?string $horaInicio, ?string $horaFim): bool
