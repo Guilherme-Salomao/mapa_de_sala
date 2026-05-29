@@ -10,7 +10,7 @@ SET @coluna_existe := (
 
 SET @sql := IF(
   @coluna_existe = 0,
-  'ALTER TABLE cursos_ofertas ADD COLUMN participa_recesso_escolar TINYINT(1) NOT NULL DEFAULT 0 AFTER participa_parada_pedagogica',
+  'ALTER TABLE cursos_ofertas ADD COLUMN participa_recesso_escolar TINYINT(1) NOT NULL DEFAULT 1 AFTER participa_parada_pedagogica',
   'SELECT ''Coluna participa_recesso_escolar ja existe.'' AS mensagem'
 );
 

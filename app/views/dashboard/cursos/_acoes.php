@@ -1,7 +1,11 @@
 <?php
     $cursoId = (int) ($cursoId ?? 0);
     $cursoModeloId = (int) ($curso['curso_modelo_id'] ?? 0);
+    $cursoAreaId = (int) ($curso['curso_area_id'] ?? 0);
     $ucsTurma = $ucsPorCursoModelo[$cursoModeloId] ?? [];
+    $docentesGeracaoTurma = array_values(array_filter(($docentesGeracao ?? []), static function (array $docente) use ($cursoAreaId): bool {
+        return $cursoAreaId <= 0 || (int) ($docente['area_id'] ?? 0) === $cursoAreaId;
+    }));
 ?>
 
 <div class="app-actions">
@@ -116,8 +120,20 @@
             </select>
           </div>
 
+          <div class="mb-3 text-start">
+            <label class="form-label" for="docente_id_<?php echo $cursoId; ?>">Docente preferencial</label>
+            <select class="form-select" id="docente_id_<?php echo $cursoId; ?>" name="docente_id">
+              <option value="">Sem docente preferencial</option>
+              <?php foreach ($docentesGeracaoTurma as $docenteGeracao): ?>
+              <option value="<?php echo (int) $docenteGeracao['id']; ?>">
+                <?php echo htmlspecialchars($docenteGeracao['nome'] ?? ''); ?>
+              </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+
           <div class="alert alert-warning mb-0 text-start">
-            A geração respeita aulas já lançadas, calendário, reserva de salas e dias de aula da turma.
+            A geração respeita aulas já lançadas, calendário, reserva de salas, vínculo do docente com a UC, escala e dias de aula da turma.
           </div>
         </div>
         <div class="modal-footer">

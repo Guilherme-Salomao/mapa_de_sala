@@ -23,6 +23,7 @@ class CursoController
         $cursos      = $this->cursoModel->listar($busca, $status, $escopo);
         $totalCursos = $this->cursoModel->contar($busca, $status, $escopo);
         $salas       = $this->cursoModel->listarSalasAtivas();
+        $docentesGeracao = $this->cursoModel->listarDocentesAtivos($escopo);
         $ucsPorCursoModelo = $this->cursoModel->listarUcsPorCursoModelos(array_column($cursos, 'curso_modelo_id'));
 
         require_once __DIR__ . '/../views/dashboard/cursos.php';
@@ -161,6 +162,7 @@ class CursoController
         $modoGeracao = trim($_POST['modo_geracao'] ?? 'completo');
         $dataInicio = trim($_POST['data_inicio'] ?? '');
         $salaId = (int) ($_POST['sala_id'] ?? 0);
+        $docenteId = (int) ($_POST['docente_id'] ?? 0);
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
         if ($id <= 0 || $dataInicio === '' || ! $this->cursoModel->turmaPertenceEscopo($id, $escopo)) {
@@ -179,10 +181,16 @@ class CursoController
                 $unidadeCurricularId,
                 $diasSemana,
                 $dataInicio,
-                $salaId > 0 ? $salaId : null
+                $salaId > 0 ? $salaId : null,
+                $docenteId > 0 ? $docenteId : null
             );
         } else {
-            $resultado = $this->cursoModel->gerarQuadroCompleto($id, $dataInicio, $salaId > 0 ? $salaId : null);
+            $resultado = $this->cursoModel->gerarQuadroCompleto(
+                $id,
+                $dataInicio,
+                $salaId > 0 ? $salaId : null,
+                $docenteId > 0 ? $docenteId : null
+            );
         }
 
         $tipo = ! empty($resultado['sucesso']) ? 'sucesso' : 'erro';

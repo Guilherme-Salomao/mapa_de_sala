@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS cursos_ofertas (
   hora_inicio_tarde TIME DEFAULT NULL,
   hora_fim_tarde TIME DEFAULT NULL,
   participa_parada_pedagogica TINYINT(1) NOT NULL DEFAULT 1,
-  participa_recesso_escolar TINYINT(1) NOT NULL DEFAULT 0,
+  participa_recesso_escolar TINYINT(1) NOT NULL DEFAULT 1,
   aula_segunda TINYINT(1) NOT NULL DEFAULT 1,
   aula_terca TINYINT(1) NOT NULL DEFAULT 1,
   aula_quarta TINYINT(1) NOT NULL DEFAULT 1,

@@ -295,7 +295,9 @@
                         $bloqueiosDia = $bloqueiosPorData[$dataIso] ?? [];
                         $horaInicioOfertaDia = substr((string) ($ofertaSelecionada['hora_inicio'] ?? ''), 0, 5);
                         $horaFimOfertaDia = substr((string) ($ofertaSelecionada['hora_fim'] ?? ''), 0, 5);
-                        $horarioLancamentoDia = $horariosLancamentoPorData[$dataIso] ?? horarioLancamentoQuadro($bloqueiosDia, $horaInicioOfertaDia, $horaFimOfertaDia);
+                        $horarioLancamentoDia = array_key_exists($dataIso, $horariosLancamentoPorData)
+                            ? $horariosLancamentoPorData[$dataIso]
+                            : horarioLancamentoQuadro($bloqueiosDia, $horaInicioOfertaDia, $horaFimOfertaDia);
                         $diaBloqueado = $horarioLancamentoDia === null && ! empty($bloqueiosDia);
                         $permiteLancamento = $mostrarDia && $turmaTemAulaDia && ! $diaBloqueado && $coluna !== 0 && ! ($coluna === 6 && $bloquearSabado) && $horarioLancamentoDia !== null;
                         $salasDisponiveisDia = $salasDisponiveisPorData[$dataIso] ?? [];

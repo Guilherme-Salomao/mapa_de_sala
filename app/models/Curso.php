@@ -38,6 +38,7 @@ class Curso
                 co.descricao,
                 co.criado_em,
                 co.atualizado_em,
+                cm.area_id AS curso_area_id,
                 cm.nome AS curso_modelo_nome
             FROM {$this->table} co
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
@@ -251,7 +252,29 @@ class Curso
         return $ucs;
     }
 
-    public function gerarQuadroCompleto(int $turmaId, string $dataInicio, ?int $salaPreferencialId = null): array
+    public function listarDocentesAtivos(array $escopo = ['tipo' => 'todos', 'ids' => []]): array
+    {
+        $sql = "
+            SELECT d.id, a.id AS area_id, u.nome, u.email
+            FROM docentes d
+            INNER JOIN usuarios u ON u.id = d.usuario_id
+            LEFT JOIN areas a ON a.nome = d.area_atuacao
+            WHERE d.status = 'Ativo'
+              AND u.status = 'Ativo'
+        ";
+        $params = [];
+
+        $this->aplicarEscopoDocente($sql, $params, $escopo);
+
+        $sql .= " ORDER BY u.nome ASC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function gerarQuadroCompleto(int $turmaId, string $dataInicio, ?int $salaPreferencialId = null, ?int $docentePreferencialId = null): array
     {
         $turma = $this->buscarPorId($turmaId);
 
@@ -314,6 +337,7 @@ class Curso
             $minutosRestantesUc = 0;
             $aulasCriadas = 0;
             $blocosSemSala = 0;
+            $blocosSemDocente = 0;
             $guard = 0;
 
             $this->avancarParaProximaUcPendente($ucs, $minutosLancados, $ucIndex, $minutosRestantesUc);
@@ -372,15 +396,24 @@ class Curso
 
                         $minutosBloco = min($minutosRestantesUc, $minutosRestantesBloco);
                         $fimBloco = $this->somarMinutos($cursor, $minutosBloco);
+                        $ucAtualId = (int) $ucs[$ucIndex]['id'];
+                        $docenteBlocoId = $this->docenteDisponivelParaAula($docentePreferencialId, $ucAtualId, $dataAtual, $cursor, $fimBloco)
+                            ? $docentePreferencialId
+                            : null;
+
+                        if ($docentePreferencialId !== null && $docenteBlocoId === null) {
+                            $blocosSemDocente++;
+                        }
 
                         $this->inserirAulaGerada([
                             'curso_oferta_id' => $turmaId,
-                            'unidade_curricular_id' => (int) $ucs[$ucIndex]['id'],
+                            'unidade_curricular_id' => $ucAtualId,
                             'sala_id' => $salaBlocoId,
                             'data_aula' => $dataAtual,
                             'hora_inicio' => $cursor,
                             'hora_fim' => $fimBloco,
                             'divisao_por_hora' => $minutosBloco < $minutosRestantesBloco ? 1 : 0,
+                            'docente_id' => $docenteBlocoId,
                         ]);
 
                         $aulasCriadas++;
@@ -410,7 +443,7 @@ class Curso
 
             return [
                 'sucesso' => true,
-                'mensagem' => $aulasCriadas . ' aula(s) geradas para completar o restante do curso. Blocos sem sala: ' . $blocosSemSala . '. Previsao de termino: ' . date('d/m/Y', strtotime($dataAtual . ' -1 day')) . '.',
+                'mensagem' => $aulasCriadas . ' aula(s) geradas para completar o restante do curso. Blocos sem sala: ' . $blocosSemSala . '. Blocos sem docente: ' . $blocosSemDocente . '. Previsao de termino: ' . date('d/m/Y', strtotime($dataAtual . ' -1 day')) . '.',
             ];
         } catch (Throwable $e) {
             if ($this->conn->inTransaction()) {
@@ -426,7 +459,8 @@ class Curso
         int $unidadeCurricularId,
         array $diasSemana,
         string $dataInicio,
-        ?int $salaPreferencialId = null
+        ?int $salaPreferencialId = null,
+        ?int $docentePreferencialId = null
     ): array {
         $turma = $this->buscarPorId($turmaId);
 
@@ -483,6 +517,7 @@ class Curso
             $dataAtual = date('Y-m-d', $diaInicio);
             $aulasCriadas = 0;
             $blocosSemSala = 0;
+            $blocosSemDocente = 0;
             $guard = 0;
 
             while ($minutosRestantesUc > 0 && $guard < $limiteDiasCalendario) {
@@ -525,6 +560,13 @@ class Curso
                     $minutosDisponiveis = $this->minutosEntre($horaInicioBloco, $horaFimBloco);
                     $minutosBloco = min($minutosRestantesUc, $minutosDisponiveis);
                     $horaFimAula = $this->somarMinutos($horaInicioBloco, $minutosBloco);
+                    $docenteBlocoId = $this->docenteDisponivelParaAula($docentePreferencialId, $unidadeCurricularId, $dataAtual, $horaInicioBloco, $horaFimAula)
+                        ? $docentePreferencialId
+                        : null;
+
+                    if ($docentePreferencialId !== null && $docenteBlocoId === null) {
+                        $blocosSemDocente++;
+                    }
 
                     $this->inserirAulaGerada([
                         'curso_oferta_id' => $turmaId,
@@ -534,6 +576,7 @@ class Curso
                         'hora_inicio' => $horaInicioBloco,
                         'hora_fim' => $horaFimAula,
                         'divisao_por_hora' => $minutosBloco < $minutosDisponiveis ? 1 : 0,
+                        'docente_id' => $docenteBlocoId,
                     ]);
 
                     $aulasCriadas++;
@@ -558,7 +601,7 @@ class Curso
             return [
                 'sucesso' => true,
                 'mensagem' => $aulasCriadas . ' aula(s) geradas para ' . ($uc['codigo'] ?? 'UC') .
-                    '. Blocos sem sala: ' . $blocosSemSala . '. Ultima aula: ' . date('d/m/Y', strtotime($dataAtual . ' -1 day')) . '.',
+                    '. Blocos sem sala: ' . $blocosSemSala . '. Blocos sem docente: ' . $blocosSemDocente . '. Ultima aula: ' . date('d/m/Y', strtotime($dataAtual . ' -1 day')) . '.',
             ];
         } catch (Throwable $e) {
             if ($this->conn->inTransaction()) {
@@ -771,6 +814,166 @@ class Curso
             ':hora_fim' => $dados['hora_fim'],
             ':divisao_por_hora' => $dados['divisao_por_hora'],
         ]);
+
+        $aulaId = (int) $this->conn->lastInsertId();
+        $docenteId = (int) ($dados['docente_id'] ?? 0);
+
+        if ($aulaId > 0 && $docenteId > 0) {
+            $sqlDocente = "
+                INSERT INTO quadro_horario_docentes (
+                    quadro_horario_id,
+                    docente_id
+                ) VALUES (
+                    :quadro_horario_id,
+                    :docente_id
+                )
+            ";
+
+            $stmtDocente = $this->conn->prepare($sqlDocente);
+            $stmtDocente->execute([
+                ':quadro_horario_id' => $aulaId,
+                ':docente_id' => $docenteId,
+            ]);
+        }
+    }
+
+    private function docenteDisponivelParaAula(?int $docenteId, int $unidadeCurricularId, string $data, string $horaInicio, string $horaFim): bool
+    {
+        if ($docenteId === null || $docenteId <= 0) {
+            return false;
+        }
+
+        return $this->docenteVinculadoUc($docenteId, $unidadeCurricularId)
+            && $this->docenteTemEscala($docenteId, $data, $horaInicio, $horaFim)
+            && ! $this->docenteTemConflito($docenteId, $data, $horaInicio, $horaFim);
+    }
+
+    private function docenteVinculadoUc(int $docenteId, int $unidadeCurricularId): bool
+    {
+        $sql = "
+            SELECT docente_id
+            FROM docente_unidades_curriculares
+            WHERE docente_id = :docente_id
+              AND unidade_curricular_id = :unidade_curricular_id
+            LIMIT 1
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([
+            ':docente_id' => $docenteId,
+            ':unidade_curricular_id' => $unidadeCurricularId,
+        ]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function docenteTemConflito(int $docenteId, string $data, string $horaInicio, string $horaFim): bool
+    {
+        $sql = "
+            SELECT qh.id
+            FROM quadro_horario qh
+            INNER JOIN quadro_horario_docentes qhd ON qhd.quadro_horario_id = qh.id
+            WHERE qhd.docente_id = :docente_id
+              AND qh.data_aula = :data
+              AND qh.status = 'Ativa'
+              AND qh.hora_inicio < :hora_fim
+              AND qh.hora_fim > :hora_inicio
+            LIMIT 1
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([
+            ':docente_id' => $docenteId,
+            ':data' => $data,
+            ':hora_inicio' => $horaInicio,
+            ':hora_fim' => $horaFim,
+        ]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function docenteTemEscala(int $docenteId, string $data, string $horaInicio, string $horaFim): bool
+    {
+        $diaSemana = $this->diaSemanaPortugues($data);
+        $periodos = $this->periodosPorHorario($horaInicio, $horaFim);
+
+        if ($diaSemana === '' || empty($periodos)) {
+            return false;
+        }
+
+        $placeholders = [];
+        $params = [
+            ':docente_id' => $docenteId,
+            ':dia_semana' => $diaSemana,
+        ];
+
+        foreach ($periodos as $index => $periodo) {
+            $placeholder = ':periodo_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $periodo;
+        }
+
+        $sql = "
+            SELECT id
+            FROM docente_escala
+            WHERE docente_id = :docente_id
+              AND dia_semana = :dia_semana
+              AND periodo IN (" . implode(',', $placeholders) . ")
+            LIMIT 1
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function diaSemanaPortugues(string $data): string
+    {
+        $timestamp = strtotime($data);
+
+        if ($timestamp === false) {
+            return '';
+        }
+
+        return [
+            1 => 'Segunda',
+            2 => 'Terça',
+            3 => 'Quarta',
+            4 => 'Quinta',
+            5 => 'Sexta',
+            6 => 'Sábado',
+            7 => 'Domingo',
+        ][(int) date('N', $timestamp)] ?? '';
+    }
+
+    private function periodosPorHorario(string $horaInicio, string $horaFim): array
+    {
+        $inicio = strtotime($horaInicio);
+        $fim = strtotime($horaFim);
+
+        if ($inicio === false || $fim === false || $fim <= $inicio) {
+            return [];
+        }
+
+        $periodos = [];
+        $faixas = [
+            'Manhã' => ['00:00', '12:00'],
+            'Tarde' => ['12:00', '18:00'],
+            'Noite' => ['18:00', '23:59'],
+        ];
+
+        foreach ($faixas as $periodo => [$inicioFaixa, $fimFaixa]) {
+            $base = date('Y-m-d ', $inicio);
+            $faixaInicio = strtotime($base . $inicioFaixa);
+            $faixaFim = strtotime($base . $fimFaixa);
+
+            if ($faixaInicio !== false && $faixaFim !== false && $inicio < $faixaFim && $fim > $faixaInicio) {
+                $periodos[] = $periodo;
+            }
+        }
+
+        return array_values(array_unique($periodos));
     }
 
     private function salaDisponivelNoDia(?int $salaId, string $data, string $horaInicio, string $horaFim, int $turmaId): bool
@@ -1149,6 +1352,31 @@ class Curso
                   AND uc_escopo.id IN (" . implode(',', $placeholders) . ")
             )";
         }
+    }
+
+    private function aplicarEscopoDocente(string &$sql, array &$params, array $escopo): void
+    {
+        $tipo = $escopo['tipo'] ?? 'todos';
+        $ids = array_values(array_filter(array_map('intval', $escopo['ids'] ?? [])));
+
+        if ($tipo === 'todos') {
+            return;
+        }
+
+        if ($tipo !== 'areas' || empty($ids)) {
+            $sql .= " AND 1 = 0";
+            return;
+        }
+
+        $placeholders = [];
+
+        foreach ($ids as $index => $id) {
+            $placeholder = ':escopo_docente_area_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $id;
+        }
+
+        $sql .= " AND a.id IN (" . implode(',', $placeholders) . ")";
     }
 
 }

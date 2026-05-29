@@ -26,7 +26,7 @@
         'hora_inicio_tarde'   => $_GET['hora_inicio_tarde'] ?? '',
         'hora_fim_tarde'      => $_GET['hora_fim_tarde'] ?? '',
         'participa_parada_pedagogica' => $_GET['participa_parada_pedagogica'] ?? '1',
-        'participa_recesso_escolar' => $_GET['participa_recesso_escolar'] ?? '0',
+        'participa_recesso_escolar' => $_GET['participa_recesso_escolar'] ?? '1',
         'aula_segunda'        => $_GET['aula_segunda'] ?? '1',
         'aula_terca'          => $_GET['aula_terca'] ?? '1',
         'aula_quarta'         => $_GET['aula_quarta'] ?? '1',
