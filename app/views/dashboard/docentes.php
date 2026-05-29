@@ -22,6 +22,15 @@
     $botaoTopoLink   = './?page=docentes&action=cadastrar';
     $botaoTopoClasse = 'app-btn-primary';
     $botaoTopoIcone  = 'bi-person-plus';
+
+    function formatarHorasDocentes(float $horas): string
+    {
+        if (fmod($horas, 1.0) === 0.0) {
+            return (int) $horas . 'h';
+        }
+
+        return number_format($horas, 1, ',', '.') . 'h';
+    }
 ?>
 
 <!doctype html>
@@ -97,7 +106,7 @@
                       <div class="small text-muted"><?php echo htmlspecialchars($docente['usuario_email'] ?? ''); ?></div>
                     </td>
                     <td><?php echo htmlspecialchars($docente['area_atuacao'] ?? ''); ?></td>
-                    <td><?php echo (int) ($docente['horas_semanais'] ?? 0); ?>h</td>
+                    <td><?php echo formatarHorasDocentes((float) ($docente['horas_semanais'] ?? 0)); ?></td>
                     <td>
                       <?php
                           $statusDocente = $docente['status'] ?? 'Ativo';

@@ -67,7 +67,7 @@
     </div>
 
     <div class="col-12 <?php echo $perfilProprio ? 'd-none' : ''; ?>" id="areasUsuarioWrap">
-      <label class="form-label">Areas de acesso</label>
+      <label class="form-label">Áreas de acesso</label>
       <div class="row g-2">
         <?php foreach (($areas ?? []) as $area): ?>
         <?php $areaId = (int) ($area['id'] ?? 0); ?>
@@ -80,7 +80,7 @@
         </div>
         <?php endforeach; ?>
       </div>
-      <div class="form-text">Usado para limitar o acesso de Gestor(a) e Apoio por area.</div>
+      <div class="form-text">Usado para limitar o acesso de Gestor(a) e Apoio por área.</div>
     </div>
 
     <div class="col-12 col-md-6">

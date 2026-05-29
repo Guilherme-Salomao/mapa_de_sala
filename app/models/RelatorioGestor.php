@@ -31,7 +31,7 @@ class RelatorioGestor
                 'docente_nome' => $docente['nome'] ?? '',
                 'docente_email' => $docente['email'] ?? '',
                 'area_atuacao' => $docente['area_atuacao'] ?? '',
-                'horas_semanais' => (int) ($docente['horas_semanais'] ?? 0),
+                'horas_semanais' => (float) ($docente['horas_semanais'] ?? 0),
                 'horas_aula' => $horasAula,
                 'horas_curso' => $horasCurso,
                 'horas_planejamento' => $horasPlanejamento,

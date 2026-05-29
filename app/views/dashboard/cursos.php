@@ -253,6 +253,25 @@
       window.location.href = "./?page=logout";
     }
   });
+
+  document.addEventListener("change", function(event) {
+    const seletorModo = event.target.closest(".js-modo-geracao");
+    if (!seletorModo) return;
+
+    const modalId = seletorModo.dataset.modalId;
+    const camposUc = document.querySelector(`.js-gerar-uc-campos[data-modal-id="${modalId}"]`);
+    const inputsUc = camposUc ? camposUc.querySelectorAll(".js-gerar-uc-input") : [];
+    const gerarUc = seletorModo.value === "uc_dia";
+
+    if (camposUc) {
+      camposUc.classList.toggle("d-none", !gerarUc);
+    }
+
+    inputsUc.forEach(function(input) {
+      input.disabled = !gerarUc;
+      input.required = gerarUc && input.type !== "checkbox";
+    });
+  });
   </script>
 </body>
 

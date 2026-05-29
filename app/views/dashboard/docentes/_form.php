@@ -161,7 +161,7 @@
               $periodoEscala = $itemEscala['periodo'] ?? '';
 
               if ($diaEscala !== '' && $periodoEscala !== '') {
-                  $escalaSelecionada[$diaEscala][$periodoEscala] = (int) ($itemEscala['horas'] ?? 0);
+                  $escalaSelecionada[$diaEscala][$periodoEscala] = (float) ($itemEscala['horas'] ?? 0);
               }
           }
       ?>
@@ -182,7 +182,10 @@
               <td class="fw-semibold"><?php echo htmlspecialchars($dia); ?></td>
               <?php foreach ($periodos as $periodo): ?>
               <?php
-                  $horasEscala = (int) ($escalaSelecionada[$dia][$periodo] ?? 0);
+                  $horasEscala = (float) ($escalaSelecionada[$dia][$periodo] ?? 0);
+                  $horasEscalaValor = $horasEscala > 0
+                      ? rtrim(rtrim(number_format($horasEscala, 2, '.', ''), '0'), '.')
+                      : '';
                   $campoId     = 'escala_' . md5($dia . '_' . $periodo);
               ?>
               <td>
@@ -192,9 +195,9 @@
                       name="escala[<?php echo htmlspecialchars($dia); ?>][<?php echo htmlspecialchars($periodo); ?>][ativo]"
                       id="<?php echo $campoId; ?>" <?php echo $horasEscala > 0 ? 'checked' : ''; ?>>
                   </div>
-                  <input type="number" class="form-control form-control-sm escala-horas"
+                  <input type="text" class="form-control form-control-sm escala-horas"
                     name="escala[<?php echo htmlspecialchars($dia); ?>][<?php echo htmlspecialchars($periodo); ?>][horas]"
-                    min="1" max="12" value="<?php echo $horasEscala > 0 ? $horasEscala : ''; ?>" placeholder="h"
+                    inputmode="decimal" value="<?php echo htmlspecialchars($horasEscalaValor); ?>" placeholder="ex.: 3,5 ou 3h30"
                     <?php echo $horasEscala > 0 ? '' : 'disabled'; ?>>
                 </div>
               </td>
@@ -324,13 +327,31 @@ document.addEventListener("DOMContentLoaded", function() {
 
     document.querySelectorAll(".escala-horas").forEach(function(input) {
       if (!input.disabled) {
-        total += Number(input.value || 0);
+        const horas = normalizarHorasEscala(input.value);
+        total += Number.isFinite(horas) ? horas : 0;
       }
     });
 
     if (totalHorasEscala) {
-      totalHorasEscala.textContent = total;
+      totalHorasEscala.textContent = total % 1 === 0 ? String(total) : String(total).replace(".", ",");
     }
+  }
+
+  function normalizarHorasEscala(valor) {
+    const texto = String(valor || "").trim().toLowerCase();
+    let match = texto.match(/^(\d{1,2})\s*h\s*(\d{1,2})?$/);
+
+    if (match) {
+      return Number(match[1]) + (Number(match[2] || 0) / 60);
+    }
+
+    match = texto.match(/^(\d{1,2}):(\d{1,2})$/);
+
+    if (match) {
+      return Number(match[1]) + (Number(match[2]) / 60);
+    }
+
+    return Number(texto.replace(",", "."));
   }
 
   function atualizarFiltroUc() {

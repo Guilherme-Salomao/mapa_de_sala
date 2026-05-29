@@ -169,7 +169,7 @@
                     <td>
                       <div class="fw-semibold">
                         <?php echo htmlspecialchars($resumo['docente_nome'] ?? ''); ?> -
-                        <?php echo (int) ($resumo['horas_semanais'] ?? 0); ?>h
+                        <?php echo formatarHorasGestor((float) ($resumo['horas_semanais'] ?? 0)); ?>
                       </div>
                       <div class="small text-muted"><?php echo htmlspecialchars($resumo['docente_email'] ?? ''); ?></div>
                     </td>

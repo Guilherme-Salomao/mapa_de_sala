@@ -17,8 +17,10 @@
 
     $tituloPagina = 'Relatório da Turma';
     $subtituloPagina = 'Acompanhamento de carga horária por unidade curricular';
-    $botaoTopoTexto = '';
-    $botaoTopoLink = '';
+    $botaoTopoTexto = 'Nova Turma';
+    $botaoTopoLink = './?page=turmas&action=cadastrar';
+    $botaoTopoClasse = 'app-btn-primary';
+    $botaoTopoIcone = 'bi-plus-circle';
 
     $totalCarga = 0;
     $totalLancadas = 0;

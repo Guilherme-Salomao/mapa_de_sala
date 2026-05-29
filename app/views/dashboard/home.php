@@ -215,7 +215,7 @@
                       <tr>
                         <td>
                           <div class="fw-semibold"><?php echo htmlspecialchars($docenteResumo['docente_nome'] ?? ''); ?></div>
-                          <div class="small text-muted"><?php echo (int) ($docenteResumo['horas_semanais'] ?? 0); ?>h semanais</div>
+                          <div class="small text-muted"><?php echo formatarHorasHome((float) ($docenteResumo['horas_semanais'] ?? 0)); ?> semanais</div>
                         </td>
                         <td class="text-end"><?php echo number_format((float) ($docenteResumo['percentual_aula'] ?? 0), 1, ',', '.'); ?>%</td>
                         <td class="text-end"><?php echo number_format((float) ($docenteResumo['percentual_planejamento'] ?? 0), 1, ',', '.'); ?>%</td>

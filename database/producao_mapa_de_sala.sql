@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS unidades_curriculares (
 CREATE TABLE IF NOT EXISTS docentes (
   id INT AUTO_INCREMENT PRIMARY KEY,
   usuario_id INT NOT NULL UNIQUE,
-  horas_semanais INT NOT NULL DEFAULT 0,
+  horas_semanais DECIMAL(5,2) NOT NULL DEFAULT 0.00,
   area_atuacao VARCHAR(100) NOT NULL,
   status ENUM('Ativo','Inativo') DEFAULT 'Ativo',
   observacoes TEXT DEFAULT NULL,
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS docente_escala (
   docente_id INT NOT NULL,
   dia_semana ENUM('Segunda','Terça','Quarta','Quinta','Sexta','Sábado') NOT NULL,
   periodo ENUM('Manhã','Tarde','Noite') NOT NULL,
-  horas INT NOT NULL,
+  horas DECIMAL(4,2) NOT NULL,
   KEY fk_docente_escala_docente (docente_id),
   CONSTRAINT fk_docente_escala_docente FOREIGN KEY (docente_id) REFERENCES docentes(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

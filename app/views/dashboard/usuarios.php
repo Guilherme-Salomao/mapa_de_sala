@@ -4,7 +4,7 @@
     }
 
     if (! isset($_SESSION['usuario'])) {
-    header('Location: ./?tipo=erro&msg=' . urlencode('FaÃ§a login para acessar o sistema.'));
+    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
     exit;
     }
 
@@ -77,9 +77,9 @@
                   <tr>
                     <th>Nome</th>
                     <th>E-mail</th>
-                    <th>NÃ­vel</th>
+                    <th>Nível</th>
                     <th>Status</th>
-                    <th>Ãšltimo login</th>
+                    <th>Último login</th>
                     <th class="text-end">Ações</th>
                   </tr>
                 </thead>
@@ -115,7 +115,7 @@
                   <?php else: ?>
                   <tr>
                     <td colspan="6" class="text-center text-muted py-4">
-                      Nenhum usuÃ¡rio encontrado.
+                      Nenhum usuário encontrado.
                     </td>
                   </tr>
                   <?php endif; ?>

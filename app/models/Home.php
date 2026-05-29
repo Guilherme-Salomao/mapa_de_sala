@@ -286,7 +286,7 @@ class Home
                     $eventos[] = [
                         'tipo' => 'planejamento',
                         'periodo' => $periodo,
-                        'hora' => ((int) ($itemEscala['horas'] ?? 0)) . 'h',
+                        'hora' => $this->formatarHoras((float) ($itemEscala['horas'] ?? 0)),
                         'titulo' => 'Planejamento',
                         'uc' => '',
                         'sala' => '',
@@ -365,7 +365,7 @@ class Home
             $resumos[] = [
                 'docente_nome' => $docente['nome'] ?? '',
                 'area_atuacao' => $docente['area_atuacao'] ?? '',
-                'horas_semanais' => (int) ($docente['horas_semanais'] ?? 0),
+                'horas_semanais' => (float) ($docente['horas_semanais'] ?? 0),
                 'percentual_aula' => $total > 0 ? round(($resumo['aula'] / $total) * 100, 1) : 0,
                 'percentual_planejamento' => $total > 0 ? round(($resumo['planejamento'] / $total) * 100, 1) : 0,
                 'percentual_curso' => $total > 0 ? round(($resumo['curso'] / $total) * 100, 1) : 0,
@@ -590,7 +590,7 @@ class Home
 
             $escala[$dia][] = [
                 'periodo' => $periodo,
-                'horas' => (int) ($item['horas'] ?? 0),
+                'horas' => (float) ($item['horas'] ?? 0),
             ];
         }
 
@@ -1082,5 +1082,17 @@ class Home
         }
 
         $sql .= " AND a.id IN (" . implode(',', $placeholders) . ")";
+    }
+
+    private function formatarHoras(float $horas): string
+    {
+        if (fmod($horas, 1.0) === 0.0) {
+            return (int) $horas . 'h';
+        }
+
+        $horasInteiras = (int) floor($horas);
+        $minutos = (int) round(($horas - $horasInteiras) * 60);
+
+        return $horasInteiras . 'h' . str_pad((string) $minutos, 2, '0', STR_PAD_LEFT);
     }
 }

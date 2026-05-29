@@ -23,6 +23,7 @@ class CursoController
         $cursos      = $this->cursoModel->listar($busca, $status, $escopo);
         $totalCursos = $this->cursoModel->contar($busca, $status, $escopo);
         $salas       = $this->cursoModel->listarSalasAtivas();
+        $ucsPorCursoModelo = $this->cursoModel->listarUcsPorCursoModelos(array_column($cursos, 'curso_modelo_id'));
 
         require_once __DIR__ . '/../views/dashboard/cursos.php';
     }
@@ -157,6 +158,7 @@ class CursoController
         }
 
         $id = (int) ($_POST['id'] ?? 0);
+        $modoGeracao = trim($_POST['modo_geracao'] ?? 'completo');
         $dataInicio = trim($_POST['data_inicio'] ?? '');
         $salaId = (int) ($_POST['sala_id'] ?? 0);
         $escopo = (new AccessControl())->escopoAreaAtuacao();
@@ -165,7 +167,24 @@ class CursoController
             $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Dados invalidos para gerar o quadro horario.'));
         }
 
-        $resultado = $this->cursoModel->gerarQuadroCompleto($id, $dataInicio, $salaId > 0 ? $salaId : null);
+        if ($modoGeracao === 'uc_dia') {
+            $unidadeCurricularId = (int) ($_POST['unidade_curricular_id'] ?? 0);
+            $diasSemanaPost = $_POST['dias_semana'] ?? [];
+            $diasSemana = is_array($diasSemanaPost)
+                ? array_map('intval', $diasSemanaPost)
+                : [(int) $diasSemanaPost];
+
+            $resultado = $this->cursoModel->gerarQuadroPorUcDia(
+                $id,
+                $unidadeCurricularId,
+                $diasSemana,
+                $dataInicio,
+                $salaId > 0 ? $salaId : null
+            );
+        } else {
+            $resultado = $this->cursoModel->gerarQuadroCompleto($id, $dataInicio, $salaId > 0 ? $salaId : null);
+        }
+
         $tipo = ! empty($resultado['sucesso']) ? 'sucesso' : 'erro';
 
         $this->redirecionar('./?page=turmas&tipo=' . $tipo . '&msg=' . urlencode($resultado['mensagem'] ?? 'Processo concluido.'));

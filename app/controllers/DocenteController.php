@@ -296,9 +296,9 @@ class DocenteController
                 }
 
                 $ativo = isset($dadosPeriodo['ativo']);
-                $horas = (int) ($dadosPeriodo['horas'] ?? 0);
+                $horas = $this->normalizarHoras($dadosPeriodo['horas'] ?? 0);
 
-                if ($ativo && $horas > 0) {
+                if ($ativo && $horas > 0 && $horas <= 12) {
                     $escala[] = [
                         'dia_semana' => $diaSemana,
                         'periodo'    => $periodo,
@@ -322,9 +322,43 @@ class DocenteController
         return array_values(array_unique(array_filter(array_map('intval', $ucs))));
     }
 
-    private function totalHorasEscala(array $escala): int
+    private function totalHorasEscala(array $escala): float
     {
-        return (int) array_sum(array_column($escala, 'horas'));
+        return round((float) array_sum(array_column($escala, 'horas')), 2);
+    }
+
+    private function normalizarHoras($valor): float
+    {
+        $valor = strtolower(trim((string) $valor));
+
+        if (preg_match('/^(\d{1,2})\s*h\s*(\d{1,2})?$/', $valor, $matches)) {
+            $horas = (int) $matches[1];
+            $minutos = isset($matches[2]) && $matches[2] !== '' ? (int) $matches[2] : 0;
+
+            if ($minutos >= 60) {
+                return 0.0;
+            }
+
+            return round($horas + ($minutos / 60), 2);
+        }
+
+        if (preg_match('/^(\d{1,2}):(\d{1,2})$/', $valor, $matches)) {
+            $minutos = (int) $matches[2];
+
+            if ($minutos >= 60) {
+                return 0.0;
+            }
+
+            return round(((int) $matches[1]) + ($minutos / 60), 2);
+        }
+
+        $valor = str_replace(',', '.', $valor);
+
+        if ($valor === '' || ! is_numeric($valor)) {
+            return 0.0;
+        }
+
+        return round((float) $valor, 2);
     }
 
     private function montarQueryCadastro(array $dados): string

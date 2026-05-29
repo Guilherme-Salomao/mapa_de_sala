@@ -214,6 +214,43 @@ class Curso
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function listarUcsPorCursoModelos(array $cursoModeloIds): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $cursoModeloIds))));
+
+        if (empty($ids)) {
+            return [];
+        }
+
+        $placeholders = [];
+        $params = [];
+
+        foreach ($ids as $index => $id) {
+            $placeholder = ':curso_modelo_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $id;
+        }
+
+        $sql = "
+            SELECT id, curso_modelo_id, codigo, nome, carga_horaria
+            FROM unidades_curriculares
+            WHERE curso_modelo_id IN (" . implode(',', $placeholders) . ")
+              AND status = 'Ativa'
+            ORDER BY curso_modelo_id ASC, CHAR_LENGTH(codigo) ASC, codigo ASC, nome ASC
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+
+        $ucs = [];
+
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $uc) {
+            $ucs[(int) $uc['curso_modelo_id']][] = $uc;
+        }
+
+        return $ucs;
+    }
+
     public function gerarQuadroCompleto(int $turmaId, string $dataInicio, ?int $salaPreferencialId = null): array
     {
         $turma = $this->buscarPorId($turmaId);
@@ -384,6 +421,154 @@ class Curso
         }
     }
 
+    public function gerarQuadroPorUcDia(
+        int $turmaId,
+        int $unidadeCurricularId,
+        array $diasSemana,
+        string $dataInicio,
+        ?int $salaPreferencialId = null
+    ): array {
+        $turma = $this->buscarPorId($turmaId);
+
+        if (! $turma || empty($turma['curso_modelo_id']) || empty($turma['hora_inicio']) || empty($turma['hora_fim'])) {
+            return ['sucesso' => false, 'mensagem' => 'Turma sem curso ou horario configurado.'];
+        }
+
+        $diasSemana = array_values(array_unique(array_filter(array_map('intval', $diasSemana), static function ($dia): bool {
+            return $dia >= 1 && $dia <= 6;
+        })));
+        sort($diasSemana);
+
+        if (empty($diasSemana)) {
+            return ['sucesso' => false, 'mensagem' => 'Selecione pelo menos um dia da semana valido.'];
+        }
+
+        $diasPermitidosTurma = $this->diasPermitidosTurma($turma);
+        $diasInvalidosTurma = array_diff($diasSemana, $diasPermitidosTurma);
+
+        if (! empty($diasInvalidosTurma)) {
+            return ['sucesso' => false, 'mensagem' => 'Um ou mais dias selecionados nao estao marcados como dia de aula desta turma.'];
+        }
+
+        $uc = $this->buscarUcDaTurma((int) $turma['curso_modelo_id'], $unidadeCurricularId);
+
+        if (! $uc) {
+            return ['sucesso' => false, 'mensagem' => 'A UC selecionada nao pertence ao curso desta turma.'];
+        }
+
+        $diaInicio = strtotime($dataInicio);
+
+        if ($diaInicio === false) {
+            return ['sucesso' => false, 'mensagem' => 'Data inicial invalida.'];
+        }
+
+        $blocosHorario = $this->blocosHorarioTurma($turma);
+
+        if (empty($blocosHorario)) {
+            return ['sucesso' => false, 'mensagem' => 'Horario da turma invalido.'];
+        }
+
+        $minutosLancados = $this->minutosLancadosPorUc($turmaId);
+        $minutosRestantesUc = $this->minutosPendentesUc($uc, $minutosLancados);
+
+        if ($minutosRestantesUc <= 0) {
+            return ['sucesso' => true, 'mensagem' => 'Esta UC ja esta com toda a carga horaria lancada nesta turma.'];
+        }
+
+        $limiteDiasCalendario = 730;
+
+        try {
+            $this->conn->beginTransaction();
+
+            $dataAtual = date('Y-m-d', $diaInicio);
+            $aulasCriadas = 0;
+            $blocosSemSala = 0;
+            $guard = 0;
+
+            while ($minutosRestantesUc > 0 && $guard < $limiteDiasCalendario) {
+                $guard++;
+
+                if (! in_array((int) date('N', strtotime($dataAtual)), $diasSemana, true)) {
+                    $dataAtual = date('Y-m-d', strtotime($dataAtual . ' +1 day'));
+                    continue;
+                }
+
+                foreach ($blocosHorario as $blocoHorario) {
+                    if ($minutosRestantesUc <= 0) {
+                        break;
+                    }
+
+                    $horaInicioBloco = $blocoHorario['inicio'];
+                    $horaFimBloco = $blocoHorario['fim'];
+
+                    if ($this->turmaTemAulaNoDia($turmaId, $dataAtual, $horaInicioBloco, $horaFimBloco)) {
+                        continue;
+                    }
+
+                    $intervaloDisponivel = $this->intervaloDisponivelPorBloqueios($dataAtual, $turma, $horaInicioBloco, $horaFimBloco);
+
+                    if ($intervaloDisponivel === null) {
+                        continue;
+                    }
+
+                    $horaInicioBloco = $intervaloDisponivel['inicio'];
+                    $horaFimBloco = $intervaloDisponivel['fim'];
+
+                    $salaBlocoId = $this->salaDisponivelNoDia($salaPreferencialId, $dataAtual, $horaInicioBloco, $horaFimBloco, $turmaId)
+                        ? $salaPreferencialId
+                        : null;
+
+                    if ($salaPreferencialId !== null && $salaBlocoId === null) {
+                        $blocosSemSala++;
+                    }
+
+                    $minutosDisponiveis = $this->minutosEntre($horaInicioBloco, $horaFimBloco);
+                    $minutosBloco = min($minutosRestantesUc, $minutosDisponiveis);
+                    $horaFimAula = $this->somarMinutos($horaInicioBloco, $minutosBloco);
+
+                    $this->inserirAulaGerada([
+                        'curso_oferta_id' => $turmaId,
+                        'unidade_curricular_id' => $unidadeCurricularId,
+                        'sala_id' => $salaBlocoId,
+                        'data_aula' => $dataAtual,
+                        'hora_inicio' => $horaInicioBloco,
+                        'hora_fim' => $horaFimAula,
+                        'divisao_por_hora' => $minutosBloco < $minutosDisponiveis ? 1 : 0,
+                    ]);
+
+                    $aulasCriadas++;
+                    $minutosRestantesUc -= $minutosBloco;
+                }
+
+                $dataAtual = date('Y-m-d', strtotime($dataAtual . ' +1 day'));
+            }
+
+            if ($minutosRestantesUc > 0) {
+                $this->conn->rollBack();
+
+                return [
+                    'sucesso' => false,
+                    'mensagem' => 'Nao foi possivel concluir a geracao da UC. Faltam aproximadamente ' .
+                        round($minutosRestantesUc / 60, 2) . 'h. Verifique dias de aula, calendario e aulas ja lancadas.',
+                ];
+            }
+
+            $this->conn->commit();
+
+            return [
+                'sucesso' => true,
+                'mensagem' => $aulasCriadas . ' aula(s) geradas para ' . ($uc['codigo'] ?? 'UC') .
+                    '. Blocos sem sala: ' . $blocosSemSala . '. Ultima aula: ' . date('d/m/Y', strtotime($dataAtual . ' -1 day')) . '.',
+            ];
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+
+            return ['sucesso' => false, 'mensagem' => 'Nao foi possivel gerar a UC: ' . $e->getMessage()];
+        }
+    }
+
     public function salvar(array $dados)
     {
         try {
@@ -472,6 +657,28 @@ class Curso
         $stmt->execute([':curso_modelo_id' => $cursoModeloId]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function buscarUcDaTurma(int $cursoModeloId, int $unidadeCurricularId): ?array
+    {
+        $sql = "
+            SELECT id, codigo, nome, carga_horaria
+            FROM unidades_curriculares
+            WHERE id = :id
+              AND curso_modelo_id = :curso_modelo_id
+              AND status = 'Ativa'
+            LIMIT 1
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([
+            ':id' => $unidadeCurricularId,
+            ':curso_modelo_id' => $cursoModeloId,
+        ]);
+
+        $uc = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $uc ?: null;
     }
 
     private function minutosLancadosPorUc(int $turmaId): array

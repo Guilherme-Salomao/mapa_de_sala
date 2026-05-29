@@ -1,36 +1,36 @@
 ﻿<?php
     if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+    session_start();
     }
 
     if (! isset($_SESSION['usuario'])) {
-        header('Location: ./?tipo=erro&msg=' . urlencode('FaÃ§a login para acessar o sistema.'));
-        exit;
+    header('Location: ./?tipo=erro&msg=' . urlencode('Faça login para acessar o sistema.'));
+    exit;
     }
 
     if (! isset($usuario) || empty($usuario)) {
-        header('Location: ./?page=home&tipo=erro&msg=' . urlencode('UsuÃ¡rio nÃ£o encontrado.'));
-        exit;
+    header('Location: ./?page=home&tipo=erro&msg=' . urlencode('Usuário não encontrado.'));
+    exit;
     }
 
-    $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'UsuÃ¡rio';
-    $mensagem = $_GET['msg'] ?? '';
-    $tipo = $_GET['tipo'] ?? '';
+    $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuário';
+    $mensagem      = $_GET['msg'] ?? '';
+    $tipo          = $_GET['tipo'] ?? '';
 
-    $formAction = './?page=perfil&action=atualizar';
-    $botaoTexto = 'Salvar Dados';
-    $modoEdicao = true;
+    $formAction    = './?page=perfil&action=atualizar';
+    $botaoTexto    = 'Salvar Dados';
+    $modoEdicao    = true;
     $perfilProprio = true;
-    $usuarioForm = $usuario;
-    $areas = [];
-    $areasUsuario = [];
+    $usuarioForm   = $usuario;
+    $areas         = [];
+    $areasUsuario  = [];
 
-    $tituloPagina = 'Meu Cadastro';
+    $tituloPagina    = 'Meu Cadastro';
     $subtituloPagina = 'Atualize seu nome, e-mail ou senha';
-    $botaoTopoTexto = 'Voltar';
-    $botaoTopoLink = './?page=home';
+    $botaoTopoTexto  = 'Voltar';
+    $botaoTopoLink   = './?page=home';
     $botaoTopoClasse = 'btn-outline-secondary';
-    $botaoTopoIcone = 'bi-arrow-left';
+    $botaoTopoIcone  = 'bi-arrow-left';
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -99,9 +99,9 @@
     btnToggleSenha.addEventListener("click", function() {
       const isPassword = senha.type === "password";
       senha.type = isPassword ? "text" : "password";
-      btnToggleSenha.innerHTML = isPassword
-        ? '<i class="bi bi-eye-slash"></i>'
-        : '<i class="bi bi-eye"></i>';
+      btnToggleSenha.innerHTML = isPassword ?
+        '<i class="bi bi-eye-slash"></i>' :
+        '<i class="bi bi-eye"></i>';
     });
   }
 
@@ -120,7 +120,7 @@
       if ((senhaValor || confSenhaValor) && senhaValor !== confSenhaValor) {
         e.preventDefault();
         form.classList.add("was-validated");
-        alert("As senhas nÃ£o conferem.");
+        alert("A senha não confere.");
       }
     });
   }
@@ -134,4 +134,3 @@
 </body>
 
 </html>
-

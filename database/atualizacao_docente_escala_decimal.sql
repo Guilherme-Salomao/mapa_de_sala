@@ -1,0 +1,7 @@
+SET NAMES utf8mb4;
+
+ALTER TABLE docentes
+  MODIFY COLUMN horas_semanais DECIMAL(5,2) NOT NULL DEFAULT 0.00;
+
+ALTER TABLE docente_escala
+  MODIFY COLUMN horas DECIMAL(4,2) NOT NULL;

@@ -17,6 +17,7 @@
     $ano = (int) ($ano ?? date('Y'));
     $cursoOfertaId = (int) ($cursoOfertaId ?? 0);
     $bloqueiosPorData = $bloqueiosPorData ?? [];
+    $horariosLancamentoPorData = $horariosLancamentoPorData ?? [];
 
     function labelTipoBloqueioQuadro(string $tipo): string
     {
@@ -294,10 +295,9 @@
                         $bloqueiosDia = $bloqueiosPorData[$dataIso] ?? [];
                         $horaInicioOfertaDia = substr((string) ($ofertaSelecionada['hora_inicio'] ?? ''), 0, 5);
                         $horaFimOfertaDia = substr((string) ($ofertaSelecionada['hora_fim'] ?? ''), 0, 5);
-                        $horarioLancamentoDia = horarioLancamentoQuadro($bloqueiosDia, $horaInicioOfertaDia, $horaFimOfertaDia);
+                        $horarioLancamentoDia = $horariosLancamentoPorData[$dataIso] ?? horarioLancamentoQuadro($bloqueiosDia, $horaInicioOfertaDia, $horaFimOfertaDia);
                         $diaBloqueado = $horarioLancamentoDia === null && ! empty($bloqueiosDia);
-                        $diaComLancamento = ! empty($aulasPorData[$dataIso] ?? []);
-                        $permiteLancamento = $mostrarDia && $turmaTemAulaDia && ! $diaComLancamento && ! $diaBloqueado && $coluna !== 0 && ! ($coluna === 6 && $bloquearSabado);
+                        $permiteLancamento = $mostrarDia && $turmaTemAulaDia && ! $diaBloqueado && $coluna !== 0 && ! ($coluna === 6 && $bloquearSabado) && $horarioLancamentoDia !== null;
                         $salasDisponiveisDia = $salasDisponiveisPorData[$dataIso] ?? [];
                         $docentesDisponiveisDia = $docentesDisponiveisPorData[$dataIso] ?? [];
                         $docentesBlocosDia = $docentesDisponiveisPorBloco[$dataIso] ?? [];

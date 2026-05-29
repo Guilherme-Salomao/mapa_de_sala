@@ -78,7 +78,7 @@ class RelatorioDocenteController
             if ($diaKey !== '' && $periodoKey !== '') {
                 $escalaPorDia[$diaKey][$periodoKey] = [
                     'periodo' => $this->periodoLabel($periodoKey),
-                    'horas' => (int) ($item['horas'] ?? 0),
+                    'horas' => (float) ($item['horas'] ?? 0),
                 ];
             }
         }

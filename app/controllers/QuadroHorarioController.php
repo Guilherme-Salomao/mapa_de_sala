@@ -43,11 +43,12 @@ class QuadroHorarioController
         $salas = $ofertaSelecionada ? $this->quadroModel->listarSalas() : [];
         $docentes = $ofertaSelecionada ? $this->quadroModel->listarDocentes() : [];
         $bloqueiosPorData = $ofertaSelecionada ? $this->montarBloqueiosPorData($mes, $ano, $ofertaSelecionada) : [];
-        $disponibilidadeMensal = $this->montarDisponibilidadeMensal($salas, $docentes, $ofertaSelecionada, $mes, $ano);
+        $disponibilidadeMensal = $this->montarDisponibilidadeMensal($salas, $docentes, $ofertaSelecionada, $mes, $ano, $aulas);
         $salasDisponiveisPorData = $disponibilidadeMensal['salas'];
         $docentesDisponiveisPorData = $disponibilidadeMensal['docentes'];
         $docentesDisponiveisPorBloco = $disponibilidadeMensal['docentes_por_bloco'];
         $blocosOferta = $disponibilidadeMensal['blocos'];
+        $horariosLancamentoPorData = $disponibilidadeMensal['horarios_lancamento'];
         $disponibilidadeEdicao = $this->montarDisponibilidadeEdicao($aulas, $salas, $docentes);
         $salasDisponiveisPorAula = $disponibilidadeEdicao['salas'];
         $docentesDisponiveisPorAula = $disponibilidadeEdicao['docentes'];
@@ -395,11 +396,12 @@ class QuadroHorarioController
         return count($periodos) > 1 ? 'integral' : ($periodos[0] ?? '');
     }
 
-    private function montarDisponibilidadeMensal(array $salas, array $docentes, ?array $oferta, int $mes, int $ano): array
+    private function montarDisponibilidadeMensal(array $salas, array $docentes, ?array $oferta, int $mes, int $ano, array $aulas = []): array
     {
         $salasPorData = [];
         $docentesPorData = [];
         $docentesPorBloco = [];
+        $horariosLancamentoPorData = [];
         $blocos = [];
 
         if (! $oferta || empty($oferta['hora_inicio']) || empty($oferta['hora_fim'])) {
@@ -407,6 +409,7 @@ class QuadroHorarioController
                 'salas' => $salasPorData,
                 'docentes' => $docentesPorData,
                 'docentes_por_bloco' => $docentesPorBloco,
+                'horarios_lancamento' => $horariosLancamentoPorData,
                 'blocos' => $blocos,
             ];
         }
@@ -416,6 +419,15 @@ class QuadroHorarioController
         $horaInicio = substr((string) $oferta['hora_inicio'], 0, 5);
         $horaFim = substr((string) $oferta['hora_fim'], 0, 5);
         $blocos = $this->montarBlocos($horaInicio, $horaFim, true);
+        $aulasPorData = [];
+
+        foreach ($aulas as $aula) {
+            $dataAula = (string) ($aula['data_aula'] ?? '');
+
+            if ($dataAula !== '') {
+                $aulasPorData[$dataAula][] = $aula;
+            }
+        }
 
         for ($dia = 1; $dia <= $diasNoMes; $dia++) {
             $data = sprintf('%04d-%02d-%02d', $ano, $mes, $dia);
@@ -430,6 +442,7 @@ class QuadroHorarioController
                 $salasPorData[$data] = [];
                 $docentesPorData[$data] = [];
                 $docentesPorBloco[$data] = [];
+                $horariosLancamentoPorData[$data] = null;
                 continue;
             }
 
@@ -439,11 +452,27 @@ class QuadroHorarioController
                 $salasPorData[$data] = [];
                 $docentesPorData[$data] = [];
                 $docentesPorBloco[$data] = [];
+                $horariosLancamentoPorData[$data] = null;
                 continue;
             }
 
-            $horaInicioDia = $intervaloDisponivel['inicio'];
-            $horaFimDia = $intervaloDisponivel['fim'];
+            $horarioLivre = $this->primeiroIntervaloLivre(
+                $intervaloDisponivel['inicio'],
+                $intervaloDisponivel['fim'],
+                $aulasPorData[$data] ?? []
+            );
+
+            $horariosLancamentoPorData[$data] = $horarioLivre;
+
+            if ($horarioLivre === null) {
+                $salasPorData[$data] = [];
+                $docentesPorData[$data] = [];
+                $docentesPorBloco[$data] = [];
+                continue;
+            }
+
+            $horaInicioDia = $horarioLivre['inicio'];
+            $horaFimDia = $horarioLivre['fim'];
 
             $salasPorData[$data] = array_values(array_filter($salas, function (array $sala) use ($data, $horaInicioDia, $horaFimDia): bool {
                 return ! $this->quadroModel->encontrarConflitoSala((int) $sala['id'], $data, $horaInicioDia, $horaFimDia);
@@ -467,8 +496,42 @@ class QuadroHorarioController
             'salas' => $salasPorData,
             'docentes' => $docentesPorData,
             'docentes_por_bloco' => $docentesPorBloco,
+            'horarios_lancamento' => $horariosLancamentoPorData,
             'blocos' => $blocos,
         ];
+    }
+
+    private function primeiroIntervaloLivre(string $horaInicio, string $horaFim, array $aulasDia): ?array
+    {
+        $cursor = substr($horaInicio, 0, 5);
+        $fimDia = substr($horaFim, 0, 5);
+
+        usort($aulasDia, static function (array $a, array $b): int {
+            return strcmp((string) ($a['hora_inicio'] ?? ''), (string) ($b['hora_inicio'] ?? ''));
+        });
+
+        foreach ($aulasDia as $aula) {
+            $inicioAula = substr((string) ($aula['hora_inicio'] ?? ''), 0, 5);
+            $fimAula = substr((string) ($aula['hora_fim'] ?? ''), 0, 5);
+
+            if ($inicioAula === '' || $fimAula === '' || $fimAula <= $cursor || $inicioAula >= $fimDia) {
+                continue;
+            }
+
+            if ($inicioAula > $cursor) {
+                return ['inicio' => $cursor, 'fim' => min($inicioAula, $fimDia)];
+            }
+
+            if ($fimAula > $cursor) {
+                $cursor = min($fimAula, $fimDia);
+            }
+
+            if ($cursor >= $fimDia) {
+                return null;
+            }
+        }
+
+        return $cursor < $fimDia ? ['inicio' => $cursor, 'fim' => $fimDia] : null;
     }
 
     private function intervaloDisponivelPorBloqueios(string $data, ?array $oferta, string $horaInicio, string $horaFim): ?array
