@@ -111,6 +111,29 @@ class RelatorioDocente
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function listarBloqueiosMensais(int $mes, int $ano): array
+    {
+        $inicio = sprintf('%04d-%02d-01', $ano, $mes);
+        $fim = date('Y-m-t', strtotime($inicio));
+
+        $sql = "
+            SELECT data, data_fim, hora_inicio, hora_fim, titulo, tipo
+            FROM calendario_bloqueios
+            WHERE status = 'Ativo'
+              AND data <= :fim
+              AND COALESCE(data_fim, data) >= :inicio
+            ORDER BY data ASC, COALESCE(data_fim, data) ASC, titulo ASC
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([
+            ':inicio' => $inicio,
+            ':fim' => $fim,
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     private function aplicarEscopo(string &$sql, array &$params, array $escopo): void
     {
         $tipo = $escopo['tipo'] ?? 'todos';

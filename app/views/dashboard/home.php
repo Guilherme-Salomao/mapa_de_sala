@@ -33,6 +33,10 @@
     $dataAtualAtalho = date('Y-m-d');
     $dataAmanhaAtalho = date('Y-m-d', strtotime($dataAtualAtalho . ' +1 day'));
     $dataDepoisAmanhaAtalho = date('Y-m-d', strtotime($dataAtualAtalho . ' +2 days'));
+    $dataProximaSemanaDocente = date('Y-m-d', strtotime($dataHoje . ' +7 days'));
+    $inicioSemanaAtualDocente = date('Y-m-d', strtotime('monday this week', strtotime($dataAtualAtalho)));
+    $inicioSemanaSelecionadaDocente = date('Y-m-d', strtotime('monday this week', strtotime($dataHoje)));
+    $semanaAtualDocenteAtiva = $inicioSemanaSelecionadaDocente === $inicioSemanaAtualDocente;
     $atalhosSemanaGestor = [];
 
     for ($offset = -3; $offset <= 3; $offset++) {
@@ -425,7 +429,17 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
               <div>
                 <div class="fw-bold">Minha semana</div>
-                <div class="small text-muted">Aulas, planejamento e educação corporativa</div>
+                <div class="small text-muted">Aulas, planejamento, educação corporativa e calendário</div>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                <a href="./?page=home&data=<?php echo htmlspecialchars($dataAtualAtalho); ?>"
+                  class="btn btn-sm <?php echo $semanaAtualDocenteAtiva ? 'app-btn-primary' : 'btn-outline-secondary'; ?>">
+                  <i class="bi bi-calendar-event"></i> Semana atual
+                </a>
+                <a href="./?page=home&data=<?php echo htmlspecialchars($dataProximaSemanaDocente); ?>"
+                  class="btn btn-sm <?php echo ! $semanaAtualDocenteAtiva ? 'app-btn-primary' : 'btn-outline-secondary'; ?>">
+                  <i class="bi bi-calendar-plus"></i> Próxima semana
+                </a>
               </div>
             </div>
 
@@ -447,6 +461,7 @@
                             'aula' => 'border-primary',
                             'planejamento' => 'border-warning bg-warning-subtle',
                             'curso' => 'border-success bg-success-subtle',
+                            'calendario' => 'border-info bg-info-subtle',
                         ][$tipoEvento] ?? '';
                     ?>
                     <div class="border rounded p-2 small <?php echo htmlspecialchars($classeEvento); ?>">

@@ -228,8 +228,10 @@ class Home
         $escala = $this->escalaDocente($docenteId);
         $aulas = $this->aulasDocentePeriodo($docenteId, $inicioSemana, $fimSemana);
         $cursos = $this->cursosCorporativosDocentePeriodo($docenteId, $inicioSemana, $fimSemana);
+        $bloqueiosCalendario = $this->bloqueiosCalendarioPeriodo($inicioSemana, $fimSemana);
         $aulasPorData = [];
         $cursosPorData = [];
+        $bloqueiosPorData = [];
         $semana = [];
 
         foreach ($aulas as $aula) {
@@ -240,11 +242,44 @@ class Home
             $cursosPorData[(string) $curso['data']][] = $curso;
         }
 
+        foreach ($bloqueiosCalendario as $bloqueio) {
+            $dataInicioBloqueio = (string) ($bloqueio['data'] ?? '');
+            $dataFimBloqueio = (string) ($bloqueio['data_fim'] ?? $dataInicioBloqueio);
+
+            for ($dataBloqueio = $dataInicioBloqueio; $dataBloqueio !== '' && $dataBloqueio <= $dataFimBloqueio; $dataBloqueio = date('Y-m-d', strtotime($dataBloqueio . ' +1 day'))) {
+                if ($dataBloqueio >= $inicioSemana && $dataBloqueio <= $fimSemana) {
+                    $bloqueiosPorData[$dataBloqueio][] = $bloqueio;
+                }
+            }
+        }
+
         for ($i = 0; $i < 6; $i++) {
             $data = date('Y-m-d', strtotime($inicioSemana . ' +' . $i . ' days'));
             $diaKey = $this->diaSemanaKey($data);
             $eventos = [];
             $periodosComAula = [];
+            $diaInteiroBloqueado = false;
+
+            foreach (($bloqueiosPorData[$data] ?? []) as $bloqueio) {
+                $horaInicioBloqueio = substr((string) ($bloqueio['hora_inicio'] ?? ''), 0, 5);
+                $horaFimBloqueio = substr((string) ($bloqueio['hora_fim'] ?? ''), 0, 5);
+                $tipoBloqueio = (string) ($bloqueio['tipo'] ?? 'Evento');
+                $tituloBloqueio = (string) ($bloqueio['titulo'] ?? '');
+                $isParadaPedagogica = $tipoBloqueio === 'Parada Pedagogica';
+                $ocultarTipoBloqueio = stripos($tituloBloqueio, 'Ponte de Feriado') !== false;
+                $diaInteiroBloqueado = $diaInteiroBloqueado || $horaInicioBloqueio === '' || $horaFimBloqueio === '';
+                $eventos[] = [
+                    'tipo' => 'calendario',
+                    'periodo' => '',
+                    'hora' => '',
+                    'titulo' => $ocultarTipoBloqueio ? '' : $this->labelTipoBloqueio($tipoBloqueio),
+                    'uc' => $isParadaPedagogica ? '' : $tituloBloqueio,
+                    'sala' => '',
+                    'visita_tecnica' => 0,
+                    'ead_assincrona' => 0,
+                    'aprendizagem_quadro_id' => null,
+                ];
+            }
 
             foreach (($aulasPorData[$data] ?? []) as $aula) {
                 $periodo = $this->normalizarPeriodoPorHorario((string) $aula['hora_inicio']);
@@ -275,7 +310,7 @@ class Home
                     'ead_assincrona' => 0,
                     'aprendizagem_quadro_id' => null,
                 ];
-            } else {
+            } elseif (! $diaInteiroBloqueado) {
                 foreach (($escala[$diaKey] ?? []) as $itemEscala) {
                     $periodo = (string) ($itemEscala['periodo'] ?? '');
 
@@ -307,6 +342,31 @@ class Home
         }
 
         return $semana;
+    }
+
+    private function bloqueiosCalendarioPeriodo(string $dataInicio, string $dataFim): array
+    {
+        $sql = "
+            SELECT data, data_fim, hora_inicio, hora_fim, titulo, tipo
+            FROM calendario_bloqueios
+            WHERE status = 'Ativo'
+              AND data <= :data_fim
+              AND COALESCE(data_fim, data) >= :data_inicio
+            ORDER BY data ASC, COALESCE(data_fim, data) ASC, titulo ASC
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([
+            ':data_inicio' => $dataInicio,
+            ':data_fim' => $dataFim,
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function labelTipoBloqueio(string $tipo): string
+    {
+        return $tipo === 'Parada Pedagogica' ? 'Parada Pedagógica' : $tipo;
     }
 
     public function indicadoresDocente(int $docenteId, string $dataReferencia): array

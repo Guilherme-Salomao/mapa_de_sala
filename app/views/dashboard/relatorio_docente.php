@@ -20,10 +20,12 @@
         'horas_aula' => 0,
         'horas_planejamento' => 0,
         'horas_curso' => 0,
+        'horas_parada_pedagogica' => 0,
         'total_horas' => 0,
         'percentual_aula' => 0,
         'percentual_planejamento' => 0,
         'percentual_curso' => 0,
+        'percentual_parada_pedagogica' => 0,
     ];
 
     $tituloPagina = 'Relatorio Docente';
@@ -120,6 +122,12 @@
     border-color: #16a34a !important;
     color: #14532d;
    }
+
+  .periodo-calendario {
+    background: #cffafe;
+    border-color: #0891b2 !important;
+    color: #164e63;
+  }
 
   .relatorio-calendario thead th {
     background: #0d6efd;
@@ -255,6 +263,10 @@
                   style="min-width: 190px;">
                   Curso: <?php echo number_format((float) ($resumoCarga['percentual_curso'] ?? 0), 1, ',', '.'); ?>%
                 </span>
+                <span class="badge text-bg-info d-inline-flex align-items-center justify-content-center fs-6 py-2"
+                  style="min-width: 190px;">
+                  Parada Pedagógica: <?php echo number_format((float) ($resumoCarga['percentual_parada_pedagogica'] ?? 0), 1, ',', '.'); ?>%
+                </span>
               </div>
             </div>
           </div>
@@ -301,6 +313,9 @@
                         </div>
                         <?php endif; ?>
                         <div class="relatorio-turma"><?php echo htmlspecialchars($evento['turma'] ?? ''); ?></div>
+                        <?php if (($evento['tipo'] ?? '') === 'calendario' && ! empty($evento['titulo_calendario'])): ?>
+                        <div class="text-center"><?php echo htmlspecialchars($evento['titulo_calendario']); ?></div>
+                        <?php endif; ?>
                         <?php if ($isAula && ! empty($evento['uc'])): ?>
                         <div class="relatorio-uc" title="<?php echo htmlspecialchars($evento['uc']); ?>">
                           <?php echo htmlspecialchars(abreviarUcRelatorioDocente((string) $evento['uc'])); ?>

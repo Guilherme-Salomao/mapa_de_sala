@@ -55,20 +55,23 @@ class RelatorioDocenteController
         $escala = $docenteSelecionado ? $this->relatorioModel->listarEscala($docenteId) : [];
         $aulas = $docenteSelecionado ? $this->relatorioModel->listarAulasMensais($docenteId, $mes, $ano) : [];
         $cursosCorporativos = $docenteSelecionado ? $this->educacaoModel->listarPorDocenteMes($docenteId, $mes, $ano) : [];
-        $eventosPorData = $this->montarEventos($escala, $aulas, $cursosCorporativos, $mes, $ano);
+        $bloqueiosCalendario = $docenteSelecionado ? $this->relatorioModel->listarBloqueiosMensais($mes, $ano) : [];
+        $eventosPorData = $this->montarEventos($escala, $aulas, $cursosCorporativos, $bloqueiosCalendario, $mes, $ano);
         $resumoCarga = $this->calcularResumoCarga($eventosPorData);
         $periodosEscala = $this->periodosDaEscala($escala);
 
         require_once __DIR__ . '/../views/dashboard/relatorio_docente.php';
     }
 
-    private function montarEventos(array $escala, array $aulas, array $cursosCorporativos, int $mes, int $ano): array
+    private function montarEventos(array $escala, array $aulas, array $cursosCorporativos, array $bloqueiosCalendario, int $mes, int $ano): array
     {
         $escalaPorDia = [];
         $aulasPorData = [];
         $cursosPorData = [];
+        $bloqueiosPorData = [];
         $eventosPorData = [];
         $inicio = sprintf('%04d-%02d-01', $ano, $mes);
+        $fim = date('Y-m-t', strtotime($inicio));
         $diasNoMes = (int) date('t', strtotime($inicio));
 
         foreach ($escala as $item) {
@@ -101,6 +104,17 @@ class RelatorioDocenteController
             }
         }
 
+        foreach ($bloqueiosCalendario as $bloqueio) {
+            $dataInicioBloqueio = (string) ($bloqueio['data'] ?? '');
+            $dataFimBloqueio = (string) ($bloqueio['data_fim'] ?? $dataInicioBloqueio);
+
+            for ($dataBloqueio = $dataInicioBloqueio; $dataBloqueio !== '' && $dataBloqueio <= $dataFimBloqueio; $dataBloqueio = date('Y-m-d', strtotime($dataBloqueio . ' +1 day'))) {
+                if ($dataBloqueio >= $inicio && $dataBloqueio <= $fim) {
+                    $bloqueiosPorData[$dataBloqueio][] = $bloqueio;
+                }
+            }
+        }
+
         for ($dia = 1; $dia <= $diasNoMes; $dia++) {
             $data = sprintf('%04d-%02d-%02d', $ano, $mes, $dia);
             $diaKey = $this->diaSemanaPorData($data);
@@ -108,6 +122,35 @@ class RelatorioDocenteController
             $cursoData = $cursosPorData[$data][0] ?? null;
             $escalaData = $escalaPorDia[$diaKey] ?? [];
             $periodosComAula = [];
+            $diaInteiroBloqueado = false;
+            $temParadaPedagogica = false;
+            $horasParadaPedagogica = array_sum(array_map(
+                static fn(array $itemEscala): float => (float) ($itemEscala['horas'] ?? 0),
+                $escalaData
+            ));
+
+            foreach (($bloqueiosPorData[$data] ?? []) as $bloqueio) {
+                $horaInicioBloqueio = substr((string) ($bloqueio['hora_inicio'] ?? ''), 0, 5);
+                $horaFimBloqueio = substr((string) ($bloqueio['hora_fim'] ?? ''), 0, 5);
+                $isParadaPedagogica = (string) ($bloqueio['tipo'] ?? '') === 'Parada Pedagogica';
+                $tituloBloqueio = (string) ($bloqueio['titulo'] ?? '');
+                $ocultarTipoBloqueio = stripos($tituloBloqueio, 'Ponte de Feriado') !== false;
+                $diaInteiroBloqueado = $diaInteiroBloqueado || $horaInicioBloqueio === '' || $horaFimBloqueio === '';
+                $eventosPorData[$data][] = [
+                    'tipo' => 'calendario',
+                    'periodo' => '',
+                    'periodo_key' => 'calendario',
+                    'hora' => '',
+                    'horas_numero' => $isParadaPedagogica && ! $temParadaPedagogica ? $horasParadaPedagogica : 0,
+                    'turma' => $ocultarTipoBloqueio ? '' : $this->labelTipoBloqueio((string) ($bloqueio['tipo'] ?? 'Evento')),
+                    'uc' => '',
+                    'sala' => '',
+                    'titulo_calendario' => $isParadaPedagogica ? '' : $tituloBloqueio,
+                    'subtipo_calendario' => $bloqueio['tipo'] ?? '',
+                ];
+
+                $temParadaPedagogica = $temParadaPedagogica || $isParadaPedagogica;
+            }
 
             foreach ($aulasData as $aula) {
                 $periodoKey = (string) ($aula['periodo_key'] ?? '');
@@ -151,6 +194,10 @@ class RelatorioDocenteController
                 continue;
             }
 
+            if ($diaInteiroBloqueado || $temParadaPedagogica) {
+                continue;
+            }
+
             foreach ($escalaData as $periodoKey => $itemEscala) {
                 if (isset($periodosComAula[$periodoKey])) {
                     continue;
@@ -172,11 +219,17 @@ class RelatorioDocenteController
         return $eventosPorData;
     }
 
+    private function labelTipoBloqueio(string $tipo): string
+    {
+        return $tipo === 'Parada Pedagogica' ? 'Parada Pedagógica' : $tipo;
+    }
+
     private function calcularResumoCarga(array $eventosPorData): array
     {
         $horasAula = 0.0;
         $horasPlanejamento = 0.0;
         $horasCurso = 0.0;
+        $horasParadaPedagogica = 0.0;
 
         foreach ($eventosPorData as $eventos) {
             foreach ($eventos as $evento) {
@@ -194,20 +247,30 @@ class RelatorioDocenteController
 
                 if (($evento['tipo'] ?? '') === 'curso') {
                     $horasCurso += $horas;
+                    continue;
+                }
+
+                if (
+                    ($evento['tipo'] ?? '') === 'calendario'
+                    && ($evento['subtipo_calendario'] ?? '') === 'Parada Pedagogica'
+                ) {
+                    $horasParadaPedagogica += $horas;
                 }
             }
         }
 
-        $total = $horasAula + $horasPlanejamento + $horasCurso;
+        $total = $horasAula + $horasPlanejamento + $horasCurso + $horasParadaPedagogica;
 
         return [
             'horas_aula' => $horasAula,
             'horas_planejamento' => $horasPlanejamento,
             'horas_curso' => $horasCurso,
+            'horas_parada_pedagogica' => $horasParadaPedagogica,
             'total_horas' => $total,
             'percentual_aula' => $total > 0 ? round(($horasAula / $total) * 100, 1) : 0,
             'percentual_planejamento' => $total > 0 ? round(($horasPlanejamento / $total) * 100, 1) : 0,
             'percentual_curso' => $total > 0 ? round(($horasCurso / $total) * 100, 1) : 0,
+            'percentual_parada_pedagogica' => $total > 0 ? round(($horasParadaPedagogica / $total) * 100, 1) : 0,
         ];
     }
 
