@@ -380,6 +380,7 @@ class Home
                 'percentual_aula' => 0,
                 'percentual_planejamento' => 0,
                 'percentual_curso' => 0,
+                'percentual_parada_pedagogica' => 0,
             ];
         }
 
@@ -389,14 +390,16 @@ class Home
         $fimMes = date('Y-m-t', $timestamp);
         $resumoSemana = $this->resumoDocentePeriodo($docenteId, $inicioSemana, $fimSemana);
         $resumoMes = $this->resumoDocentePeriodo($docenteId, $inicioMes, $fimMes);
-        $totalMes = $resumoMes['aula'] + $resumoMes['planejamento'] + $resumoMes['curso'];
+        $totalMes = $resumoMes['aula'] + $resumoMes['planejamento'] + $resumoMes['curso'] + $resumoMes['parada_pedagogica'];
+        $cargaHorariaMes = $this->cargaHorariaEscalaPeriodo($docenteId, $inicioMes, $fimMes);
 
         return [
             'horas_semana' => $resumoSemana['aula'] + $resumoSemana['planejamento'] + $resumoSemana['curso'],
-            'horas_mes' => $totalMes,
+            'horas_mes' => $cargaHorariaMes,
             'percentual_aula' => $totalMes > 0 ? round(($resumoMes['aula'] / $totalMes) * 100, 1) : 0,
             'percentual_planejamento' => $totalMes > 0 ? round(($resumoMes['planejamento'] / $totalMes) * 100, 1) : 0,
             'percentual_curso' => $totalMes > 0 ? round(($resumoMes['curso'] / $totalMes) * 100, 1) : 0,
+            'percentual_parada_pedagogica' => $totalMes > 0 ? round(($resumoMes['parada_pedagogica'] / $totalMes) * 100, 1) : 0,
         ];
     }
 
@@ -662,12 +665,14 @@ class Home
         $escala = $this->escalaDocente($docenteId);
         $aulas = $this->aulasDocentePeriodo($docenteId, $inicio, $fim);
         $cursos = $this->cursosCorporativosDocentePeriodo($docenteId, $inicio, $fim);
+        $feriadosIntegrais = $this->datasFeriadoIntegralPeriodo($inicio, $fim);
         $aulasPorData = [];
         $cursosPorData = [];
         $resumo = [
             'aula' => 0.0,
             'planejamento' => 0.0,
             'curso' => 0.0,
+            'parada_pedagogica' => 0.0,
         ];
 
         foreach ($aulas as $aula) {
@@ -681,9 +686,23 @@ class Home
         $data = $inicio;
 
         while (strtotime($data) !== false && strtotime($data) <= strtotime($fim)) {
+            if (isset($feriadosIntegrais[$data])) {
+                $data = date('Y-m-d', strtotime($data . ' +1 day'));
+                continue;
+            }
+
             $diaKey = $this->diaSemanaKey($data);
             $escalaData = $escala[$diaKey] ?? [];
             $periodosComAula = [];
+
+            if ($this->dataTemParadaPedagogica($data)) {
+                foreach ($escalaData as $itemEscala) {
+                    $resumo['parada_pedagogica'] += (float) ($itemEscala['horas'] ?? 0);
+                }
+
+                $data = date('Y-m-d', strtotime($data . ' +1 day'));
+                continue;
+            }
 
             foreach (($aulasPorData[$data] ?? []) as $aula) {
                 $periodo = $this->normalizarPeriodoPorHorario((string) $aula['hora_inicio']);
@@ -714,6 +733,67 @@ class Home
         }
 
         return $resumo;
+    }
+
+    private function dataTemParadaPedagogica(string $data): bool
+    {
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM calendario_bloqueios
+            WHERE status = 'Ativo'
+              AND tipo = 'Parada Pedagogica'
+              AND data <= :data
+              AND COALESCE(data_fim, data) >= :data
+            LIMIT 1
+        ");
+        $stmt->execute([':data' => $data]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function cargaHorariaEscalaPeriodo(int $docenteId, string $inicio, string $fim): float
+    {
+        $escala = $this->escalaDocente($docenteId);
+        $feriadosIntegrais = $this->datasFeriadoIntegralPeriodo($inicio, $fim);
+        $total = 0.0;
+        $data = $inicio;
+
+        while (strtotime($data) !== false && strtotime($data) <= strtotime($fim)) {
+            if (! isset($feriadosIntegrais[$data])) {
+                foreach (($escala[$this->diaSemanaKey($data)] ?? []) as $itemEscala) {
+                    $total += (float) ($itemEscala['horas'] ?? 0);
+                }
+            }
+
+            $data = date('Y-m-d', strtotime($data . ' +1 day'));
+        }
+
+        return $total;
+    }
+
+    private function datasFeriadoIntegralPeriodo(string $inicio, string $fim): array
+    {
+        $feriados = [];
+
+        foreach ($this->bloqueiosCalendarioPeriodo($inicio, $fim) as $bloqueio) {
+            if (
+                (string) ($bloqueio['tipo'] ?? '') !== 'Feriado'
+                || ! empty($bloqueio['hora_inicio'])
+                || ! empty($bloqueio['hora_fim'])
+            ) {
+                continue;
+            }
+
+            $dataAtual = max($inicio, (string) ($bloqueio['data'] ?? ''));
+            $dataFim = min($fim, (string) ($bloqueio['data_fim'] ?? $dataAtual));
+
+            while ($dataAtual !== '' && $dataAtual <= $dataFim) {
+                $feriados[$dataAtual] = true;
+                $dataAtual = date('Y-m-d', strtotime($dataAtual . ' +1 day'));
+            }
+        }
+
+        return $feriados;
     }
 
     private function horasEntre(string $horaInicio, string $horaFim): float

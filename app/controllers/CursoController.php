@@ -171,16 +171,22 @@ class CursoController
 
         if ($modoGeracao === 'uc_dia') {
             $unidadeCurricularId = (int) ($_POST['unidade_curricular_id'] ?? 0);
+            $dataFim = trim($_POST['data_fim'] ?? '');
             $diasSemanaPost = $_POST['dias_semana'] ?? [];
             $diasSemana = is_array($diasSemanaPost)
                 ? array_map('intval', $diasSemanaPost)
                 : [(int) $diasSemanaPost];
+
+            if ($dataFim === '' || strtotime($dataFim) === false || strtotime($dataFim) < strtotime($dataInicio)) {
+                $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Informe uma data final valida para gerar a UC.'));
+            }
 
             $resultado = $this->cursoModel->gerarQuadroPorUcDia(
                 $id,
                 $unidadeCurricularId,
                 $diasSemana,
                 $dataInicio,
+                $dataFim,
                 $salaId > 0 ? $salaId : null,
                 $docenteId > 0 ? $docenteId : null
             );

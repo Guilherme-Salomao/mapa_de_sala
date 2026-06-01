@@ -13,7 +13,7 @@
       <span>Dashboard</span>
     </a>
 
-    <?php if (! $isProfessorMenu): ?>
+    <?php if (! $isProfessorMenu && ! $isGestorMenu): ?>
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'perfil' ? 'active' : '' ?>"
       href="./?page=perfil">
       <i class="bi bi-person-circle"></i>
@@ -68,6 +68,12 @@
       href="./?page=educacao_corporativa">
       <i class="bi bi-mortarboard"></i>
       <span>Educação Corporativa</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'ferias' ? 'active' : '' ?>"
+      href="./?page=ferias">
+      <i class="bi bi-calendar2-check"></i>
+      <span>Férias</span>
     </a>
 
     <?php if ($isProfessorMenu): ?>
@@ -175,6 +181,16 @@
       <i class="bi bi-mortarboard"></i>
       <span>Educação Corporativa</span>
     </a>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'ferias' ? 'active' : '' ?>"
+      href="./?page=ferias">
+      <i class="bi bi-calendar2-check"></i>
+      <span>Férias</span>
+    </a>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'perfil' ? 'active' : '' ?>"
+      href="./?page=perfil">
+      <i class="bi bi-person-circle"></i>
+      <span>Meu Cadastro</span>
+    </a>
     <?php else: ?>
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'quadro_horario' ? 'active' : '' ?>"
       href="./?page=quadro_horario">
@@ -252,6 +268,12 @@
       href="./?page=aceleracao">
       <i class="bi bi-lightning-charge"></i>
       <span>Aceleração</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'ferias' ? 'active' : '' ?>"
+      href="./?page=ferias">
+      <i class="bi bi-calendar2-check"></i>
+      <span>Férias</span>
     </a>
 
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'docentes' ? 'active' : '' ?>"

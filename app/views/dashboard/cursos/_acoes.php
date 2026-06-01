@@ -59,6 +59,12 @@
 
           <div class="js-gerar-uc-campos d-none" data-modal-id="<?php echo $cursoId; ?>">
             <div class="mb-3 text-start">
+              <label class="form-label" for="data_fim_<?php echo $cursoId; ?>">Data final</label>
+              <input type="date" class="form-control js-gerar-uc-input" id="data_fim_<?php echo $cursoId; ?>"
+                name="data_fim" disabled>
+            </div>
+
+            <div class="mb-3 text-start">
               <label class="form-label" for="unidade_curricular_id_<?php echo $cursoId; ?>">Unidade Curricular</label>
               <select class="form-select js-gerar-uc-input" id="unidade_curricular_id_<?php echo $cursoId; ?>"
                 name="unidade_curricular_id" disabled>

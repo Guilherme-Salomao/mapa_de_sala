@@ -701,6 +701,10 @@ class QuadroHorarioController
             foreach (($bloco['docentes'] ?? $dados['docentes']) as $docenteId) {
                 $exigirEscala = (int) ($dados['troca_escala'] ?? 0) !== 1;
 
+                if ($this->quadroModel->docenteEmFerias((int) $docenteId, $dados['data_aula'])) {
+                    return 'O docente selecionado esta de ferias nesta data.';
+                }
+
                 if (! $this->docenteDisponivel((int) $docenteId, $dados['data_aula'], $bloco['inicio'], $bloco['fim'], $ignorarId, $exigirEscala)) {
                     return 'Um dos docentes nao esta disponivel neste dia ou periodo.';
                 }
@@ -714,6 +718,7 @@ class QuadroHorarioController
     {
         return (! $exigirEscala || $this->quadroModel->docenteTemEscala($docenteId, $data, $horaInicio, $horaFim))
             && ! $this->educacaoModel->docenteEmCurso($docenteId, $data)
+            && ! $this->quadroModel->docenteEmFerias($docenteId, $data)
             && ! $this->quadroModel->encontrarConflitoDocente($docenteId, $data, $horaInicio, $horaFim, $ignorarId);
     }
 

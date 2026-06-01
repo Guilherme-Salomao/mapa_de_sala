@@ -17,10 +17,11 @@
         'percentual_aula' => 0,
         'percentual_curso' => 0,
         'percentual_planejamento' => 0,
+        'percentual_parada_pedagogica' => 0,
     ];
 
-    $tituloPagina = 'Relatorio Gestor';
-    $subtituloPagina = 'Distribuicao mensal da carga dos docentes';
+    $tituloPagina = 'Relatório Gestor';
+    $subtituloPagina = 'Distribuição mensal da carga dos docentes';
     $botaoTopoTexto = '';
     $botaoTopoLink = '';
 
@@ -60,6 +61,10 @@
     border-left-color: #ffc107;
   }
 
+  .gestor-resumo-card.parada {
+    border-left-color: #0dcaf0;
+  }
+
   .gestor-progress {
     height: .65rem;
   }
@@ -92,7 +97,7 @@
               <input type="hidden" name="page" value="relatorio_gestor">
 
               <div class="col-6 col-lg-2">
-                <label for="mes" class="form-label">Mes</label>
+                <label for="mes" class="form-label">Mês</label>
                 <select class="form-select" id="mes" name="mes">
                   <?php for ($m = 1; $m <= 12; $m++): ?>
                   <option value="<?php echo $m; ?>" <?php echo $mes === $m ? 'selected' : ''; ?>>
@@ -117,28 +122,34 @@
           </div>
 
           <div class="row g-3 mb-3">
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-6 col-xl">
               <div class="app-card gestor-resumo-card p-3 h-100">
                 <div class="small text-muted">Docentes ativos</div>
                 <div class="fs-3 fw-bold"><?php echo (int) ($totais['docentes'] ?? 0); ?></div>
               </div>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-6 col-xl">
               <div class="app-card gestor-resumo-card p-3 h-100">
                 <div class="small text-muted">Em sala</div>
                 <div class="fs-3 fw-bold"><?php echo formatarPercentualGestor((float) ($totais['percentual_aula'] ?? 0)); ?></div>
               </div>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-6 col-xl">
               <div class="app-card gestor-resumo-card curso p-3 h-100">
                 <div class="small text-muted">Em curso</div>
                 <div class="fs-3 fw-bold"><?php echo formatarPercentualGestor((float) ($totais['percentual_curso'] ?? 0)); ?></div>
               </div>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-6 col-xl">
               <div class="app-card gestor-resumo-card planejamento p-3 h-100">
                 <div class="small text-muted">Planejamento</div>
                 <div class="fs-3 fw-bold"><?php echo formatarPercentualGestor((float) ($totais['percentual_planejamento'] ?? 0)); ?></div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6 col-xl">
+              <div class="app-card gestor-resumo-card parada p-3 h-100">
+                <div class="small text-muted">Parada pedagógica</div>
+                <div class="fs-3 fw-bold"><?php echo formatarPercentualGestor((float) ($totais['percentual_parada_pedagogica'] ?? 0)); ?></div>
               </div>
             </div>
           </div>
@@ -154,12 +165,13 @@
                 <thead class="small text-muted">
                   <tr>
                     <th>Docente</th>
-                    <th>Area</th>
+                    <th>Área</th>
                     <th class="text-end">Sala</th>
                     <th class="text-end">Curso</th>
                     <th class="text-end">Planejamento</th>
+                    <th class="text-end">Parada pedagógica</th>
                     <th class="text-end">Total</th>
-                    <th style="min-width: 220px;">Distribuicao</th>
+                    <th style="min-width: 220px;">Distribuição</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -186,23 +198,29 @@
                       <div class="fw-semibold"><?php echo formatarPercentualGestor((float) ($resumo['percentual_planejamento'] ?? 0)); ?></div>
                       <div class="small text-muted"><?php echo formatarHorasGestor((float) ($resumo['horas_planejamento'] ?? 0)); ?></div>
                     </td>
+                    <td class="text-end">
+                      <div class="fw-semibold"><?php echo formatarPercentualGestor((float) ($resumo['percentual_parada_pedagogica'] ?? 0)); ?></div>
+                      <div class="small text-muted"><?php echo formatarHorasGestor((float) ($resumo['horas_parada_pedagogica'] ?? 0)); ?></div>
+                    </td>
                     <td class="text-end"><?php echo formatarHorasGestor((float) ($resumo['total_horas'] ?? 0)); ?></td>
                     <td>
                       <div class="progress gestor-progress" role="progressbar">
                         <div class="progress-bar bg-primary"
-                          style="width: <?php echo (float) ($resumo['percentual_aula'] ?? 0); ?> %"></div>
+                          style="width: <?php echo (float) ($resumo['percentual_aula'] ?? 0); ?>%"></div>
                         <div class="progress-bar bg-success"
-                          style="width: <?php echo (float) ($resumo['percentual_curso'] ?? 0); ?> %"></div>
+                          style="width: <?php echo (float) ($resumo['percentual_curso'] ?? 0); ?>%"></div>
                         <div class="progress-bar bg-warning"
-                          style="width: <?php echo (float) ($resumo['percentual_planejamento'] ?? 0); ?> %"></div>
+                          style="width: <?php echo (float) ($resumo['percentual_planejamento'] ?? 0); ?>%"></div>
+                        <div class="progress-bar bg-info"
+                          style="width: <?php echo (float) ($resumo['percentual_parada_pedagogica'] ?? 0); ?>%"></div>
                       </div>
                     </td>
                   </tr>
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
-                      Nenhum docente ativo encontrado para o periodo.
+                    <td colspan="8" class="text-center text-muted py-4">
+                      Nenhum docente ativo encontrado para o período.
                     </td>
                   </tr>
                   <?php endif; ?>
@@ -220,7 +238,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = "Relatorio Gestor";
+  if (pageTitle) pageTitle.textContent = "Relatório Gestor";
 
   const userName = document.getElementById("userName");
   if (userName) userName.textContent = <?php echo json_encode($usuarioLogado); ?>;

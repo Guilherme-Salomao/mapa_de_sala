@@ -558,6 +558,25 @@ class QuadroHorario
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function docenteEmFerias(int $docenteId, string $dataAula): bool
+    {
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM docente_ferias
+            WHERE docente_id = :docente_id
+              AND status = 'Ativo'
+              AND data_inicio <= :data_aula
+              AND data_fim >= :data_aula
+            LIMIT 1
+        ");
+        $stmt->execute([
+            ':docente_id' => $docenteId,
+            ':data_aula' => $dataAula,
+        ]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     private function diaSemanaPortugues(string $data): string
     {
         $timestamp = strtotime($data);

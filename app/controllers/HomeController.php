@@ -39,6 +39,7 @@ class HomeController
             'percentual_aula' => 0,
             'percentual_planejamento' => 0,
             'percentual_curso' => 0,
+            'percentual_parada_pedagogica' => 0,
         ];
 
         if ($dashboardDocente) {

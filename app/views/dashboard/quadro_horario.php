@@ -209,6 +209,45 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
 
+  <style>
+  .quadro-print-header {
+    display: none;
+  }
+
+  #quadroResumoImpressao {
+    text-align: center;
+  }
+
+  #quadroResumoImpressao > .d-flex {
+    align-items: center;
+    flex-direction: column;
+    justify-content: center !important;
+  }
+
+  #quadroCalendarioImpressao th,
+  #quadroCalendarioImpressao td {
+    text-align: center;
+  }
+
+  #quadroCalendarioImpressao .quadro-dia-header {
+    justify-content: center !important;
+    position: relative;
+  }
+
+  #quadroCalendarioImpressao .quadro-dia-header button {
+    position: absolute;
+    right: 0;
+  }
+
+  #quadroCalendarioImpressao .app-calendar-actions {
+    justify-content: center;
+  }
+
+  #quadroCalendarioImpressao .collapse form {
+    text-align: left;
+  }
+  </style>
+
   <script>
   (function() {
     const tema = localStorage.getItem("tema") || "light";
@@ -229,18 +268,28 @@
         ?>
 
         <section class="col-12 col-md-9 col-lg-10 p-3 p-md-4 app-content">
-          <?php require_once __DIR__ . '/../components/page_header.php'; ?>
+          <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+            <div>
+              <h4 class="mb-0"><?php echo htmlspecialchars($tituloPagina); ?></h4>
+              <div class="small text-muted"><?php echo htmlspecialchars($subtituloPagina); ?></div>
+            </div>
+            <?php if (! empty($ofertaSelecionada)): ?>
+            <button type="button" class="btn btn-sm app-btn-primary quadro-no-print" id="btnImprimirQuadro">
+              <i class="bi bi-printer"></i> Imprimir
+            </button>
+            <?php endif; ?>
+          </div>
 
           <?php if (($tipo ?? '') !== 'sucesso'): ?>
           <?php require_once __DIR__ . '/../components/alert.php'; ?>
           <?php endif; ?>
 
-          <div class="app-card p-3 mb-3">
+          <div class="app-card p-3 mb-3 quadro-no-print">
             <?php require_once __DIR__ . '/quadro_horario/_filtros.php'; ?>
           </div>
 
           <?php if (! empty($ofertaSelecionada)): ?>
-          <div class="app-card p-3 mb-3">
+          <div class="app-card p-3 mb-3" id="quadroResumoImpressao">
             <div class="d-flex flex-wrap justify-content-between gap-2">
               <div>
                 <div class="fw-bold"><?php echo htmlspecialchars($ofertaSelecionada['nome']); ?></div>
@@ -258,7 +307,7 @@
             </div>
           </div>
 
-          <div class="app-card p-3">
+          <div class="app-card p-3" id="quadroCalendarioImpressao">
             <div class="table-responsive">
               <table class="table table-bordered align-top mb-0">
                 <thead class="small text-muted">
@@ -308,7 +357,7 @@
                     ?>
                     <td style="min-width: 160px; height: 150px;">
                       <?php if ($mostrarDia): ?>
-                      <div class="d-flex align-items-center justify-content-between mb-2">
+                      <div class="d-flex align-items-center justify-content-between mb-2 quadro-dia-header">
                         <span class="fw-semibold"><?php echo $diaAtual; ?></span>
                         <?php if ($permiteLancamento): ?>
                         <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
@@ -870,6 +919,88 @@
     if (!selecionadoValido) {
       professor2.value = "";
     }
+  }
+
+  const btnImprimirQuadro = document.getElementById("btnImprimirQuadro");
+
+  if (btnImprimirQuadro) {
+    btnImprimirQuadro.addEventListener("click", function() {
+      const resumo = document.getElementById("quadroResumoImpressao");
+      const calendario = document.getElementById("quadroCalendarioImpressao");
+      const janelaImpressao = window.open("", "_blank");
+
+      if (!resumo || !calendario || !janelaImpressao) {
+        return;
+      }
+
+      janelaImpressao.document.write(`
+        <!doctype html>
+        <html lang="pt-br">
+        <head>
+          <meta charset="UTF-8">
+          <title>Quadro Horário - SIGHA</title>
+          <style>
+            @page { size: A4 landscape; margin: 5mm; }
+            * { box-sizing: border-box; }
+            body { color: #111827; font-family: Arial, sans-serif; margin: 0; }
+            h1 { font-size: 17px; margin: 0 0 4px; text-align: center; }
+            .app-card { border: 0; box-shadow: none; margin: 0 0 4px; padding: 0; }
+            .d-flex { display: flex; }
+            .flex-wrap { flex-wrap: wrap; }
+            .justify-content-between { justify-content: space-between; }
+            .gap-2 { gap: 4px; }
+            .fw-bold, .fw-semibold { font-weight: 700; }
+            .small, small { font-size: 10px; }
+            .text-muted { color: #4b5563; }
+            .text-center { text-align: center; }
+            .mb-1 { margin-bottom: 2px; }
+            .mb-2 { margin-bottom: 3px; }
+            .my-1 { margin: 2px 0; }
+            .mt-2 { margin-top: 3px; }
+            .p-2 { padding: 3px; }
+            .p-3 { padding: 0; }
+            .border { border: 1px solid #d1d5db; }
+            .rounded { border-radius: 3px; }
+            .table-responsive { overflow: visible; }
+            #quadroResumoImpressao .fw-bold { font-size: 13px; }
+            #quadroResumoImpressao .small { font-size: 11px; }
+            table { border-collapse: collapse; font-size: 10px; table-layout: fixed; width: 100%; }
+            th, td { border: 1px solid #9ca3af; padding: 2px; vertical-align: top; }
+            th { background: #0d6efd !important; color: #fff; font-size: 10px; font-weight: 700; text-align: center; }
+            td { height: 24mm !important; min-width: 0 !important; text-align: center; }
+            td > * { text-align: center !important; }
+            .badge { border: 1px solid #9ca3af; border-radius: 3px; display: inline-block; font-size: 8px; padding: 1px 2px; }
+            button, form, .collapse, .app-calendar-actions { display: none !important; }
+          </style>
+        </head>
+        <body>
+          <h1>Quadro Horário</h1>
+          ${resumo.outerHTML}
+          ${calendario.outerHTML}
+          <script>
+            document.querySelectorAll("table").forEach(function(table) {
+              const cabecalhoDomingo = table.querySelector("thead tr th:first-child");
+
+              if (!cabecalhoDomingo || cabecalhoDomingo.textContent.trim() !== "Dom") {
+                return;
+              }
+
+              table.querySelectorAll("tr").forEach(function(row) {
+                if (row.children.length > 0) {
+                  row.children[0].remove();
+                }
+              });
+            });
+
+            window.addEventListener("load", function() {
+              window.print();
+            });
+          <\/script>
+        </body>
+        </html>
+      `);
+      janelaImpressao.document.close();
+    });
   }
   </script>
 </body>

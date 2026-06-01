@@ -24,6 +24,7 @@
         'percentual_aula' => 0,
         'percentual_planejamento' => 0,
         'percentual_curso' => 0,
+        'percentual_parada_pedagogica' => 0,
     ];
     $dataHoje = $dataHoje ?? date('Y-m-d');
 
@@ -358,20 +359,6 @@
               <div class="app-card p-3">
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
-                    <div class="small text-muted">Carga Horária</div>
-                    <div class="fs-3 fw-bold"><?php echo htmlspecialchars(formatarHorasHome((float) ($indicadoresDocente['horas_semana'] ?? 0))); ?></div>
-                  </div>
-                  <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--default">
-                    <i class="bi bi-calendar-week"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl">
-              <div class="app-card p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                  <div>
                     <div class="small text-muted">Carga Horária Mensal (<?php echo htmlspecialchars($mesAnoReferencia); ?>)</div>
                     <div class="fs-3 fw-bold"><?php echo htmlspecialchars(formatarHorasHome((float) ($indicadoresDocente['horas_mes'] ?? 0))); ?></div>
                   </div>
@@ -386,7 +373,7 @@
               <div class="app-card p-3">
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
-                    <div class="small text-muted">% em sala (<?php echo htmlspecialchars($mesAnoReferencia); ?>)</div>
+                    <div class="small text-muted">% em sala de aula (<?php echo htmlspecialchars($mesAnoReferencia); ?>)</div>
                     <div class="fs-3 fw-bold"><?php echo number_format((float) ($indicadoresDocente['percentual_aula'] ?? 0), 1, ',', '.'); ?>%</div>
                   </div>
                   <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--livre">
@@ -419,6 +406,20 @@
                   </div>
                   <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--uso">
                     <i class="bi bi-mortarboard"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl">
+              <div class="app-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="small text-muted">% parada pedagógica (<?php echo htmlspecialchars($mesAnoReferencia); ?>)</div>
+                    <div class="fs-3 fw-bold"><?php echo number_format((float) ($indicadoresDocente['percentual_parada_pedagogica'] ?? 0), 1, ',', '.'); ?>%</div>
+                  </div>
+                  <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--default">
+                    <i class="bi bi-calendar-check"></i>
                   </div>
                 </div>
               </div>

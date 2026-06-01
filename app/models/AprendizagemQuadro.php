@@ -381,6 +381,10 @@ class AprendizagemQuadro
             return 'docente em curso';
         }
 
+        if ($this->docenteEmFerias($docenteId, $data)) {
+            return 'docente em ferias';
+        }
+
         return null;
     }
 
@@ -528,6 +532,25 @@ class AprendizagemQuadro
             WHERE docente_id = :docente_id
               AND data = :data
               AND status = 'Ativo'
+            LIMIT 1
+        ");
+        $stmt->execute([
+            ':docente_id' => $docenteId,
+            ':data' => $data,
+        ]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function docenteEmFerias(int $docenteId, string $data): bool
+    {
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM docente_ferias
+            WHERE docente_id = :docente_id
+              AND status = 'Ativo'
+              AND data_inicio <= :data
+              AND data_fim >= :data
             LIMIT 1
         ");
         $stmt->execute([

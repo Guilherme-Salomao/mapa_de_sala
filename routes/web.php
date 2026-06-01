@@ -16,6 +16,7 @@ require_once __DIR__ . '/../app/controllers/RelatorioTurmaController.php';
 require_once __DIR__ . '/../app/controllers/RelatorioSalaController.php';
 require_once __DIR__ . '/../app/controllers/CalendarioBloqueioController.php';
 require_once __DIR__ . '/../app/controllers/EducacaoCorporativaController.php';
+require_once __DIR__ . '/../app/controllers/DocenteFeriasController.php';
 require_once __DIR__ . '/../app/controllers/AprendizagemQuadroController.php';
 require_once __DIR__ . '/../app/controllers/SistemaLogController.php';
 require_once __DIR__ . '/../app/core/AuditLog.php';
@@ -24,7 +25,7 @@ require_once __DIR__ . '/../app/core/AccessControl.php';
 $page   = $_GET['page'] ?? 'login';
 $action = $_GET['action'] ?? '';
 
-$rotasPermitidas = ['login', 'cadastro', 'esqueci_senha', 'perfil', 'home', 'usuarios', 'salas', 'gestao_salas', 'docentes', 'cursos', 'turmas', 'ucs', 'quadro_horario', 'calendario', 'educacao_corporativa', 'aprendizagem', 'aceleracao', 'relatorio_docente', 'relatorio_gestor', 'relatorio_turma', 'relatorio_salas', 'logs', 'logout'];
+$rotasPermitidas = ['login', 'cadastro', 'esqueci_senha', 'perfil', 'home', 'usuarios', 'salas', 'gestao_salas', 'docentes', 'cursos', 'turmas', 'ucs', 'quadro_horario', 'calendario', 'educacao_corporativa', 'ferias', 'aprendizagem', 'aceleracao', 'relatorio_docente', 'relatorio_gestor', 'relatorio_turma', 'relatorio_salas', 'logs', 'logout'];
 
 if (! in_array($page, $rotasPermitidas, true)) {
     $page = 'login';
@@ -238,6 +239,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($page === 'ferias' && $action === 'salvar') {
+        $controller = new DocenteFeriasController();
+        $controller->salvar();
+        exit;
+    }
+
+    if ($page === 'ferias' && $action === 'atualizar') {
+        $controller = new DocenteFeriasController();
+        $controller->atualizar();
+        exit;
+    }
+
+    if ($page === 'ferias' && $action === 'excluir') {
+        $controller = new DocenteFeriasController();
+        $controller->excluir();
+        exit;
+    }
+
     if (in_array($page, ['aprendizagem', 'aceleracao'], true) && $action === 'salvar') {
         $controller = new AprendizagemQuadroController();
         $controller->salvar();
@@ -399,6 +418,11 @@ switch ($page) {
 
     case 'educacao_corporativa':
         $controller = new EducacaoCorporativaController();
+        $controller->index();
+        break;
+
+    case 'ferias':
+        $controller = new DocenteFeriasController();
         $controller->index();
         break;
 

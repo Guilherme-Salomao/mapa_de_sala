@@ -43,24 +43,28 @@ class RelatorioGestorController
         $horasAula = 0.0;
         $horasCurso = 0.0;
         $horasPlanejamento = 0.0;
+        $horasParadaPedagogica = 0.0;
 
         foreach ($resumos as $resumo) {
             $horasAula += (float) ($resumo['horas_aula'] ?? 0);
             $horasCurso += (float) ($resumo['horas_curso'] ?? 0);
             $horasPlanejamento += (float) ($resumo['horas_planejamento'] ?? 0);
+            $horasParadaPedagogica += (float) ($resumo['horas_parada_pedagogica'] ?? 0);
         }
 
-        $total = $horasAula + $horasCurso + $horasPlanejamento;
+        $total = $horasAula + $horasCurso + $horasPlanejamento + $horasParadaPedagogica;
 
         return [
             'docentes' => count($resumos),
             'horas_aula' => $horasAula,
             'horas_curso' => $horasCurso,
             'horas_planejamento' => $horasPlanejamento,
+            'horas_parada_pedagogica' => $horasParadaPedagogica,
             'total_horas' => $total,
             'percentual_aula' => $total > 0 ? round(($horasAula / $total) * 100, 1) : 0,
             'percentual_curso' => $total > 0 ? round(($horasCurso / $total) * 100, 1) : 0,
             'percentual_planejamento' => $total > 0 ? round(($horasPlanejamento / $total) * 100, 1) : 0,
+            'percentual_parada_pedagogica' => $total > 0 ? round(($horasParadaPedagogica / $total) * 100, 1) : 0,
         ];
     }
 

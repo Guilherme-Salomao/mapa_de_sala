@@ -459,6 +459,7 @@ class Curso
         int $unidadeCurricularId,
         array $diasSemana,
         string $dataInicio,
+        string $dataFim,
         ?int $salaPreferencialId = null,
         ?int $docentePreferencialId = null
     ): array {
@@ -496,6 +497,12 @@ class Curso
             return ['sucesso' => false, 'mensagem' => 'Data inicial invalida.'];
         }
 
+        $diaFim = strtotime($dataFim);
+
+        if ($diaFim === false || $diaFim < $diaInicio) {
+            return ['sucesso' => false, 'mensagem' => 'Data final invalida.'];
+        }
+
         $blocosHorario = $this->blocosHorarioTurma($turma);
 
         if (empty($blocosHorario)) {
@@ -520,7 +527,7 @@ class Curso
             $blocosSemDocente = 0;
             $guard = 0;
 
-            while ($minutosRestantesUc > 0 && $guard < $limiteDiasCalendario) {
+            while ($minutosRestantesUc > 0 && strtotime($dataAtual) <= $diaFim && $guard < $limiteDiasCalendario) {
                 $guard++;
 
                 if (! in_array((int) date('N', strtotime($dataAtual)), $diasSemana, true)) {
@@ -587,12 +594,23 @@ class Curso
             }
 
             if ($minutosRestantesUc > 0) {
-                $this->conn->rollBack();
+                if ($aulasCriadas === 0) {
+                    $this->conn->rollBack();
+
+                    return [
+                        'sucesso' => false,
+                        'mensagem' => 'Nenhuma aula foi gerada para a UC no periodo informado. Verifique os dias selecionados, calendario e aulas ja lancadas.',
+                    ];
+                }
+
+                $this->conn->commit();
 
                 return [
-                    'sucesso' => false,
-                    'mensagem' => 'Nao foi possivel concluir a geracao da UC. Faltam aproximadamente ' .
-                        round($minutosRestantesUc / 60, 2) . 'h. Verifique dias de aula, calendario e aulas ja lancadas.',
+                    'sucesso' => true,
+                    'mensagem' => $aulasCriadas . ' aula(s) geradas para ' . ($uc['codigo'] ?? 'UC') .
+                        ' ate ' . date('d/m/Y', $diaFim) . '. Ainda restam aproximadamente ' .
+                        round($minutosRestantesUc / 60, 2) . 'h desta UC. Blocos sem sala: ' .
+                        $blocosSemSala . '. Blocos sem docente: ' . $blocosSemDocente . '.',
                 ];
             }
 
@@ -845,6 +863,7 @@ class Curso
 
         return $this->docenteVinculadoUc($docenteId, $unidadeCurricularId)
             && $this->docenteTemEscala($docenteId, $data, $horaInicio, $horaFim)
+            && ! $this->docenteEmFerias($docenteId, $data)
             && ! $this->docenteTemConflito($docenteId, $data, $horaInicio, $horaFim);
     }
 
@@ -887,6 +906,25 @@ class Curso
             ':data' => $data,
             ':hora_inicio' => $horaInicio,
             ':hora_fim' => $horaFim,
+        ]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function docenteEmFerias(int $docenteId, string $data): bool
+    {
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM docente_ferias
+            WHERE docente_id = :docente_id
+              AND status = 'Ativo'
+              AND data_inicio <= :data
+              AND data_fim >= :data
+            LIMIT 1
+        ");
+        $stmt->execute([
+            ':docente_id' => $docenteId,
+            ':data' => $data,
         ]);
 
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
