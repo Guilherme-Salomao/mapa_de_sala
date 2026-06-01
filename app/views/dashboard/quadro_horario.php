@@ -214,16 +214,6 @@
     display: none;
   }
 
-  #quadroResumoImpressao {
-    text-align: center;
-  }
-
-  #quadroResumoImpressao > .d-flex {
-    align-items: center;
-    flex-direction: column;
-    justify-content: center !important;
-  }
-
   #quadroCalendarioImpressao th,
   #quadroCalendarioImpressao td {
     text-align: center;
