@@ -460,6 +460,7 @@ class Curso
         array $diasSemana,
         string $dataInicio,
         string $dataFim,
+        ?string $turnoGeracao = null,
         ?int $salaPreferencialId = null,
         ?int $docentePreferencialId = null
     ): array {
@@ -503,7 +504,11 @@ class Curso
             return ['sucesso' => false, 'mensagem' => 'Data final invalida.'];
         }
 
-        $blocosHorario = $this->blocosHorarioTurma($turma);
+        if ((int) ($turma['integral'] ?? 0) === 1 && ! in_array($turnoGeracao, ['primeiro', 'segundo'], true)) {
+            return ['sucesso' => false, 'mensagem' => 'Selecione o turno em que a UC sera gerada.'];
+        }
+
+        $blocosHorario = $this->blocosHorarioTurma($turma, $turnoGeracao);
 
         if (empty($blocosHorario)) {
             return ['sucesso' => false, 'mensagem' => 'Horario da turma invalido.'];
@@ -1225,17 +1230,17 @@ class Curso
         return (int) (($fim - $inicio) / 60);
     }
 
-    private function blocosHorarioTurma(array $turma): array
+    private function blocosHorarioTurma(array $turma, ?string $turnoGeracao = null): array
     {
         $blocos = [];
         $horaInicio = substr((string) ($turma['hora_inicio'] ?? ''), 0, 5);
         $horaFim = substr((string) ($turma['hora_fim'] ?? ''), 0, 5);
 
-        if ($this->minutosEntre($horaInicio, $horaFim) > 0) {
+        if ($turnoGeracao !== 'segundo' && $this->minutosEntre($horaInicio, $horaFim) > 0) {
             $blocos[] = ['inicio' => $horaInicio, 'fim' => $horaFim];
         }
 
-        if ((int) ($turma['integral'] ?? 0) === 1) {
+        if ((int) ($turma['integral'] ?? 0) === 1 && $turnoGeracao !== 'primeiro') {
             $horaInicioTarde = substr((string) ($turma['hora_inicio_tarde'] ?? ''), 0, 5);
             $horaFimTarde = substr((string) ($turma['hora_fim_tarde'] ?? ''), 0, 5);
 

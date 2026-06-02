@@ -18,6 +18,62 @@
     $cursoOfertaId = (int) ($cursoOfertaId ?? 0);
     $bloqueiosPorData = $bloqueiosPorData ?? [];
     $horariosLancamentoPorData = $horariosLancamentoPorData ?? [];
+    $turnosLancamentoPorData = $turnosLancamentoPorData ?? [];
+
+    function salasDisponiveisTurnosQuadro(array $turnos): array
+    {
+        $salas = [];
+
+        foreach ($turnos as $turno) {
+            foreach (($turno['salas'] ?? []) as $sala) {
+                $id = (int) ($sala['id'] ?? 0);
+
+                if ($id <= 0) {
+                    continue;
+                }
+
+                $salas[$id] = $salas[$id] ?? $sala;
+                $salas[$id]['turnos_disponiveis'][] = (string) ($turno['turno'] ?? '');
+            }
+        }
+
+        foreach ($salas as &$sala) {
+            $sala['turnos_disponiveis'] = implode(',', array_unique(array_filter($sala['turnos_disponiveis'] ?? [])));
+        }
+
+        return array_values($salas);
+    }
+
+    function docentesDisponiveisTurnosQuadro(array $turnos): array
+    {
+        $docentes = [];
+
+        foreach ($turnos as $turno) {
+            $turnoId = (string) ($turno['turno'] ?? '');
+
+            foreach (($turno['docentes'] ?? []) as $docente) {
+                $id = (int) ($docente['id'] ?? 0);
+
+                if ($id <= 0) {
+                    continue;
+                }
+
+                $docentes[$id] = $docentes[$id] ?? $docente;
+                $docentes[$id]['turnos_disponiveis'][] = $turnoId;
+
+                if ((int) ($docente['tem_escala'] ?? 0) === 1) {
+                    $docentes[$id]['turnos_escala'][] = $turnoId;
+                }
+            }
+        }
+
+        foreach ($docentes as &$docente) {
+            $docente['turnos_disponiveis'] = implode(',', array_unique(array_filter($docente['turnos_disponiveis'] ?? [])));
+            $docente['turnos_escala'] = implode(',', array_unique(array_filter($docente['turnos_escala'] ?? [])));
+        }
+
+        return array_values($docentes);
+    }
 
     function labelTipoBloqueioQuadro(string $tipo): string
     {
@@ -289,6 +345,9 @@
                   <?php if (! empty($ofertaSelecionada['hora_inicio']) && ! empty($ofertaSelecionada['hora_fim'])): ?>
                   · <?php echo htmlspecialchars(substr($ofertaSelecionada['hora_inicio'], 0, 5) . ' - ' . substr($ofertaSelecionada['hora_fim'], 0, 5)); ?>
                   <?php endif; ?>
+                  <?php if ((int) ($ofertaSelecionada['integral'] ?? 0) === 1 && ! empty($ofertaSelecionada['hora_inicio_tarde']) && ! empty($ofertaSelecionada['hora_fim_tarde'])): ?>
+                  / <?php echo htmlspecialchars(substr($ofertaSelecionada['hora_inicio_tarde'], 0, 5) . ' - ' . substr($ofertaSelecionada['hora_fim_tarde'], 0, 5)); ?>
+                  <?php endif; ?>
                 </div>
               </div>
               <div class="small text-muted">
@@ -337,10 +396,15 @@
                         $horarioLancamentoDia = array_key_exists($dataIso, $horariosLancamentoPorData)
                             ? $horariosLancamentoPorData[$dataIso]
                             : horarioLancamentoQuadro($bloqueiosDia, $horaInicioOfertaDia, $horaFimOfertaDia);
+                        $turnosLancamentoDia = $turnosLancamentoPorData[$dataIso] ?? [];
                         $diaBloqueado = $horarioLancamentoDia === null && ! empty($bloqueiosDia);
                         $permiteLancamento = $mostrarDia && $turmaTemAulaDia && ! $diaBloqueado && $coluna !== 0 && ! ($coluna === 6 && $bloquearSabado) && $horarioLancamentoDia !== null;
-                        $salasDisponiveisDia = $salasDisponiveisPorData[$dataIso] ?? [];
-                        $docentesDisponiveisDia = $docentesDisponiveisPorData[$dataIso] ?? [];
+                        $salasDisponiveisDia = ! empty($turnosLancamentoDia)
+                            ? salasDisponiveisTurnosQuadro($turnosLancamentoDia)
+                            : ($salasDisponiveisPorData[$dataIso] ?? []);
+                        $docentesDisponiveisDia = ! empty($turnosLancamentoDia)
+                            ? docentesDisponiveisTurnosQuadro($turnosLancamentoDia)
+                            : ($docentesDisponiveisPorData[$dataIso] ?? []);
                         $docentesBlocosDia = $docentesDisponiveisPorBloco[$dataIso] ?? [];
                         $cadastroDisponivel = ! empty($salasDisponiveisDia);
                         $dataId = str_replace('-', '_', $dataIso);
@@ -391,12 +455,31 @@
                           <input type="hidden" name="status" value="Ativa">
 
                           <div class="mb-2">
+                            <?php if ((int) ($ofertaSelecionada['integral'] ?? 0) === 1): ?>
+                            <select class="form-select form-select-sm quick-turno" name="turno_lancamento" required>
+                              <?php foreach ($turnosLancamentoDia as $turnoDia): ?>
+                              <option value="<?php echo htmlspecialchars($turnoDia['turno'] ?? ''); ?>"
+                                data-inicio="<?php echo htmlspecialchars($turnoDia['inicio'] ?? ''); ?>"
+                                data-fim="<?php echo htmlspecialchars($turnoDia['fim'] ?? ''); ?>">
+                                <?php echo htmlspecialchars(($turnoDia['rotulo'] ?? 'Turno') . ' - ' . ($turnoDia['inicio'] ?? '') . ' - ' . ($turnoDia['fim'] ?? '')); ?>
+                              </option>
+                              <?php endforeach; ?>
+                            </select>
+                            <?php else: ?>
+                            <div class="small fw-semibold">
+                              Horário: <?php echo htmlspecialchars(($horarioLancamentoDia['inicio'] ?? $horaInicioOfertaDia) . ' - ' . ($horarioLancamentoDia['fim'] ?? $horaFimOfertaDia)); ?>
+                            </div>
+                            <?php endif; ?>
+                          </div>
+
+                          <div class="mb-2">
                             <select class="form-select form-select-sm" name="sala_id">
                               <option value="">
                                 <?php echo empty($salasDisponiveisDia) ? 'Nenhuma sala disponivel' : 'Sala...'; ?>
                               </option>
                               <?php foreach ($salasDisponiveisDia as $sala): ?>
-                              <option value="<?php echo (int) $sala['id']; ?>">
+                              <option value="<?php echo (int) $sala['id']; ?>"
+                                data-turnos="<?php echo htmlspecialchars((string) ($sala['turnos_disponiveis'] ?? '')); ?>">
                                 <?php echo htmlspecialchars($sala['nome'] ?? ''); ?>
                               </option>
                               <?php endforeach; ?>
@@ -422,7 +505,9 @@
                               <?php foreach ($docentesDisponiveisDia as $docente): ?>
                               <option value="<?php echo (int) $docente['id']; ?>"
                                 data-uc-ids="<?php echo htmlspecialchars((string) ($docente['uc_ids'] ?? '')); ?>"
-                                data-tem-escala="<?php echo (int) ($docente['tem_escala'] ?? 0); ?>">
+                                data-tem-escala="<?php echo (int) ($docente['tem_escala'] ?? 0); ?>"
+                                data-turnos="<?php echo htmlspecialchars((string) ($docente['turnos_disponiveis'] ?? '')); ?>"
+                                data-turnos-escala="<?php echo htmlspecialchars((string) ($docente['turnos_escala'] ?? '')); ?>">
                                 <?php echo htmlspecialchars($docente['nome'] ?? ''); ?>
                               </option>
                               <?php endforeach; ?>
@@ -465,7 +550,9 @@
                               <?php foreach ($docentesDisponiveisDia as $docente): ?>
                               <option value="<?php echo (int) $docente['id']; ?>"
                                 data-uc-ids="<?php echo htmlspecialchars((string) ($docente['uc_ids'] ?? '')); ?>"
-                                data-tem-escala="<?php echo (int) ($docente['tem_escala'] ?? 0); ?>">
+                                data-tem-escala="<?php echo (int) ($docente['tem_escala'] ?? 0); ?>"
+                                data-turnos="<?php echo htmlspecialchars((string) ($docente['turnos_disponiveis'] ?? '')); ?>"
+                                data-turnos-escala="<?php echo htmlspecialchars((string) ($docente['turnos_escala'] ?? '')); ?>">
                                 <?php echo htmlspecialchars($docente['nome'] ?? ''); ?>
                               </option>
                               <?php endforeach; ?>
@@ -478,7 +565,7 @@
                                 $chaveBloco = substr((string) $bloco['inicio'], 0, 5) . '|' . substr((string) $bloco['fim'], 0, 5);
                                 $docentesBloco = $docentesBlocosDia[$chaveBloco] ?? [];
                             ?>
-                            <div class="mb-2">
+                            <div class="mb-2 quick-bloco-wrap" data-turno="<?php echo htmlspecialchars((string) ($bloco['turno'] ?? 'primeiro')); ?>">
                               <label class="form-label small mb-1">
                                 <?php echo htmlspecialchars(str_replace('|', ' - ', $chaveBloco)); ?>
                               </label>
@@ -724,6 +811,11 @@
   });
 
   document.addEventListener("change", function(e) {
+    if (e.target.classList.contains("quick-turno")) {
+      atualizarTurnoLancamento(e.target.closest("form"));
+      return;
+    }
+
     if (e.target.matches('select[name="docente_principal_id"]')) {
       atualizarProfessor2(e.target.closest("form"));
       return;
@@ -743,7 +835,9 @@
       if (blocos) {
         blocos.classList.toggle("d-none", !e.target.checked);
         blocos.querySelectorAll(".quick-bloco-uc, .quick-bloco-docente").forEach(function(select) {
-          select.required = e.target.classList.contains("quick-bloco-uc") && e.target.checked;
+          const blocoVisivel = !select.closest(".quick-bloco-wrap")?.classList.contains("d-none");
+          select.disabled = e.target.checked && !blocoVisivel;
+          select.required = e.target.classList.contains("quick-bloco-uc") && e.target.checked && blocoVisivel;
           if (!e.target.checked) {
             select.value = "";
           }
@@ -816,6 +910,10 @@
     document.querySelectorAll(".quick-ead").forEach(function(checkbox) {
       atualizarObrigatoriedadeSala(checkbox.closest("form"));
     });
+
+    document.querySelectorAll(".quick-turno").forEach(function(select) {
+      atualizarTurnoLancamento(select.closest("form"));
+    });
   });
 
   document.addEventListener("change", function(e) {
@@ -835,6 +933,62 @@
     if (sala) {
       sala.required = !((ead && ead.checked) || (visita && visita.checked));
     }
+  }
+
+  function turnoSelecionado(form) {
+    return form?.querySelector(".quick-turno")?.value || "";
+  }
+
+  function atualizarTurnoLancamento(form) {
+    if (!form) return;
+
+    const seletorTurno = form.querySelector(".quick-turno");
+    const opcao = seletorTurno?.selectedOptions[0];
+    const horaInicio = form.querySelector('input[name="hora_inicio"]');
+    const horaFim = form.querySelector('input[name="hora_fim"]');
+
+    if (opcao && horaInicio && horaFim) {
+      horaInicio.value = opcao.dataset.inicio || "";
+      horaFim.value = opcao.dataset.fim || "";
+    }
+
+    const turno = turnoSelecionado(form);
+
+    form.querySelectorAll('select[name="sala_id"] option').forEach(function(option) {
+      if (!option.value) return;
+
+      const turnos = (option.dataset.turnos || "").split(",").filter(Boolean);
+      option.hidden = Boolean(turno) && turnos.length > 0 && !turnos.includes(turno);
+
+      if (option.selected && option.hidden) {
+        option.selected = false;
+      }
+    });
+
+    atualizarBlocosTurno(form);
+    atualizarDocentesDoFormulario(form);
+    atualizarProfessor2(form);
+  }
+
+  function atualizarBlocosTurno(form) {
+    if (!form) return;
+
+    const turno = turnoSelecionado(form);
+    const divisaoAtiva = Boolean(form.querySelector(".quick-divisao:checked"));
+
+    form.querySelectorAll(".quick-bloco-wrap").forEach(function(bloco) {
+      const mostrar = !turno || bloco.dataset.turno === turno;
+      bloco.classList.toggle("d-none", !mostrar);
+
+      bloco.querySelectorAll(".quick-bloco-uc, .quick-bloco-docente").forEach(function(select) {
+        select.disabled = divisaoAtiva && !mostrar;
+        select.required = divisaoAtiva && mostrar && select.classList.contains("quick-bloco-uc");
+
+        if (!mostrar) {
+          select.value = "";
+        }
+      });
+    });
   }
 
   function atualizarDocentesDoFormulario(form) {
@@ -862,9 +1016,13 @@
     select.querySelectorAll("option").forEach(function(option) {
       if (!option.value) return;
 
+      const turno = turnoSelecionado(select.closest("form"));
+      const turnos = (option.dataset.turnos || "").split(",").filter(Boolean);
+      const turnosEscala = (option.dataset.turnosEscala || "").split(",").filter(Boolean);
       const ucs = (option.dataset.ucIds || "").split(",").filter(Boolean);
-      const temEscala = option.dataset.temEscala === "1";
-      const mostrar = Boolean(ucId) && ucs.includes(ucId) && (temEscala || trocaEscala);
+      const disponivelTurno = !turno || turnos.length === 0 || turnos.includes(turno);
+      const temEscala = turno && turnosEscala.length > 0 ? turnosEscala.includes(turno) : option.dataset.temEscala === "1";
+      const mostrar = Boolean(ucId) && ucs.includes(ucId) && disponivelTurno && (temEscala || trocaEscala);
 
       option.hidden = !mostrar;
 
@@ -895,10 +1053,14 @@
     professor2.querySelectorAll("option").forEach(function(option) {
       if (!option.value) return;
 
+      const turno = turnoSelecionado(form);
+      const turnos = (option.dataset.turnos || "").split(",").filter(Boolean);
+      const turnosEscala = (option.dataset.turnosEscala || "").split(",").filter(Boolean);
       const esconderPorPrincipal = principalId && option.value === principalId;
       const ucs = (option.dataset.ucIds || "").split(",").filter(Boolean);
-      const temEscala = option.dataset.temEscala === "1";
-      const esconderPorUc = !ucId || !ucs.includes(ucId) || (!temEscala && !trocaEscala);
+      const disponivelTurno = !turno || turnos.length === 0 || turnos.includes(turno);
+      const temEscala = turno && turnosEscala.length > 0 ? turnosEscala.includes(turno) : option.dataset.temEscala === "1";
+      const esconderPorUc = !ucId || !ucs.includes(ucId) || !disponivelTurno || (!temEscala && !trocaEscala);
       option.hidden = esconderPorPrincipal || esconderPorUc;
 
       if (option.selected && option.hidden) {

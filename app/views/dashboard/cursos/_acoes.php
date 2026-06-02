@@ -64,6 +64,22 @@
                 name="data_fim" disabled>
             </div>
 
+            <?php if ((int) ($curso['integral'] ?? 0) === 1): ?>
+            <div class="mb-3 text-start">
+              <label class="form-label" for="turno_geracao_<?php echo $cursoId; ?>">Turno da UC</label>
+              <select class="form-select js-gerar-uc-input" id="turno_geracao_<?php echo $cursoId; ?>"
+                name="turno_geracao" disabled>
+                <option value="">Selecione...</option>
+                <option value="primeiro">
+                  1º turno - <?php echo htmlspecialchars(substr((string) ($curso['hora_inicio'] ?? ''), 0, 5) . ' - ' . substr((string) ($curso['hora_fim'] ?? ''), 0, 5)); ?>
+                </option>
+                <option value="segundo">
+                  2º turno - <?php echo htmlspecialchars(substr((string) ($curso['hora_inicio_tarde'] ?? ''), 0, 5) . ' - ' . substr((string) ($curso['hora_fim_tarde'] ?? ''), 0, 5)); ?>
+                </option>
+              </select>
+            </div>
+            <?php endif; ?>
+
             <div class="mb-3 text-start">
               <label class="form-label" for="unidade_curricular_id_<?php echo $cursoId; ?>">Unidade Curricular</label>
               <select class="form-select js-gerar-uc-input" id="unidade_curricular_id_<?php echo $cursoId; ?>"

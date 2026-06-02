@@ -56,9 +56,9 @@ class RelatorioTurma
                 COALESCE(SUM(
                     CASE
                         WHEN qh.id IS NULL THEN 0
-                        ELSE TIME_TO_SEC(TIMEDIFF(qh.hora_fim, qh.hora_inicio)) / 3600
+                        ELSE TIMESTAMPDIFF(MINUTE, qh.hora_inicio, qh.hora_fim)
                     END
-                ), 0) AS horas_lancadas,
+                ), 0) AS minutos_lancados,
                 MIN(qh.data_aula) AS data_inicio,
                 MAX(qh.data_aula) AS ultima_aula
             FROM cursos_ofertas co
@@ -132,9 +132,9 @@ class RelatorioTurma
                 COALESCE(SUM(
                     CASE
                         WHEN qh.id IS NULL THEN 0
-                        ELSE TIME_TO_SEC(TIMEDIFF(qh.hora_fim, qh.hora_inicio)) / 3600
+                        ELSE TIMESTAMPDIFF(MINUTE, qh.hora_inicio, qh.hora_fim)
                     END
-                ), 0) AS horas_lancadas,
+                ), 0) AS minutos_lancados,
                 MIN(qh.data_aula) AS data_inicial,
                 MAX(qh.data_aula) AS data_final
             FROM unidades_curriculares uc

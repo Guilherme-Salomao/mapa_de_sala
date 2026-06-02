@@ -22,18 +22,27 @@
     $botaoTopoClasse = 'app-btn-primary';
     $botaoTopoIcone = 'bi-plus-circle';
 
-    $totalCarga = 0;
-    $totalLancadas = 0;
-    $totalDadas = 0;
+    $formatarMinutosTurma = static function (int $minutos): string {
+        $sinal = $minutos < 0 ? '-' : '';
+        $minutos = abs($minutos);
+        $horas = intdiv($minutos, 60);
+        $restante = $minutos % 60;
+
+        return $sinal . $horas . 'h' . ($restante > 0 ? str_pad((string) $restante, 2, '0', STR_PAD_LEFT) : '');
+    };
+
+    $totalCargaMinutos = 0;
+    $totalLancadasMinutos = 0;
+    $totalDadasMinutos = 0;
 
     foreach ($linhas as $linhaResumo) {
-        $totalCarga += (float) ($linhaResumo['carga_horaria'] ?? 0);
-        $totalLancadas += round((float) ($linhaResumo['horas_lancadas'] ?? 0), 2);
+        $totalCargaMinutos += (int) ($linhaResumo['carga_horaria'] ?? 0) * 60;
+        $totalLancadasMinutos += (int) ($linhaResumo['minutos_lancados'] ?? 0);
     }
 
-    $turmaConcluida = $totalCarga > 0 && $totalLancadas >= $totalCarga;
+    $turmaConcluida = $totalCargaMinutos > 0 && $totalLancadasMinutos >= $totalCargaMinutos;
     $corDataFinal = $turmaConcluida ? '#198754' : '#f97316';
-    $totalDadas = $totalLancadas;
+    $totalDadasMinutos = $totalLancadasMinutos;
 
     $formatarDataTurma = static function (?string $data): string {
         return ! empty($data) ? date('d/m/Y', strtotime($data)) : '-';
@@ -80,6 +89,11 @@
 
   .horas-pendente {
     background: #fff3cd !important;
+  }
+
+  .horas-dadas-acima {
+    color: #dc3545 !important;
+    font-weight: 700;
   }
 
   .relatorio-turma-resumo th {
@@ -152,10 +166,10 @@
                   <?php if (! empty($resumoTurmas)): ?>
                   <?php foreach ($resumoTurmas as $resumo): ?>
                   <?php
-                      $cargaResumo = (float) ($resumo['carga_horaria_total'] ?? 0);
-                      $lancadasResumo = round((float) ($resumo['horas_lancadas'] ?? 0), 2);
-                      $faltantesResumo = max($cargaResumo - $lancadasResumo, 0);
-                      $concluidaResumo = $cargaResumo > 0 && $lancadasResumo >= $cargaResumo;
+                      $cargaResumoMinutos = (int) ($resumo['carga_horaria_total'] ?? 0) * 60;
+                      $lancadasResumoMinutos = (int) ($resumo['minutos_lancados'] ?? 0);
+                      $faltantesResumoMinutos = max($cargaResumoMinutos - $lancadasResumoMinutos, 0);
+                      $concluidaResumo = $cargaResumoMinutos > 0 && $lancadasResumoMinutos >= $cargaResumoMinutos;
                       $dataFimResumo = $concluidaResumo ? ($resumo['ultima_aula'] ?? null) : null;
                   ?>
                   <tr>
@@ -165,9 +179,9 @@
                     </td>
                     <td><?php echo htmlspecialchars($resumo['curso_nome'] ?? '-'); ?></td>
                     <td><?php echo htmlspecialchars($resumo['area_nome'] ?? '-'); ?></td>
-                    <td class="text-center"><?php echo number_format($cargaResumo, 0, ',', '.'); ?>h</td>
-                    <td class="text-center"><?php echo number_format($lancadasResumo, 1, ',', '.'); ?>h</td>
-                    <td class="text-center"><?php echo number_format($faltantesResumo, 1, ',', '.'); ?>h</td>
+                    <td class="text-center"><?php echo htmlspecialchars($formatarMinutosTurma($cargaResumoMinutos)); ?></td>
+                    <td class="text-center"><?php echo htmlspecialchars($formatarMinutosTurma($lancadasResumoMinutos)); ?></td>
+                    <td class="text-center"><?php echo htmlspecialchars($formatarMinutosTurma($faltantesResumoMinutos)); ?></td>
                     <td class="text-center"><?php echo htmlspecialchars($formatarDataTurma($resumo['data_inicio'] ?? null)); ?></td>
                     <td class="text-center fw-bold <?php echo $concluidaResumo ? 'text-success' : 'text-warning'; ?>">
                       <?php echo htmlspecialchars($formatarDataTurma($dataFimResumo)); ?>
@@ -259,20 +273,22 @@
                   <?php if (! empty($linhas)): ?>
                   <?php foreach ($linhas as $linha): ?>
                   <?php
-                      $cargaHoraria = (float) ($linha['carga_horaria'] ?? 0);
-                      $horasLancadas = round((float) ($linha['horas_lancadas'] ?? 0), 2);
-                      $horasDadas = $horasLancadas;
-                      $aLancar = $cargaHoraria - $horasLancadas;
-                      $classeHoras = abs($horasLancadas - $cargaHoraria) < 0.01
+                      $cargaHorariaMinutos = (int) ($linha['carga_horaria'] ?? 0) * 60;
+                      $horasLancadasMinutos = (int) ($linha['minutos_lancados'] ?? 0);
+                      $horasDadasMinutos = $horasLancadasMinutos;
+                      $aLancarMinutos = $cargaHorariaMinutos - $horasLancadasMinutos;
+                      $classeHoras = $horasLancadasMinutos === $cargaHorariaMinutos
                            ? 'horas-ok'
-                          : ($horasLancadas > $cargaHoraria ? 'horas-acima' : 'horas-pendente');
+                          : ($horasLancadasMinutos > $cargaHorariaMinutos ? 'horas-acima' : 'horas-pendente');
                   ?>
                   <tr>
                     <td><?php echo htmlspecialchars(($linha['codigo'] ?? '') . '-' . ($linha['nome'] ?? '')); ?></td>
-                    <td class="col-numero"><?php echo number_format($cargaHoraria, 0, ',', '.'); ?></td>
-                    <td class="col-numero"><?php echo number_format($aLancar, 0, ',', '.'); ?></td>
-                    <td class="col-numero <?php echo $classeHoras; ?>"><?php echo number_format($horasLancadas, 0, ',', '.'); ?></td>
-                    <td class="col-numero"><?php echo number_format($horasDadas, 0, ',', '.'); ?></td>
+                    <td class="col-numero"><?php echo htmlspecialchars($formatarMinutosTurma($cargaHorariaMinutos)); ?></td>
+                    <td class="col-numero"><?php echo htmlspecialchars($formatarMinutosTurma($aLancarMinutos)); ?></td>
+                    <td class="col-numero <?php echo $classeHoras; ?>"><?php echo htmlspecialchars($formatarMinutosTurma($horasLancadasMinutos)); ?></td>
+                    <td class="col-numero <?php echo $horasDadasMinutos > $cargaHorariaMinutos ? 'horas-dadas-acima' : ''; ?>">
+                      <?php echo htmlspecialchars($formatarMinutosTurma($horasDadasMinutos)); ?>
+                    </td>
                     <td class="col-numero">
                       <?php echo ! empty($linha['data_inicial']) ? htmlspecialchars(date('d/m/y', strtotime($linha['data_inicial'])))  : '-'; ?>
                     </td>
@@ -283,10 +299,10 @@
                   <?php endforeach; ?>
                   <tr class="fw-bold">
                     <td>Total</td>
-                    <td class="col-numero"><?php echo number_format($totalCarga, 0, ',', '.'); ?></td>
-                    <td class="col-numero"><?php echo number_format($totalCarga - $totalLancadas, 0, ',', '.'); ?></td>
-                    <td class="col-numero"><?php echo number_format($totalLancadas, 0, ',', '.'); ?></td>
-                    <td class="col-numero"><?php echo number_format($totalDadas, 0, ',', '.'); ?></td>
+                    <td class="col-numero"><?php echo htmlspecialchars($formatarMinutosTurma($totalCargaMinutos)); ?></td>
+                    <td class="col-numero"><?php echo htmlspecialchars($formatarMinutosTurma($totalCargaMinutos - $totalLancadasMinutos)); ?></td>
+                    <td class="col-numero"><?php echo htmlspecialchars($formatarMinutosTurma($totalLancadasMinutos)); ?></td>
+                    <td class="col-numero"><?php echo htmlspecialchars($formatarMinutosTurma($totalDadasMinutos)); ?></td>
                     <td colspan="2"></td>
                   </tr>
                   <?php else: ?>

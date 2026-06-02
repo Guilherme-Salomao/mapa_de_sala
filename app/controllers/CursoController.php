@@ -172,6 +172,7 @@ class CursoController
         if ($modoGeracao === 'uc_dia') {
             $unidadeCurricularId = (int) ($_POST['unidade_curricular_id'] ?? 0);
             $dataFim = trim($_POST['data_fim'] ?? '');
+            $turnoGeracao = trim($_POST['turno_geracao'] ?? '');
             $diasSemanaPost = $_POST['dias_semana'] ?? [];
             $diasSemana = is_array($diasSemanaPost)
                 ? array_map('intval', $diasSemanaPost)
@@ -187,6 +188,7 @@ class CursoController
                 $diasSemana,
                 $dataInicio,
                 $dataFim,
+                $turnoGeracao !== '' ? $turnoGeracao : null,
                 $salaId > 0 ? $salaId : null,
                 $docenteId > 0 ? $docenteId : null
             );
