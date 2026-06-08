@@ -33,9 +33,11 @@ class QuadroHorario
                 co.aula_sexta,
                 co.aula_sabado,
                 co.curso_modelo_id,
-                cm.nome AS curso_nome
+                cm.nome AS curso_nome,
+                a.nome AS area_nome
             FROM cursos_ofertas co
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
+            LEFT JOIN areas a ON a.id = cm.area_id
             WHERE 1 = 1
         ";
 
@@ -73,9 +75,11 @@ class QuadroHorario
                 co.aula_sexta,
                 co.aula_sabado,
                 co.curso_modelo_id,
-                cm.nome AS curso_nome
+                cm.nome AS curso_nome,
+                a.nome AS area_nome
             FROM cursos_ofertas co
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
+            LEFT JOIN areas a ON a.id = cm.area_id
             WHERE co.id = :id
             LIMIT 1
         ";
@@ -95,14 +99,30 @@ class QuadroHorario
             return [];
         }
 
+        if ($this->cursoModeloSemUc((int) $oferta['curso_modelo_id'])) {
+            $this->garantirUcPadraoCursoSemUc((int) $oferta['curso_modelo_id']);
+        }
+
         $sql = "
-            SELECT uc.id, uc.codigo, uc.nome, uc.carga_horaria
+            SELECT
+                uc.id,
+                uc.codigo,
+                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN co.nome ELSE uc.nome END AS nome,
+                uc.nome AS nome_original,
+                uc.carga_horaria,
+                COALESCE(cm.sem_uc, 0) AS curso_sem_uc
             FROM unidades_curriculares uc
+            INNER JOIN curso_modelos cm ON cm.id = uc.curso_modelo_id
+            INNER JOIN cursos_ofertas co ON co.curso_modelo_id = cm.id
             WHERE uc.curso_modelo_id = :curso_modelo_id
+              AND co.id = :curso_oferta_id
               AND uc.status = 'Ativa'
         ";
 
-        $params = [':curso_modelo_id' => (int) $oferta['curso_modelo_id']];
+        $params = [
+            ':curso_modelo_id' => (int) $oferta['curso_modelo_id'],
+            ':curso_oferta_id' => $cursoOfertaId,
+        ];
         $this->aplicarEscopoUc($sql, $params, $escopo);
 
         $sql .= " ORDER BY CHAR_LENGTH(uc.codigo) ASC, uc.codigo ASC, uc.nome ASC";
@@ -111,6 +131,72 @@ class QuadroHorario
         $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function buscarUnidadeCurricular(int $id): ?array
+    {
+        $stmt = $this->conn->prepare("
+            SELECT id, curso_modelo_id, codigo, nome
+            FROM unidades_curriculares
+            WHERE id = :id
+            LIMIT 1
+        ");
+        $stmt->execute([':id' => $id]);
+        $unidade = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $unidade ?: null;
+    }
+
+    private function cursoModeloSemUc(int $cursoModeloId): bool
+    {
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM curso_modelos
+            WHERE id = :id
+              AND COALESCE(sem_uc, 0) = 1
+            LIMIT 1
+        ");
+        $stmt->execute([':id' => $cursoModeloId]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function garantirUcPadraoCursoSemUc(int $cursoModeloId): void
+    {
+        $stmt = $this->conn->prepare("
+            SELECT nome, carga_horaria_total
+            FROM curso_modelos
+            WHERE id = :id
+              AND COALESCE(sem_uc, 0) = 1
+            LIMIT 1
+        ");
+        $stmt->execute([':id' => $cursoModeloId]);
+        $curso = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (! $curso) {
+            return;
+        }
+
+        $insert = $this->conn->prepare("
+            INSERT IGNORE INTO unidades_curriculares (
+                curso_modelo_id,
+                codigo,
+                nome,
+                carga_horaria,
+                status
+            ) VALUES (
+                :curso_modelo_id,
+                'TURMA',
+                :nome,
+                :carga_horaria,
+                'Ativa'
+            )
+        ");
+        $insert->execute([
+            ':curso_modelo_id' => $cursoModeloId,
+            ':nome' => (string) ($curso['nome'] ?? ''),
+            ':carga_horaria' => (float) ($curso['carga_horaria_total'] ?? 0),
+        ]);
     }
 
     public function listarSalas(): array
@@ -130,6 +216,10 @@ class QuadroHorario
 
     public function docenteVinculadoUc(int $docenteId, int $unidadeCurricularId): bool
     {
+        if ($this->unidadeDeCursoSemUc($unidadeCurricularId)) {
+            return true;
+        }
+
         $sql = "
             SELECT docente_id
             FROM docente_unidades_curriculares
@@ -143,6 +233,23 @@ class QuadroHorario
             ':docente_id' => $docenteId,
             ':unidade_curricular_id' => $unidadeCurricularId,
         ]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function unidadeDeCursoSemUc(int $unidadeCurricularId): bool
+    {
+        $sql = "
+            SELECT cm.id
+            FROM unidades_curriculares uc
+            INNER JOIN curso_modelos cm ON cm.id = uc.curso_modelo_id
+            WHERE uc.id = :id
+              AND COALESCE(cm.sem_uc, 0) = 1
+            LIMIT 1
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':id' => $unidadeCurricularId]);
 
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -192,10 +299,13 @@ class QuadroHorario
                 qh.status,
                 qh.observacoes,
                 uc.codigo AS uc_codigo,
-                uc.nome AS uc_nome,
+                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN co.nome ELSE uc.nome END AS uc_nome,
+                COALESCE(cm.sem_uc, 0) AS curso_sem_uc,
                 s.nome AS sala_nome
             FROM quadro_horario qh
             INNER JOIN unidades_curriculares uc ON uc.id = qh.unidade_curricular_id
+            INNER JOIN cursos_ofertas co ON co.id = qh.curso_oferta_id
+            LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             LEFT JOIN salas s ON s.id = qh.sala_id
             WHERE qh.curso_oferta_id = :curso_oferta_id
               AND qh.data_aula BETWEEN :inicio AND :fim
@@ -569,6 +679,25 @@ class QuadroHorario
         $stmt = $this->conn->prepare("
             SELECT id
             FROM docente_ferias
+            WHERE docente_id = :docente_id
+              AND status = 'Ativo'
+              AND data_inicio <= :data_aula
+              AND data_fim >= :data_aula
+            LIMIT 1
+        ");
+        $stmt->execute([
+            ':docente_id' => $docenteId,
+            ':data_aula' => $dataAula,
+        ]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function docenteEmCompensacao(int $docenteId, string $dataAula): bool
+    {
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM docente_compensacoes
             WHERE docente_id = :docente_id
               AND status = 'Ativo'
               AND data_inicio <= :data_aula

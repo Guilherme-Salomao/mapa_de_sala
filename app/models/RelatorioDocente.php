@@ -18,7 +18,6 @@ class RelatorioDocente
             SELECT d.id, u.nome, u.email
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
-            LEFT JOIN areas a ON a.nome = d.area_atuacao
             WHERE d.status = 'Ativo'
         ";
 
@@ -39,7 +38,6 @@ class RelatorioDocente
             SELECT d.id, u.nome, u.email
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
-            LEFT JOIN areas a ON a.nome = d.area_atuacao
             WHERE d.id = :id
               AND d.status = 'Ativo'
         ";
@@ -88,11 +86,12 @@ class RelatorioDocente
                 co.hora_inicio AS turma_hora_inicio,
                 co.hora_fim AS turma_hora_fim,
                 uc.codigo AS uc_codigo,
-                uc.nome AS uc_nome,
+                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN co.nome ELSE uc.nome END AS uc_nome,
                 s.nome AS sala_nome
             FROM quadro_horario qh
             INNER JOIN quadro_horario_docentes qhd ON qhd.quadro_horario_id = qh.id
             INNER JOIN cursos_ofertas co ON co.id = qh.curso_oferta_id
+            LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             INNER JOIN unidades_curriculares uc ON uc.id = qh.unidade_curricular_id
             LEFT JOIN salas s ON s.id = qh.sala_id
             WHERE qhd.docente_id = :docente_id
@@ -134,6 +133,44 @@ class RelatorioDocente
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function listarAusenciasMensais(int $docenteId, int $mes, int $ano): array
+    {
+        $inicio = sprintf('%04d-%02d-01', $ano, $mes);
+        $fim = date('Y-m-t', strtotime($inicio));
+
+        $sql = "
+            SELECT data_inicio, data_fim, observacoes, 'ferias' AS tipo
+            FROM docente_ferias
+            WHERE docente_id = :docente_ferias
+              AND status = 'Ativo'
+              AND data_inicio <= :fim_ferias
+              AND data_fim >= :inicio_ferias
+
+            UNION ALL
+
+            SELECT data_inicio, data_fim, observacoes, 'compensacao' AS tipo
+            FROM docente_compensacoes
+            WHERE docente_id = :docente_compensacao
+              AND status = 'Ativo'
+              AND data_inicio <= :fim_compensacao
+              AND data_fim >= :inicio_compensacao
+
+            ORDER BY data_inicio ASC, data_fim ASC
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([
+            ':docente_ferias' => $docenteId,
+            ':fim_ferias' => $fim,
+            ':inicio_ferias' => $inicio,
+            ':docente_compensacao' => $docenteId,
+            ':fim_compensacao' => $fim,
+            ':inicio_compensacao' => $inicio,
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     private function aplicarEscopo(string &$sql, array &$params, array $escopo): void
     {
         $tipo = $escopo['tipo'] ?? 'todos';
@@ -156,6 +193,19 @@ class RelatorioDocente
             $params[$placeholder] = $id;
         }
 
-        $sql .= " AND a.id IN (" . implode(',', $placeholders) . ")";
+        $sql .= " AND EXISTS (
+            SELECT 1
+            FROM areas a_escopo
+            WHERE a_escopo.id IN (" . implode(',', $placeholders) . ")
+              AND (
+                a_escopo.nome = d.area_atuacao
+                OR EXISTS (
+                    SELECT 1
+                    FROM docente_areas da_escopo
+                    WHERE da_escopo.docente_id = d.id
+                      AND da_escopo.area_id = a_escopo.id
+                )
+              )
+        )";
     }
 }

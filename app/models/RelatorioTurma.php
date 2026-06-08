@@ -44,29 +44,90 @@ class RelatorioTurma
                 co.status,
                 cm.nome AS curso_nome,
                 a.nome AS area_nome,
-                COALESCE(
-                    NULLIF(cm.carga_horaria_total, 0),
-                    (
+                CASE
+                    WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem' THEN (
                         SELECT COALESCE(SUM(uc_total.carga_horaria), 0)
                         FROM unidades_curriculares uc_total
                         WHERE uc_total.curso_modelo_id = cm.id
                           AND uc_total.status = 'Ativa'
+                          AND UPPER(REPLACE(REPLACE(TRIM(uc_total.codigo), '-', ''), ' ', '')) <> 'UC12'
                     )
-                ) AS carga_horaria_total,
+                    ELSE COALESCE(
+                        NULLIF(cm.carga_horaria_total, 0),
+                        (
+                            SELECT COALESCE(SUM(uc_total.carga_horaria), 0)
+                            FROM unidades_curriculares uc_total
+                            WHERE uc_total.curso_modelo_id = cm.id
+                              AND uc_total.status = 'Ativa'
+                        )
+                    )
+                END AS carga_horaria_total,
+                CASE
+                    WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem' THEN COALESCE((
+                        SELECT SUM(uc12_total.carga_horaria * 60)
+                        FROM unidades_curriculares uc12_total
+                        WHERE uc12_total.curso_modelo_id = cm.id
+                          AND uc12_total.status = 'Ativa'
+                          AND UPPER(REPLACE(REPLACE(TRIM(uc12_total.codigo), '-', ''), ' ', '')) = 'UC12'
+                    ), 0)
+                    ELSE 0
+                END AS uc12_carga_minutos,
+                (
+                    SELECT COUNT(*)
+                    FROM unidades_curriculares uc_pendente
+                    WHERE uc_pendente.curso_modelo_id = cm.id
+                      AND uc_pendente.status = 'Ativa'
+                      AND NOT (
+                          LOWER(COALESCE(a.nome, '')) = 'aprendizagem'
+                          AND UPPER(REPLACE(REPLACE(TRIM(uc_pendente.codigo), '-', ''), ' ', '')) = 'UC12'
+                      )
+                      AND COALESCE((
+                          SELECT SUM(TIMESTAMPDIFF(MINUTE, qh_pendente.hora_inicio, qh_pendente.hora_fim))
+                          FROM quadro_horario qh_pendente
+                          WHERE qh_pendente.curso_oferta_id = co.id
+                            AND qh_pendente.unidade_curricular_id = uc_pendente.id
+                            AND qh_pendente.status = 'Ativa'
+                      ), 0) < ROUND(
+                          CASE
+                              WHEN COALESCE(cm.sem_uc, 0) = 1
+                              THEN cm.carga_horaria_total
+                              ELSE uc_pendente.carga_horaria
+                          END * 60
+                      )
+                ) AS ucs_pendentes_conclusao,
                 COALESCE(SUM(
                     CASE
                         WHEN qh.id IS NULL THEN 0
+                        WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem'
+                          AND UPPER(REPLACE(REPLACE(TRIM(qh_uc.codigo), '-', ''), ' ', '')) = 'UC12'
+                        THEN 0
                         ELSE TIMESTAMPDIFF(MINUTE, qh.hora_inicio, qh.hora_fim)
                     END
                 ), 0) AS minutos_lancados,
+                COALESCE(SUM(
+                    CASE
+                        WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem'
+                          AND UPPER(REPLACE(REPLACE(TRIM(qh_uc.codigo), '-', ''), ' ', '')) = 'UC12'
+                        THEN TIMESTAMPDIFF(MINUTE, qh.hora_inicio, qh.hora_fim)
+                        ELSE 0
+                    END
+                ), 0) AS uc12_minutos_lancados,
                 MIN(qh.data_aula) AS data_inicio,
-                MAX(qh.data_aula) AS ultima_aula
+                MAX(
+                    CASE
+                        WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem'
+                          AND UPPER(REPLACE(REPLACE(TRIM(qh_uc.codigo), '-', ''), ' ', '')) = 'UC12'
+                        THEN NULL
+                        ELSE qh.data_aula
+                    END
+                ) AS ultima_aula
             FROM cursos_ofertas co
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             LEFT JOIN areas a ON a.id = cm.area_id
             LEFT JOIN quadro_horario qh
                 ON qh.curso_oferta_id = co.id
                 AND qh.status = 'Ativa'
+            LEFT JOIN unidades_curriculares qh_uc ON qh_uc.id = qh.unidade_curricular_id
             WHERE 1 = 1
         ";
 
@@ -98,9 +159,12 @@ class RelatorioTurma
                 co.hora_inicio,
                 co.hora_fim,
                 co.status,
-                cm.nome AS curso_nome
+                cm.nome AS curso_nome,
+                a.nome AS area_nome,
+                COALESCE(cm.sem_uc, 0) AS curso_sem_uc
             FROM cursos_ofertas co
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
+            LEFT JOIN areas a ON a.id = cm.area_id
             WHERE co.id = :id
         ";
 
@@ -127,8 +191,14 @@ class RelatorioTurma
             SELECT
                 uc.id,
                 uc.codigo,
-                uc.nome,
-                uc.carga_horaria,
+                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN co.nome ELSE uc.nome END AS nome,
+                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN cm.carga_horaria_total ELSE uc.carga_horaria END AS carga_horaria,
+                CASE
+                    WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem'
+                      AND UPPER(REPLACE(REPLACE(TRIM(uc.codigo), '-', ''), ' ', '')) = 'UC12'
+                    THEN 0
+                    ELSE 1
+                END AS conta_conclusao,
                 COALESCE(SUM(
                     CASE
                         WHEN qh.id IS NULL THEN 0
@@ -138,13 +208,16 @@ class RelatorioTurma
                 MIN(qh.data_aula) AS data_inicial,
                 MAX(qh.data_aula) AS data_final
             FROM unidades_curriculares uc
+            INNER JOIN curso_modelos cm ON cm.id = uc.curso_modelo_id
+            LEFT JOIN areas a ON a.id = cm.area_id
+            INNER JOIN cursos_ofertas co ON co.id = :turma_id
             LEFT JOIN quadro_horario qh
                 ON qh.unidade_curricular_id = uc.id
                 AND qh.curso_oferta_id = :turma_id
                 AND qh.status = 'Ativa'
             WHERE uc.curso_modelo_id = :curso_modelo_id
               AND uc.status = 'Ativa'
-            GROUP BY uc.id, uc.codigo, uc.nome, uc.carga_horaria
+            GROUP BY uc.id, uc.codigo, uc.nome, uc.carga_horaria, cm.sem_uc, cm.carga_horaria_total, co.nome, a.nome
             ORDER BY CHAR_LENGTH(uc.codigo) ASC, uc.codigo ASC, uc.nome ASC
         ";
 
@@ -161,11 +234,22 @@ class RelatorioTurma
     {
         $sql = "
             SELECT
-                MIN(data_aula) AS data_inicial,
-                MAX(data_aula) AS data_final
-            FROM quadro_horario
-            WHERE curso_oferta_id = :turma_id
-              AND status = 'Ativa'
+                MIN(qh.data_aula) AS data_inicial,
+                MAX(
+                    CASE
+                        WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem'
+                          AND UPPER(REPLACE(REPLACE(TRIM(uc.codigo), '-', ''), ' ', '')) = 'UC12'
+                        THEN NULL
+                        ELSE qh.data_aula
+                    END
+                ) AS data_final
+            FROM quadro_horario qh
+            INNER JOIN cursos_ofertas co ON co.id = qh.curso_oferta_id
+            LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
+            LEFT JOIN areas a ON a.id = cm.area_id
+            LEFT JOIN unidades_curriculares uc ON uc.id = qh.unidade_curricular_id
+            WHERE qh.curso_oferta_id = :turma_id
+              AND qh.status = 'Ativa'
         ";
 
         $stmt = $this->conn->prepare($sql);

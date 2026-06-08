@@ -20,6 +20,7 @@
         'id'              => '',
         'usuario_id'      => '',
         'area_atuacao'   => '',
+        'areas_ids'      => [],
         'status'         => 'Ativo',
         'observacoes'    => '',
         'unidades_curriculares' => [],

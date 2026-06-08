@@ -26,11 +26,13 @@ class HomeController
 
         $escopo = (new AccessControl())->escopo();
         $access = new AccessControl();
-        $dashboardGestor = $access->nivel() === 'Gestor';
+        $dashboardGestor = in_array($access->nivel(), ['Admin', 'Gestor'], true);
+        $dashboardApoio = $access->nivel() === 'Apoio';
         $indicadores = $this->homeModel->indicadores($dataSelecionada);
         $aulasPorTurno = $this->homeModel->aulasPorTurno($dataSelecionada, $escopo);
         $indicadoresGestor = [];
         $resumoDocentesGestor = [];
+        $aulasSemDocenteGestor = [];
         $dashboardDocente = $access->nivel() === 'Professor';
         $minhaSemana = [];
         $indicadoresDocente = [
@@ -56,6 +58,12 @@ class HomeController
             $escopoGestor = $access->escopoAreaAtuacao();
             $indicadoresGestor = $this->homeModel->indicadoresGestor($dataSelecionada, $escopoGestor);
             $resumoDocentesGestor = $this->homeModel->resumoDocentesGestor($mes, $ano, $escopoGestor);
+            $aulasSemDocenteGestor = $this->homeModel->aulasSemDocenteGestor($dataSelecionada, $escopoGestor);
+        } elseif ($dashboardApoio) {
+            $aulasSemDocenteGestor = $this->homeModel->aulasSemDocenteGestor(
+                $dataSelecionada,
+                $access->escopoAreaAtuacao()
+            );
         }
 
         $dataHoje = $dataSelecionada;

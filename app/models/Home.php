@@ -46,11 +46,12 @@ class Home
                     ELSE 'Noite'
                 END AS periodo,
                 uc.codigo AS uc_codigo,
-                uc.nome AS uc_nome,
+                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN co.nome ELSE uc.nome END AS uc_nome,
                 s.nome AS sala_nome,
                 GROUP_CONCAT(u.nome ORDER BY u.nome SEPARATOR ', ') AS docentes
             FROM quadro_horario qh
             INNER JOIN cursos_ofertas co ON co.id = qh.curso_oferta_id
+            LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             INNER JOIN unidades_curriculares uc ON uc.id = qh.unidade_curricular_id
             LEFT JOIN salas s ON s.id = qh.sala_id
             LEFT JOIN quadro_horario_docentes qhd ON qhd.quadro_horario_id = qh.id
@@ -76,6 +77,7 @@ class Home
                 qh.aprendizagem_quadro_id,
                 co.nome,
                 co.codigo_oferta,
+                cm.sem_uc,
                 periodo,
                 uc.codigo,
                 uc.nome,
@@ -99,10 +101,11 @@ class Home
                 qh.hora_fim,
                 co.nome AS turma_nome,
                 uc.codigo AS uc_codigo,
-                uc.nome AS uc_nome,
+                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN co.nome ELSE uc.nome END AS uc_nome,
                 s.nome AS sala_nome
             FROM quadro_horario qh
             INNER JOIN cursos_ofertas co ON co.id = qh.curso_oferta_id
+            LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             INNER JOIN unidades_curriculares uc ON uc.id = qh.unidade_curricular_id
             LEFT JOIN salas s ON s.id = qh.sala_id
             WHERE qh.data_aula > :data
@@ -412,6 +415,44 @@ class Home
             'aulas_sem_docente' => $this->contarAulasSemDocenteGestor($data, $escopo),
             'docentes_planejamento' => $this->contarDocentesPlanejamentoGestor($data, $escopo),
         ];
+    }
+
+    public function aulasSemDocenteGestor(string $data, array $escopo = ['tipo' => 'todos', 'ids' => []]): array
+    {
+        $sql = "
+            SELECT
+                qh.id,
+                qh.curso_oferta_id,
+                qh.hora_inicio,
+                qh.hora_fim,
+                qh.visita_tecnica,
+                qh.ead_assincrona,
+                co.nome AS turma_nome,
+                co.codigo_oferta,
+                uc.codigo AS uc_codigo,
+                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN co.nome ELSE uc.nome END AS uc_nome,
+                s.nome AS sala_nome
+            FROM quadro_horario qh
+            INNER JOIN cursos_ofertas co ON co.id = qh.curso_oferta_id
+            LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
+            INNER JOIN unidades_curriculares uc ON uc.id = qh.unidade_curricular_id
+            LEFT JOIN salas s ON s.id = qh.sala_id
+            WHERE qh.data_aula = :data
+              AND qh.status = 'Ativa'
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM quadro_horario_docentes qhd
+                  WHERE qhd.quadro_horario_id = qh.id
+              )
+        ";
+        $params = [':data' => $data];
+        $this->aplicarEscopoAulas($sql, $params, $escopo);
+        $sql .= " ORDER BY qh.hora_inicio ASC, co.nome ASC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function resumoDocentesGestor(int $mes, int $ano, array $escopo = ['tipo' => 'todos', 'ids' => []]): array
@@ -820,11 +861,12 @@ class Home
                 qh.aprendizagem_quadro_id,
                 co.nome AS turma_nome,
                 uc.codigo AS uc_codigo,
-                uc.nome AS uc_nome,
+                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN co.nome ELSE uc.nome END AS uc_nome,
                 s.nome AS sala_nome
             FROM quadro_horario qh
             INNER JOIN quadro_horario_docentes qhd ON qhd.quadro_horario_id = qh.id
             INNER JOIN cursos_ofertas co ON co.id = qh.curso_oferta_id
+            LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             INNER JOIN unidades_curriculares uc ON uc.id = qh.unidade_curricular_id
             LEFT JOIN salas s ON s.id = qh.sala_id
             WHERE qhd.docente_id = :docente_id
@@ -1221,7 +1263,20 @@ class Home
             $params[$placeholder] = $id;
         }
 
-        $sql .= " AND a.id IN (" . implode(',', $placeholders) . ")";
+        $sql .= " AND EXISTS (
+            SELECT 1
+            FROM areas a_escopo
+            WHERE a_escopo.id IN (" . implode(',', $placeholders) . ")
+              AND (
+                a_escopo.nome = d.area_atuacao
+                OR EXISTS (
+                    SELECT 1
+                    FROM docente_areas da_escopo
+                    WHERE da_escopo.docente_id = d.id
+                      AND da_escopo.area_id = a_escopo.id
+                )
+              )
+        )";
     }
 
     private function formatarHoras(float $horas): string

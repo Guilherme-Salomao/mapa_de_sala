@@ -16,8 +16,9 @@ class DocenteFeriasController
     {
         $this->exigirLogin();
         $access = new AccessControl();
-        $dataInicio = $this->dataValida($_GET['data_inicio'] ?? '') ? (string) $_GET['data_inicio'] : date('Y-m-01');
-        $dataFim = $this->dataValida($_GET['data_fim'] ?? '') ? (string) $_GET['data_fim'] : date('Y-m-t');
+        $ano = $this->anoValido($_GET['ano'] ?? null) ? (int) $_GET['ano'] : (int) date('Y');
+        $dataInicio = sprintf('%04d-01-01', $ano);
+        $dataFim = sprintf('%04d-12-31', $ano);
         $registroForm = null;
         $docenteRestritoId = $access->nivel() === 'Professor' ? $access->docenteId() : null;
         $escopo = $access->escopoAreaAtuacao();
@@ -149,6 +150,17 @@ class DocenteFeriasController
         $dt = DateTime::createFromFormat('Y-m-d', $data);
 
         return $dt && $dt->format('Y-m-d') === $data;
+    }
+
+    private function anoValido(mixed $ano): bool
+    {
+        if (! is_scalar($ano) || ! preg_match('/^\d{4}$/', (string) $ano)) {
+            return false;
+        }
+
+        $anoInteiro = (int) $ano;
+
+        return $anoInteiro >= 1900 && $anoInteiro <= 2200;
     }
 
     private function exigirLogin(): void

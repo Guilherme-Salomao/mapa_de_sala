@@ -62,7 +62,8 @@ CREATE TABLE IF NOT EXISTS curso_modelos (
   id INT AUTO_INCREMENT PRIMARY KEY,
   area_id INT DEFAULT NULL,
   nome VARCHAR(150) NOT NULL UNIQUE,
-  carga_horaria_total INT NOT NULL DEFAULT 0,
+  carga_horaria_total DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+  sem_uc TINYINT(1) NOT NULL DEFAULT 0,
   status ENUM('Ativo','Inativo') NOT NULL DEFAULT 'Ativo',
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -101,7 +102,7 @@ CREATE TABLE IF NOT EXISTS unidades_curriculares (
   curso_modelo_id INT NOT NULL,
   codigo VARCHAR(20) NOT NULL,
   nome VARCHAR(200) NOT NULL,
-  carga_horaria INT NOT NULL,
+  carga_horaria DECIMAL(8,2) NOT NULL,
   status ENUM('Ativa','Inativa') NOT NULL DEFAULT 'Ativa',
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -119,6 +120,15 @@ CREATE TABLE IF NOT EXISTS docentes (
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_docentes_usuarios FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS docente_areas (
+  docente_id INT NOT NULL,
+  area_id INT NOT NULL,
+  PRIMARY KEY (docente_id, area_id),
+  KEY fk_docente_areas_area (area_id),
+  CONSTRAINT fk_docente_areas_docente FOREIGN KEY (docente_id) REFERENCES docentes(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_docente_areas_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS docente_cursos (
@@ -250,6 +260,20 @@ CREATE TABLE IF NOT EXISTS docente_ferias (
   KEY idx_docente_ferias_periodo (data_inicio, data_fim, status),
   KEY idx_docente_ferias_docente_periodo (docente_id, data_inicio, data_fim, status),
   CONSTRAINT fk_docente_ferias_docente FOREIGN KEY (docente_id) REFERENCES docentes(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS docente_compensacoes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  docente_id INT NOT NULL,
+  data_inicio DATE NOT NULL,
+  data_fim DATE NOT NULL,
+  observacoes TEXT DEFAULT NULL,
+  status ENUM('Ativo','Inativo') NOT NULL DEFAULT 'Ativo',
+  criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_docente_compensacoes_periodo (data_inicio, data_fim, status),
+  KEY idx_docente_compensacoes_docente_periodo (docente_id, data_inicio, data_fim, status),
+  CONSTRAINT fk_docente_compensacoes_docente FOREIGN KEY (docente_id) REFERENCES docentes(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS sala_reservas (

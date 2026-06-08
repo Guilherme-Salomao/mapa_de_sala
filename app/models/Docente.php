@@ -19,7 +19,12 @@ class Docente
                 d.id,
                 d.usuario_id,
                 d.horas_semanais,
-                d.area_atuacao,
+                COALESCE((
+                    SELECT GROUP_CONCAT(a2.nome ORDER BY a2.nome SEPARATOR ', ')
+                    FROM docente_areas da2
+                    INNER JOIN areas a2 ON a2.id = da2.area_id
+                    WHERE da2.docente_id = d.id
+                ), d.area_atuacao) AS area_atuacao,
                 d.status,
                 d.observacoes,
                 d.criado_em,
@@ -27,14 +32,24 @@ class Docente
                 u.email AS usuario_email
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
-            LEFT JOIN areas a ON a.nome = d.area_atuacao
             WHERE 1 = 1
         ";
 
         $params = [];
 
         if ($busca !== '') {
-            $sql .= " AND (u.nome LIKE :busca OR u.email LIKE :busca OR d.area_atuacao LIKE :busca)";
+            $sql .= " AND (
+                u.nome LIKE :busca
+                OR u.email LIKE :busca
+                OR d.area_atuacao LIKE :busca
+                OR EXISTS (
+                    SELECT 1
+                    FROM docente_areas da_busca
+                    INNER JOIN areas a_busca ON a_busca.id = da_busca.area_id
+                    WHERE da_busca.docente_id = d.id
+                      AND a_busca.nome LIKE :busca
+                )
+            )";
             $params[':busca'] = '%' . $busca . '%';
         }
 
@@ -59,14 +74,24 @@ class Docente
             SELECT COUNT(*) AS total
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
-            LEFT JOIN areas a ON a.nome = d.area_atuacao
             WHERE 1 = 1
         ";
 
         $params = [];
 
         if ($busca !== '') {
-            $sql .= " AND (u.nome LIKE :busca OR u.email LIKE :busca OR d.area_atuacao LIKE :busca)";
+            $sql .= " AND (
+                u.nome LIKE :busca
+                OR u.email LIKE :busca
+                OR d.area_atuacao LIKE :busca
+                OR EXISTS (
+                    SELECT 1
+                    FROM docente_areas da_busca
+                    INNER JOIN areas a_busca ON a_busca.id = da_busca.area_id
+                    WHERE da_busca.docente_id = d.id
+                      AND a_busca.nome LIKE :busca
+                )
+            )";
             $params[':busca'] = '%' . $busca . '%';
         }
 
@@ -91,14 +116,18 @@ class Docente
                 d.id,
                 d.usuario_id,
                 d.horas_semanais,
-                d.area_atuacao,
+                COALESCE((
+                    SELECT GROUP_CONCAT(a2.nome ORDER BY a2.nome SEPARATOR ', ')
+                    FROM docente_areas da2
+                    INNER JOIN areas a2 ON a2.id = da2.area_id
+                    WHERE da2.docente_id = d.id
+                ), d.area_atuacao) AS area_atuacao,
                 d.status,
                 d.observacoes,
                 u.nome AS usuario_nome,
                 u.email AS usuario_email
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
-            LEFT JOIN areas a ON a.nome = d.area_atuacao
             WHERE d.id = :id
         ";
 
@@ -117,6 +146,7 @@ class Docente
 
         $docente['escala'] = $this->listarEscalaPorDocente($id);
         $docente['unidades_curriculares'] = $this->listarUcsPorDocente($id);
+        $docente['areas_ids'] = $this->listarAreasPorDocente($id);
 
         return $docente;
     }
@@ -208,6 +238,7 @@ class Docente
             ]);
 
             $docenteId = (int) $this->conn->lastInsertId();
+            $this->salvarAreasDocente($docenteId, $dados['areas_ids'] ?? []);
             $this->salvarEscala($docenteId, $dados['escala'] ?? []);
             $this->salvarUcsDocente($docenteId, $dados['unidades_curriculares'] ?? []);
 
@@ -276,6 +307,7 @@ class Docente
             }
 
             $this->removerEscala((int) $dados['id']);
+            $this->salvarAreasDocente((int) $dados['id'], $dados['areas_ids'] ?? []);
             $this->salvarEscala((int) $dados['id'], $dados['escala'] ?? []);
             $this->salvarUcsDocente((int) $dados['id'], $dados['unidades_curriculares'] ?? []);
 
@@ -360,6 +392,25 @@ class Docente
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function buscarNomeArea(int $areaId, array $escopo = ['tipo' => 'todos', 'ids' => []]): ?string
+    {
+        $sql = "
+            SELECT id, nome
+            FROM areas
+            WHERE id = :id
+              AND status = 'Ativa'
+        ";
+        $params = [':id' => $areaId];
+        $this->aplicarEscopoAreas($sql, $params, $escopo);
+        $sql .= " LIMIT 1";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        $area = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $area ? (string) $area['nome'] : null;
+    }
+
     public function listarCursoModelosComUc(): array
     {
         $sql = "
@@ -393,6 +444,64 @@ class Docente
         $stmt->execute([':docente_id' => $docenteId]);
 
         return array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'unidade_curricular_id'));
+    }
+
+    public function listarAreasPorDocente(int $docenteId): array
+    {
+        $sql = "
+            SELECT da.area_id
+            FROM docente_areas da
+            INNER JOIN areas a ON a.id = da.area_id
+            WHERE da.docente_id = :docente_id
+              AND a.status = 'Ativa'
+            ORDER BY a.nome ASC
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':docente_id' => $docenteId]);
+        $ids = array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'area_id'));
+
+        if (! empty($ids)) {
+            return $ids;
+        }
+
+        $sqlFallback = "
+            SELECT a.id
+            FROM docentes d
+            INNER JOIN areas a ON a.nome = d.area_atuacao
+            WHERE d.id = :docente_id
+              AND a.status = 'Ativa'
+        ";
+        $stmtFallback = $this->conn->prepare($sqlFallback);
+        $stmtFallback->execute([':docente_id' => $docenteId]);
+
+        return array_map('intval', array_column($stmtFallback->fetchAll(PDO::FETCH_ASSOC), 'id'));
+    }
+
+    private function salvarAreasDocente(int $docenteId, array $areas): void
+    {
+        $stmt = $this->conn->prepare("DELETE FROM docente_areas WHERE docente_id = :docente_id");
+        $stmt->execute([':docente_id' => $docenteId]);
+
+        $areas = array_values(array_unique(array_filter(array_map('intval', $areas))));
+
+        if (empty($areas)) {
+            return;
+        }
+
+        $sql = "
+            INSERT INTO docente_areas (docente_id, area_id)
+            VALUES (:docente_id, :area_id)
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+
+        foreach ($areas as $areaId) {
+            $stmt->execute([
+                ':docente_id' => $docenteId,
+                ':area_id' => $areaId,
+            ]);
+        }
     }
 
     private function salvarUcsDocente(int $docenteId, array $ucs): void
@@ -487,7 +596,20 @@ class Docente
             $params[$placeholder] = $id;
         }
 
-        $sql .= " AND a.id IN (" . implode(',', $placeholders) . ")";
+        $sql .= " AND EXISTS (
+            SELECT 1
+            FROM areas a_escopo
+            WHERE a_escopo.id IN (" . implode(',', $placeholders) . ")
+              AND (
+                a_escopo.nome = d.area_atuacao
+                OR EXISTS (
+                    SELECT 1
+                    FROM docente_areas da_escopo
+                    WHERE da_escopo.docente_id = d.id
+                      AND da_escopo.area_id = a_escopo.id
+                )
+              )
+        )";
     }
 
     private function aplicarEscopoAreas(string &$sql, array &$params, array $escopo): void

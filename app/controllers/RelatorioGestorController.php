@@ -44,15 +44,24 @@ class RelatorioGestorController
         $horasCurso = 0.0;
         $horasPlanejamento = 0.0;
         $horasParadaPedagogica = 0.0;
+        $horasCompensacao = 0.0;
 
         foreach ($resumos as $resumo) {
             $horasAula += (float) ($resumo['horas_aula'] ?? 0);
             $horasCurso += (float) ($resumo['horas_curso'] ?? 0);
             $horasPlanejamento += (float) ($resumo['horas_planejamento'] ?? 0);
             $horasParadaPedagogica += (float) ($resumo['horas_parada_pedagogica'] ?? 0);
+            $horasCompensacao += (float) ($resumo['horas_compensacao'] ?? 0);
         }
 
-        $total = $horasAula + $horasCurso + $horasPlanejamento + $horasParadaPedagogica;
+        $total = $horasAula + $horasCurso + $horasPlanejamento + $horasParadaPedagogica + $horasCompensacao;
+        $percentualAula = $total > 0 ? round(($horasAula / $total) * 100, 1) : 0;
+        $percentualCurso = $total > 0 ? round(($horasCurso / $total) * 100, 1) : 0;
+        $percentualPlanejamento = $total > 0 ? round(($horasPlanejamento / $total) * 100, 1) : 0;
+        $percentualParada = $total > 0 ? round(($horasParadaPedagogica / $total) * 100, 1) : 0;
+        $percentualCompensacao = $total > 0
+            ? max(0, round(100 - $percentualAula - $percentualCurso - $percentualPlanejamento - $percentualParada, 1))
+            : 0;
 
         return [
             'docentes' => count($resumos),
@@ -60,11 +69,13 @@ class RelatorioGestorController
             'horas_curso' => $horasCurso,
             'horas_planejamento' => $horasPlanejamento,
             'horas_parada_pedagogica' => $horasParadaPedagogica,
+            'horas_compensacao' => $horasCompensacao,
             'total_horas' => $total,
-            'percentual_aula' => $total > 0 ? round(($horasAula / $total) * 100, 1) : 0,
-            'percentual_curso' => $total > 0 ? round(($horasCurso / $total) * 100, 1) : 0,
-            'percentual_planejamento' => $total > 0 ? round(($horasPlanejamento / $total) * 100, 1) : 0,
-            'percentual_parada_pedagogica' => $total > 0 ? round(($horasParadaPedagogica / $total) * 100, 1) : 0,
+            'percentual_aula' => $percentualAula,
+            'percentual_curso' => $percentualCurso,
+            'percentual_planejamento' => $percentualPlanejamento,
+            'percentual_parada_pedagogica' => $percentualParada,
+            'percentual_compensacao' => $percentualCompensacao,
         ];
     }
 

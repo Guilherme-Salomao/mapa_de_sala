@@ -14,18 +14,26 @@
     $docentes = $docentes ?? [];
     $registros = $registros ?? [];
     $registroForm = $registroForm ?? null;
+    $paginaPeriodo = $paginaPeriodo ?? 'ferias';
+    $nomePeriodo = $nomePeriodo ?? 'Férias';
+    $nomePeriodoPlural = $nomePeriodoPlural ?? 'Férias';
+    $subtituloPeriodo = $subtituloPeriodo ?? 'Cadastre e consulte os períodos de férias dos docentes';
+    $nomePeriodoMinusculo = $paginaPeriodo === 'compensacao' ? 'compensação' : 'férias';
+    $nomePeriodoPluralMinusculo = $paginaPeriodo === 'compensacao' ? 'compensações' : 'férias';
     $dataInicio = $dataInicio ?? date('Y-m-01');
     $dataFim = $dataFim ?? date('Y-m-t');
     $relatorioProprioDocente = $relatorioProprioDocente ?? false;
     $formEdicao = ! empty($registroForm);
-    $formAction = $formEdicao ? './?page=ferias&action=atualizar' : './?page=ferias&action=salvar';
+    $formAction = $formEdicao
+        ? './?page=' . $paginaPeriodo . '&action=atualizar'
+        : './?page=' . $paginaPeriodo . '&action=salvar';
     $formDocenteId = (int) ($registroForm['docente_id'] ?? ($docentes[0]['id'] ?? 0));
     $formDataInicio = $registroForm['data_inicio'] ?? '';
     $formDataFim = $registroForm['data_fim'] ?? '';
     $formObservacoes = $registroForm['observacoes'] ?? '';
     $formStatus = $registroForm['status'] ?? 'Ativo';
-    $tituloPagina = 'Férias';
-    $subtituloPagina = 'Cadastre e consulte os períodos de férias dos docentes';
+    $tituloPagina = $nomePeriodo;
+    $subtituloPagina = $subtituloPeriodo;
     $botaoTopoTexto = '';
     $botaoTopoLink = '';
 ?>
@@ -36,7 +44,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/svg+xml" href="assets/img/sigha-favicon.svg" />
-  <title>Férias - SIGHA</title>
+  <title><?php echo htmlspecialchars($nomePeriodo); ?> - SIGHA</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
@@ -49,7 +57,7 @@
     <div class="container-fluid">
       <div class="row g-0">
         <?php
-            $paginaAtiva = 'ferias';
+            $paginaAtiva = $paginaPeriodo;
             require_once __DIR__ . '/../layouts/sidebar.php';
         ?>
 
@@ -92,8 +100,12 @@
               </div>
 
               <div class="col-12 col-md-3 col-lg-2">
-                <label class="form-label">Data final</label>
-                <input type="date" name="data_fim" class="form-control" value="<?php echo htmlspecialchars($formDataFim); ?>" required>
+                <label class="form-label">
+                  Data final<?php echo $paginaPeriodo === 'compensacao' ? ' (opcional)' : ''; ?>
+                </label>
+                <input type="date" name="data_fim" class="form-control"
+                  value="<?php echo htmlspecialchars($formDataFim); ?>"
+                  <?php echo $paginaPeriodo === 'compensacao' ? '' : 'required'; ?>>
               </div>
 
               <div class="col-12 col-md-3 col-lg-2">
@@ -111,12 +123,13 @@
 
               <div class="col-12 d-flex gap-2 justify-content-end">
                 <?php if ($formEdicao): ?>
-                <a href="./?page=ferias" class="btn btn-outline-secondary">
+                <a href="./?page=<?php echo urlencode($paginaPeriodo); ?>" class="btn btn-outline-secondary">
                   <i class="bi bi-x-circle"></i> Cancelar
                 </a>
                 <?php endif; ?>
                 <button type="submit" class="btn app-btn-primary">
-                  <i class="bi bi-save"></i> <?php echo $formEdicao ? 'Salvar Alteração' : 'Salvar Férias'; ?>
+                  <i class="bi bi-save"></i>
+                  <?php echo $formEdicao ? 'Salvar Alteração' : 'Salvar ' . htmlspecialchars($nomePeriodo); ?>
                 </button>
               </div>
             </form>
@@ -124,14 +137,11 @@
 
           <div class="app-card p-3 mb-3">
             <form method="GET" action="./" class="row g-2 align-items-end">
-              <input type="hidden" name="page" value="ferias">
+              <input type="hidden" name="page" value="<?php echo htmlspecialchars($paginaPeriodo); ?>">
               <div class="col-12 col-md-4 col-lg-3">
-                <label class="form-label">Período inicial</label>
-                <input type="date" name="data_inicio" class="form-control" value="<?php echo htmlspecialchars($dataInicio); ?>">
-              </div>
-              <div class="col-12 col-md-4 col-lg-3">
-                <label class="form-label">Período final</label>
-                <input type="date" name="data_fim" class="form-control" value="<?php echo htmlspecialchars($dataFim); ?>">
+                <label for="ano" class="form-label">Ano</label>
+                <input type="number" id="ano" name="ano" class="form-control" min="1900" max="2200"
+                  value="<?php echo (int) ($ano ?? date('Y')); ?>" required>
               </div>
               <div class="col-12 col-md-auto">
                 <button type="submit" class="btn app-btn-primary">
@@ -139,7 +149,7 @@
                 </button>
               </div>
               <div class="col-12 col-md-auto">
-                <a href="./?page=ferias" class="btn btn-outline-secondary" title="Limpar filtro">
+                <a href="./?page=<?php echo urlencode($paginaPeriodo); ?>" class="btn btn-outline-secondary" title="Limpar filtro">
                   <i class="bi bi-arrow-counterclockwise"></i>
                 </a>
               </div>
@@ -148,7 +158,10 @@
 
           <div class="app-card p-3">
             <div class="d-flex align-items-center justify-content-between mb-2">
-              <div class="fw-bold">Relatório de férias por período</div>
+              <div class="fw-bold">
+                Relatório de <?php echo htmlspecialchars($nomePeriodoPluralMinusculo); ?>
+                de <?php echo (int) ($ano ?? date('Y')); ?>
+              </div>
               <div class="small text-muted"><?php echo (int) ($totalRegistros ?? count($registros)); ?> registro(s)</div>
             </div>
 
@@ -160,6 +173,7 @@
                     <th>Área</th>
                     <th>Data inicial</th>
                     <th>Data final</th>
+                    <th>Dias</th>
                     <th>Status</th>
                     <th class="text-end">Ações</th>
                   </tr>
@@ -177,6 +191,7 @@
                     <td><?php echo htmlspecialchars($registro['area_atuacao'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars(date('d/m/Y', strtotime($registro['data_inicio']))); ?></td>
                     <td><?php echo htmlspecialchars(date('d/m/Y', strtotime($registro['data_fim']))); ?></td>
+                    <td class="fw-semibold"><?php echo (int) ($registro['quantidade_dias'] ?? 0); ?></td>
                     <td>
                       <span class="badge <?php echo ($registro['status'] ?? '') === 'Ativo' ? 'text-bg-success' : 'text-bg-secondary'; ?>">
                         <?php echo htmlspecialchars($registro['status'] ?? ''); ?>
@@ -184,11 +199,11 @@
                     </td>
                     <td class="text-end">
                       <div class="app-actions">
-                        <a href="./?page=ferias&action=editar&id=<?php echo (int) $registro['id']; ?>"
+                        <a href="./?page=<?php echo urlencode($paginaPeriodo); ?>&action=editar&id=<?php echo (int) $registro['id']; ?>"
                           class="btn btn-sm btn-outline-primary app-action-btn">
                           <i class="bi bi-pencil"></i> Editar
                         </a>
-                        <form method="POST" action="./?page=ferias&action=excluir">
+                        <form method="POST" action="./?page=<?php echo urlencode($paginaPeriodo); ?>&action=excluir">
                           <input type="hidden" name="id" value="<?php echo (int) $registro['id']; ?>">
                           <button type="submit" class="btn btn-sm btn-outline-danger app-action-btn">
                             <i class="bi bi-trash"></i> Excluir
@@ -200,7 +215,9 @@
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="6" class="text-center text-muted py-4">Nenhum período de férias encontrado.</td>
+                    <td colspan="7" class="text-center text-muted py-4">
+                      Nenhum período de <?php echo htmlspecialchars($nomePeriodoMinusculo); ?> encontrado.
+                    </td>
                   </tr>
                   <?php endif; ?>
                 </tbody>
@@ -216,7 +233,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   const pageTitle = document.getElementById("pageTitle");
-  if (pageTitle) pageTitle.textContent = "Férias";
+  if (pageTitle) pageTitle.textContent = <?php echo json_encode($nomePeriodo, JSON_UNESCAPED_UNICODE); ?>;
   const userName = document.getElementById("userName");
   if (userName) userName.textContent = <?php echo json_encode($usuarioLogado); ?>;
   document.addEventListener("click", function(e) {

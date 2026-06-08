@@ -100,10 +100,11 @@ class RelatorioSala
                 qh.hora_fim,
                 co.nome AS turma_nome,
                 uc.codigo AS uc_codigo,
-                uc.nome AS uc_nome,
+                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN co.nome ELSE uc.nome END AS uc_nome,
                 GROUP_CONCAT(DISTINCT u.nome ORDER BY u.nome SEPARATOR ', ') AS docentes
             FROM quadro_horario qh
             INNER JOIN cursos_ofertas co ON co.id = qh.curso_oferta_id
+            LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             INNER JOIN unidades_curriculares uc ON uc.id = qh.unidade_curricular_id
             LEFT JOIN quadro_horario_docentes qhd ON qhd.quadro_horario_id = qh.id
             LEFT JOIN docentes d ON d.id = qhd.docente_id
@@ -116,6 +117,7 @@ class RelatorioSala
                 qh.hora_inicio,
                 qh.hora_fim,
                 co.nome,
+                cm.sem_uc,
                 uc.codigo,
                 uc.nome
             ORDER BY qh.hora_inicio ASC

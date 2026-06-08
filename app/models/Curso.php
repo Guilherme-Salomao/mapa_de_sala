@@ -223,6 +223,12 @@ class Curso
             return [];
         }
 
+        foreach ($ids as $cursoModeloId) {
+            if ($this->cursoModeloSemUc($cursoModeloId)) {
+                $this->garantirUcPadraoCursoSemUc($cursoModeloId);
+            }
+        }
+
         $placeholders = [];
         $params = [];
 
@@ -255,10 +261,16 @@ class Curso
     public function listarDocentesAtivos(array $escopo = ['tipo' => 'todos', 'ids' => []]): array
     {
         $sql = "
-            SELECT d.id, a.id AS area_id, u.nome, u.email
+            SELECT
+                d.id,
+                MIN(COALESCE(da.area_id, a.id)) AS area_id,
+                GROUP_CONCAT(DISTINCT COALESCE(da.area_id, a.id) ORDER BY COALESCE(da.area_id, a.id) SEPARATOR ',') AS area_ids,
+                u.nome,
+                u.email
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
             LEFT JOIN areas a ON a.nome = d.area_atuacao
+            LEFT JOIN docente_areas da ON da.docente_id = d.id
             WHERE d.status = 'Ativo'
               AND u.status = 'Ativo'
         ";
@@ -266,7 +278,7 @@ class Curso
 
         $this->aplicarEscopoDocente($sql, $params, $escopo);
 
-        $sql .= " ORDER BY u.nome ASC";
+        $sql .= " GROUP BY d.id, u.nome, u.email ORDER BY u.nome ASC";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
@@ -459,7 +471,7 @@ class Curso
         int $unidadeCurricularId,
         array $diasSemana,
         string $dataInicio,
-        string $dataFim,
+        string $dataFim = '',
         ?string $turnoGeracao = null,
         ?int $salaPreferencialId = null,
         ?int $docentePreferencialId = null
@@ -479,17 +491,20 @@ class Curso
             return ['sucesso' => false, 'mensagem' => 'Selecione pelo menos um dia da semana valido.'];
         }
 
-        $diasPermitidosTurma = $this->diasPermitidosTurma($turma);
-        $diasInvalidosTurma = array_diff($diasSemana, $diasPermitidosTurma);
-
-        if (! empty($diasInvalidosTurma)) {
-            return ['sucesso' => false, 'mensagem' => 'Um ou mais dias selecionados nao estao marcados como dia de aula desta turma.'];
-        }
-
         $uc = $this->buscarUcDaTurma((int) $turma['curso_modelo_id'], $unidadeCurricularId);
 
         if (! $uc) {
             return ['sucesso' => false, 'mensagem' => 'A UC selecionada nao pertence ao curso desta turma.'];
+        }
+
+        $codigoUc = strtoupper(str_replace(['-', ' '], '', trim((string) ($uc['codigo'] ?? ''))));
+        $uc12Aprendizagem = $codigoUc === 'UC12'
+            && strcasecmp(trim((string) ($uc['area_nome'] ?? '')), 'Aprendizagem') === 0;
+        $diasPermitidosTurma = $this->diasPermitidosTurma($turma);
+        $diasInvalidosTurma = array_diff($diasSemana, $diasPermitidosTurma);
+
+        if (! $uc12Aprendizagem && ! empty($diasInvalidosTurma)) {
+            return ['sucesso' => false, 'mensagem' => 'Um ou mais dias selecionados nao estao marcados como dia de aula desta turma.'];
         }
 
         $diaInicio = strtotime($dataInicio);
@@ -498,9 +513,10 @@ class Curso
             return ['sucesso' => false, 'mensagem' => 'Data inicial invalida.'];
         }
 
-        $diaFim = strtotime($dataFim);
+        $temDataFim = trim($dataFim) !== '';
+        $diaFim = $temDataFim ? strtotime($dataFim) : null;
 
-        if ($diaFim === false || $diaFim < $diaInicio) {
+        if ($temDataFim && ($diaFim === false || $diaFim < $diaInicio)) {
             return ['sucesso' => false, 'mensagem' => 'Data final invalida.'];
         }
 
@@ -532,7 +548,7 @@ class Curso
             $blocosSemDocente = 0;
             $guard = 0;
 
-            while ($minutosRestantesUc > 0 && strtotime($dataAtual) <= $diaFim && $guard < $limiteDiasCalendario) {
+            while ($minutosRestantesUc > 0 && (! $temDataFim || strtotime($dataAtual) <= $diaFim) && $guard < $limiteDiasCalendario) {
                 $guard++;
 
                 if (! in_array((int) date('N', strtotime($dataAtual)), $diasSemana, true)) {
@@ -598,7 +614,7 @@ class Curso
                 $dataAtual = date('Y-m-d', strtotime($dataAtual . ' +1 day'));
             }
 
-            if ($minutosRestantesUc > 0) {
+            if ($minutosRestantesUc > 0 && $temDataFim) {
                 if ($aulasCriadas === 0) {
                     $this->conn->rollBack();
 
@@ -613,9 +629,19 @@ class Curso
                 return [
                     'sucesso' => true,
                     'mensagem' => $aulasCriadas . ' aula(s) geradas para ' . ($uc['codigo'] ?? 'UC') .
-                        ' ate ' . date('d/m/Y', $diaFim) . '. Ainda restam aproximadamente ' .
+                        ' ate ' . date('d/m/Y', (int) $diaFim) . '. Ainda restam aproximadamente ' .
                         round($minutosRestantesUc / 60, 2) . 'h desta UC. Blocos sem sala: ' .
                         $blocosSemSala . '. Blocos sem docente: ' . $blocosSemDocente . '.',
+                ];
+            }
+
+            if ($minutosRestantesUc > 0) {
+                $this->conn->rollBack();
+
+                return [
+                    'sucesso' => false,
+                    'mensagem' => 'Nao foi possivel concluir a geracao da UC. Faltam aproximadamente ' .
+                        round($minutosRestantesUc / 60, 2) . 'h. Verifique dias de aula, calendario e aulas ja lancadas.',
                 ];
             }
 
@@ -722,17 +748,86 @@ class Curso
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([':curso_modelo_id' => $cursoModeloId]);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $ucs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($ucs) && $this->cursoModeloSemUc($cursoModeloId)) {
+            $this->garantirUcPadraoCursoSemUc($cursoModeloId);
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':curso_modelo_id' => $cursoModeloId]);
+            $ucs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        return $ucs;
+    }
+
+    private function cursoModeloSemUc(int $cursoModeloId): bool
+    {
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM curso_modelos
+            WHERE id = :id
+              AND COALESCE(sem_uc, 0) = 1
+            LIMIT 1
+        ");
+        $stmt->execute([':id' => $cursoModeloId]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function garantirUcPadraoCursoSemUc(int $cursoModeloId): void
+    {
+        $stmt = $this->conn->prepare("
+            SELECT nome, carga_horaria_total
+            FROM curso_modelos
+            WHERE id = :id
+              AND COALESCE(sem_uc, 0) = 1
+            LIMIT 1
+        ");
+        $stmt->execute([':id' => $cursoModeloId]);
+        $curso = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (! $curso) {
+            return;
+        }
+
+        $insert = $this->conn->prepare("
+            INSERT IGNORE INTO unidades_curriculares (
+                curso_modelo_id,
+                codigo,
+                nome,
+                carga_horaria,
+                status
+            ) VALUES (
+                :curso_modelo_id,
+                'TURMA',
+                :nome,
+                :carga_horaria,
+                'Ativa'
+            )
+        ");
+        $insert->execute([
+            ':curso_modelo_id' => $cursoModeloId,
+            ':nome' => (string) ($curso['nome'] ?? ''),
+            ':carga_horaria' => (float) ($curso['carga_horaria_total'] ?? 0),
+        ]);
     }
 
     private function buscarUcDaTurma(int $cursoModeloId, int $unidadeCurricularId): ?array
     {
         $sql = "
-            SELECT id, codigo, nome, carga_horaria
-            FROM unidades_curriculares
-            WHERE id = :id
-              AND curso_modelo_id = :curso_modelo_id
-              AND status = 'Ativa'
+            SELECT
+                uc.id,
+                uc.codigo,
+                uc.nome,
+                uc.carga_horaria,
+                a.nome AS area_nome
+            FROM unidades_curriculares uc
+            INNER JOIN curso_modelos cm ON cm.id = uc.curso_modelo_id
+            LEFT JOIN areas a ON a.id = cm.area_id
+            WHERE uc.id = :id
+              AND uc.curso_modelo_id = :curso_modelo_id
+              AND uc.status = 'Ativa'
             LIMIT 1
         ";
 
@@ -774,7 +869,7 @@ class Curso
 
     private function minutosPendentesUc(array $uc, array $minutosLancados): int
     {
-        $total = ((int) ($uc['carga_horaria'] ?? 0)) * 60;
+        $total = (int) round(((float) ($uc['carga_horaria'] ?? 0)) * 60);
         $lancado = (int) ($minutosLancados[(int) $uc['id']] ?? 0);
 
         return max(0, $total - $lancado);
@@ -869,11 +964,16 @@ class Curso
         return $this->docenteVinculadoUc($docenteId, $unidadeCurricularId)
             && $this->docenteTemEscala($docenteId, $data, $horaInicio, $horaFim)
             && ! $this->docenteEmFerias($docenteId, $data)
+            && ! $this->docenteEmCompensacao($docenteId, $data)
             && ! $this->docenteTemConflito($docenteId, $data, $horaInicio, $horaFim);
     }
 
     private function docenteVinculadoUc(int $docenteId, int $unidadeCurricularId): bool
     {
+        if ($this->unidadeDeCursoSemUc($unidadeCurricularId)) {
+            return true;
+        }
+
         $sql = "
             SELECT docente_id
             FROM docente_unidades_curriculares
@@ -887,6 +987,23 @@ class Curso
             ':docente_id' => $docenteId,
             ':unidade_curricular_id' => $unidadeCurricularId,
         ]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function unidadeDeCursoSemUc(int $unidadeCurricularId): bool
+    {
+        $sql = "
+            SELECT cm.id
+            FROM unidades_curriculares uc
+            INNER JOIN curso_modelos cm ON cm.id = uc.curso_modelo_id
+            WHERE uc.id = :id
+              AND COALESCE(cm.sem_uc, 0) = 1
+            LIMIT 1
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':id' => $unidadeCurricularId]);
 
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -921,6 +1038,25 @@ class Curso
         $stmt = $this->conn->prepare("
             SELECT id
             FROM docente_ferias
+            WHERE docente_id = :docente_id
+              AND status = 'Ativo'
+              AND data_inicio <= :data
+              AND data_fim >= :data
+            LIMIT 1
+        ");
+        $stmt->execute([
+            ':docente_id' => $docenteId,
+            ':data' => $data,
+        ]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function docenteEmCompensacao(int $docenteId, string $data): bool
+    {
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM docente_compensacoes
             WHERE docente_id = :docente_id
               AND status = 'Ativo'
               AND data_inicio <= :data
@@ -1419,7 +1555,7 @@ class Curso
             $params[$placeholder] = $id;
         }
 
-        $sql .= " AND a.id IN (" . implode(',', $placeholders) . ")";
+        $sql .= " AND COALESCE(da.area_id, a.id) IN (" . implode(',', $placeholders) . ")";
     }
 
 }

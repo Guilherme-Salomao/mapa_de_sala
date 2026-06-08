@@ -19,6 +19,16 @@
     $bloqueiosPorData = $bloqueiosPorData ?? [];
     $horariosLancamentoPorData = $horariosLancamentoPorData ?? [];
     $turnosLancamentoPorData = $turnosLancamentoPorData ?? [];
+    $temUc12Aprendizagem = false;
+
+    foreach (($unidadesCurriculares ?? []) as $ucDisponivel) {
+        $codigoUcDisponivel = strtoupper(str_replace(['-', ' '], '', trim((string) ($ucDisponivel['codigo'] ?? ''))));
+
+        if ($codigoUcDisponivel === 'UC12') {
+            $temUc12Aprendizagem = true;
+            break;
+        }
+    }
 
     function salasDisponiveisTurnosQuadro(array $turnos): array
     {
@@ -341,7 +351,9 @@
                 <div class="fw-bold"><?php echo htmlspecialchars($ofertaSelecionada['nome']); ?></div>
                 <div class="small text-muted">
                   Oferta <?php echo htmlspecialchars($ofertaSelecionada['codigo_oferta']); ?>
-                  · Período <?php echo htmlspecialchars(periodoQuadroPorHorario($ofertaSelecionada['hora_inicio'] ?? null, $ofertaSelecionada['hora_fim'] ?? null)); ?>
+                  · Período <?php echo (int) ($ofertaSelecionada['integral'] ?? 0) === 1
+                      ? 'Integral'
+                      : htmlspecialchars(periodoQuadroPorHorario($ofertaSelecionada['hora_inicio'] ?? null, $ofertaSelecionada['hora_fim'] ?? null)); ?>
                   <?php if (! empty($ofertaSelecionada['hora_inicio']) && ! empty($ofertaSelecionada['hora_fim'])): ?>
                   · <?php echo htmlspecialchars(substr($ofertaSelecionada['hora_inicio'], 0, 5) . ' - ' . substr($ofertaSelecionada['hora_fim'], 0, 5)); ?>
                   <?php endif; ?>
@@ -390,6 +402,8 @@
                             6 => 'aula_sabado',
                         ][$coluna] ?? '';
                         $turmaTemAulaDia = $campoDiaOferta !== '' && (int) ($ofertaSelecionada[$campoDiaOferta] ?? 0) === 1;
+                        $turmaAprendizagem = strcasecmp(trim((string) ($ofertaSelecionada['area_nome'] ?? '')), 'Aprendizagem') === 0;
+                        $diaExtraUc12 = $turmaAprendizagem && $temUc12Aprendizagem && ! $turmaTemAulaDia && $coluna !== 0;
                         $bloqueiosDia = $bloqueiosPorData[$dataIso] ?? [];
                         $horaInicioOfertaDia = substr((string) ($ofertaSelecionada['hora_inicio'] ?? ''), 0, 5);
                         $horaFimOfertaDia = substr((string) ($ofertaSelecionada['hora_fim'] ?? ''), 0, 5);
@@ -398,7 +412,12 @@
                             : horarioLancamentoQuadro($bloqueiosDia, $horaInicioOfertaDia, $horaFimOfertaDia);
                         $turnosLancamentoDia = $turnosLancamentoPorData[$dataIso] ?? [];
                         $diaBloqueado = $horarioLancamentoDia === null && ! empty($bloqueiosDia);
-                        $permiteLancamento = $mostrarDia && $turmaTemAulaDia && ! $diaBloqueado && $coluna !== 0 && ! ($coluna === 6 && $bloquearSabado) && $horarioLancamentoDia !== null;
+                        $permiteLancamento = $mostrarDia
+                            && ($turmaTemAulaDia || $diaExtraUc12)
+                            && ! $diaBloqueado
+                            && $coluna !== 0
+                            && (! ($coluna === 6 && $bloquearSabado) || $diaExtraUc12)
+                            && $horarioLancamentoDia !== null;
                         $salasDisponiveisDia = ! empty($turnosLancamentoDia)
                             ? salasDisponiveisTurnosQuadro($turnosLancamentoDia)
                             : ($salasDisponiveisPorData[$dataIso] ?? []);
@@ -490,8 +509,15 @@
                             <select class="form-select form-select-sm" name="unidade_curricular_id" required>
                               <option value="">UC...</option>
                               <?php foreach (($unidadesCurriculares ?? []) as $uc): ?>
-                              <option value="<?php echo (int) $uc['id']; ?>">
-                                <?php echo htmlspecialchars(($uc['codigo'] ?? '') . ' - ' . ($uc['nome'] ?? '')); ?>
+                              <?php
+                                  $codigoUcNormalizado = strtoupper(str_replace(['-', ' '], '', trim((string) ($uc['codigo'] ?? ''))));
+                                  if ($diaExtraUc12 && $codigoUcNormalizado !== 'UC12') {
+                                      continue;
+                                  }
+                              ?>
+                              <option value="<?php echo (int) $uc['id']; ?>"
+                                data-curso-sem-uc="<?php echo (int) ($uc['curso_sem_uc'] ?? 0); ?>">
+                                <?php echo htmlspecialchars(! empty($uc['curso_sem_uc']) ? ($uc['nome'] ?? '') : (($uc['codigo'] ?? '') . ' - ' . ($uc['nome'] ?? ''))); ?>
                               </option>
                               <?php endforeach; ?>
                             </select>
@@ -571,10 +597,17 @@
                               </label>
                               <select class="form-select form-select-sm mb-1 quick-bloco-uc"
                                 name="ucs_por_bloco[<?php echo htmlspecialchars($chaveBloco); ?>]">
-                                <option value="">UC...</option>
-                                <?php foreach (($unidadesCurriculares ?? []) as $uc): ?>
-                                <option value="<?php echo (int) $uc['id']; ?>">
-                                  <?php echo htmlspecialchars(($uc['codigo'] ?? '') . ' - ' . ($uc['nome'] ?? '')); ?>
+                                 <option value="">UC...</option>
+                                 <?php foreach (($unidadesCurriculares ?? []) as $uc): ?>
+                                 <?php
+                                     $codigoUcNormalizado = strtoupper(str_replace(['-', ' '], '', trim((string) ($uc['codigo'] ?? ''))));
+                                     if ($diaExtraUc12 && $codigoUcNormalizado !== 'UC12') {
+                                         continue;
+                                     }
+                                 ?>
+                                 <option value="<?php echo (int) $uc['id']; ?>"
+                                  data-curso-sem-uc="<?php echo (int) ($uc['curso_sem_uc'] ?? 0); ?>">
+                                  <?php echo htmlspecialchars(! empty($uc['curso_sem_uc']) ? ($uc['nome'] ?? '') : (($uc['codigo'] ?? '') . ' - ' . ($uc['nome'] ?? ''))); ?>
                                 </option>
                                 <?php endforeach; ?>
                               </select>
@@ -696,8 +729,9 @@
                                 <option value="">UC...</option>
                                 <?php foreach (($unidadesCurriculares ?? []) as $uc): ?>
                                 <option value="<?php echo (int) $uc['id']; ?>"
+                                  data-curso-sem-uc="<?php echo (int) ($uc['curso_sem_uc'] ?? 0); ?>"
                                   <?php echo (int) $aula['unidade_curricular_id'] === (int) $uc['id'] ? 'selected' : ''; ?>>
-                                  <?php echo htmlspecialchars(($uc['codigo'] ?? '') . ' - ' . ($uc['nome'] ?? '')); ?>
+                                  <?php echo htmlspecialchars(! empty($uc['curso_sem_uc']) ? ($uc['nome'] ?? '') : (($uc['codigo'] ?? '') . ' - ' . ($uc['nome'] ?? ''))); ?>
                                 </option>
                                 <?php endforeach; ?>
                               </select>
@@ -998,17 +1032,21 @@
 
     form.querySelectorAll(".quick-bloco-uc").forEach(function(selectUc) {
       const selectDocente = selectUc.parentElement.querySelector(".quick-bloco-docente");
-      filtrarDocentesPorUc(selectDocente, selectUc.value, trocaEscala);
+      const cursoSemUc = selectUc.selectedOptions[0] ? selectUc.selectedOptions[0].dataset.cursoSemUc === "1" : false;
+      filtrarDocentesPorUc(selectDocente, selectUc.value, trocaEscala, cursoSemUc);
     });
 
     const ucPrincipal = form.querySelector('select[name="unidade_curricular_id"]');
     const ucId = ucPrincipal ? ucPrincipal.value : "";
+    const cursoSemUc = ucPrincipal && ucPrincipal.selectedOptions[0]
+      ? ucPrincipal.selectedOptions[0].dataset.cursoSemUc === "1"
+      : false;
 
-    filtrarDocentesPorUc(form.querySelector('select[name="docente_principal_id"]'), ucId, trocaEscala);
-    filtrarDocentesPorUc(form.querySelector('select[name="docente_2_id"]'), ucId, trocaEscala);
+    filtrarDocentesPorUc(form.querySelector('select[name="docente_principal_id"]'), ucId, trocaEscala, cursoSemUc);
+    filtrarDocentesPorUc(form.querySelector('select[name="docente_2_id"]'), ucId, trocaEscala, cursoSemUc);
   }
 
-  function filtrarDocentesPorUc(select, ucId, trocaEscala) {
+  function filtrarDocentesPorUc(select, ucId, trocaEscala, cursoSemUc = false) {
     if (!select) return;
 
     let selecionadoValido = true;
@@ -1022,7 +1060,8 @@
       const ucs = (option.dataset.ucIds || "").split(",").filter(Boolean);
       const disponivelTurno = !turno || turnos.length === 0 || turnos.includes(turno);
       const temEscala = turno && turnosEscala.length > 0 ? turnosEscala.includes(turno) : option.dataset.temEscala === "1";
-      const mostrar = Boolean(ucId) && ucs.includes(ucId) && disponivelTurno && (temEscala || trocaEscala);
+      const vinculoUcOk = cursoSemUc || ucs.includes(ucId);
+      const mostrar = Boolean(ucId) && vinculoUcOk && disponivelTurno && (temEscala || trocaEscala);
 
       option.hidden = !mostrar;
 
@@ -1047,6 +1086,7 @@
 
     const principalId = principal.value;
     const ucId = uc ? uc.value : "";
+    const cursoSemUc = uc && uc.selectedOptions[0] ? uc.selectedOptions[0].dataset.cursoSemUc === "1" : false;
     const trocaEscala = Boolean(form.querySelector('input[name="troca_escala"]:checked'));
     let selecionadoValido = true;
 
@@ -1060,7 +1100,7 @@
       const ucs = (option.dataset.ucIds || "").split(",").filter(Boolean);
       const disponivelTurno = !turno || turnos.length === 0 || turnos.includes(turno);
       const temEscala = turno && turnosEscala.length > 0 ? turnosEscala.includes(turno) : option.dataset.temEscala === "1";
-      const esconderPorUc = !ucId || !ucs.includes(ucId) || !disponivelTurno || (!temEscala && !trocaEscala);
+      const esconderPorUc = !ucId || (!cursoSemUc && !ucs.includes(ucId)) || !disponivelTurno || (!temEscala && !trocaEscala);
       option.hidden = esconderPorPrincipal || esconderPorUc;
 
       if (option.selected && option.hidden) {

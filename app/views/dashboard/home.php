@@ -10,12 +10,14 @@
 
     $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuario';
     $nivelHome = $_SESSION['usuario']['nivel_acesso'] ?? '';
+    $isAdminHome = $nivelHome === 'Admin';
     $isApoioHome = $nivelHome === 'Apoio';
     $dashboardGestor = $dashboardGestor ?? false;
     $indicadores = $indicadores ?? [];
     $aulasPorTurno = $aulasPorTurno ?? ['Manha' => [], 'Tarde' => [], 'Noite' => []];
     $indicadoresGestor = $indicadoresGestor ?? [];
     $resumoDocentesGestor = $resumoDocentesGestor ?? [];
+    $aulasSemDocenteGestor = $aulasSemDocenteGestor ?? [];
     $dashboardDocente = $dashboardDocente ?? false;
     $minhaSemana = $minhaSemana ?? [];
     $indicadoresDocente = $indicadoresDocente ?? [
@@ -30,7 +32,7 @@
 
     $dataHojeFormatada = date('d/m/Y', strtotime($dataHoje));
     $mesAnoReferencia = date('m/Y', strtotime($dataHoje));
-    $areaGestorLabel = 'área';
+    $areaGestorLabel = $nivelHome === 'Admin' ? 'todas as áreas' : 'área';
     $dataAtualAtalho = date('Y-m-d');
     $dataAmanhaAtalho = date('Y-m-d', strtotime($dataAtualAtalho . ' +1 day'));
     $dataDepoisAmanhaAtalho = date('Y-m-d', strtotime($dataAtualAtalho . ' +2 days'));
@@ -128,7 +130,7 @@
             </form>
           </div>
 
-          <div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-3 mb-3">
+          <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3 mb-3">
             <div class="col">
               <div class="app-card p-3 h-100">
                 <div class="d-flex justify-content-between align-items-center">
@@ -157,29 +159,20 @@
               </div>
             </div>
 
+            <?php $temAulasSemDocenteCard = (int) ($indicadoresGestor['aulas_sem_docente'] ?? 0) > 0; ?>
             <div class="col">
-              <div class="app-card p-3 h-100">
+              <div class="app-card p-3 h-100 <?php echo $temAulasSemDocenteCard ? 'border border-danger bg-danger-subtle' : ''; ?>">
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
-                    <div class="small text-muted">Docentes em aula (<?php echo htmlspecialchars($dataHojeFormatada); ?>)</div>
-                    <div class="fs-3 fw-bold"><?php echo (int) ($indicadoresGestor['docentes_em_aula'] ?? 0); ?></div>
+                    <div class="small <?php echo $temAulasSemDocenteCard ? 'text-danger fw-semibold' : 'text-muted'; ?>">
+                      Aulas sem docentes (<?php echo htmlspecialchars($dataHojeFormatada); ?>)
+                    </div>
+                    <div class="fs-3 fw-bold <?php echo $temAulasSemDocenteCard ? 'text-danger' : 'text-success'; ?>">
+                      <?php echo (int) ($indicadoresGestor['aulas_sem_docente'] ?? 0); ?>
+                    </div>
                   </div>
-                  <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--uso">
-                    <i class="bi bi-easel"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col">
-              <div class="app-card p-3 h-100">
-                <div class="d-flex justify-content-between align-items-center">
-                  <div>
-                    <div class="small text-muted">Aulas sem docentes (<?php echo htmlspecialchars($dataHojeFormatada); ?>)</div>
-                    <div class="fs-3 fw-bold"><?php echo (int) ($indicadoresGestor['aulas_sem_docente'] ?? 0); ?></div>
-                  </div>
-                  <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--manut">
-                    <i class="bi bi-exclamation-triangle"></i>
+                  <div class="app-icon-badge app-icon-badge--sm kpi-icon <?php echo $temAulasSemDocenteCard ? 'text-bg-danger' : 'kpi-icon--livre'; ?>">
+                    <i class="bi <?php echo $temAulasSemDocenteCard ? 'bi-exclamation-triangle' : 'bi-check-circle'; ?>"></i>
                   </div>
                 </div>
               </div>
@@ -200,6 +193,86 @@
             </div>
           </div>
 
+          <?php if ($isAdminHome): ?>
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-md-6 col-xl">
+              <div class="app-card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="small text-muted">Salas cadastradas</div>
+                    <div class="fs-3 fw-bold"><?php echo (int) ($indicadores['total_salas'] ?? 0); ?></div>
+                  </div>
+                  <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--default">
+                    <i class="bi bi-door-open"></i>
+                  </div>
+                </div>
+                <div class="small text-muted mt-2">Total geral do cadastro</div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl">
+              <div class="app-card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="small text-muted">Salas ocupadas</div>
+                    <div class="fs-3 fw-bold"><?php echo (int) ($indicadores['salas_ocupadas'] ?? 0); ?></div>
+                  </div>
+                  <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--uso">
+                    <i class="bi bi-calendar-check"></i>
+                  </div>
+                </div>
+                <div class="small text-muted mt-2"><?php echo htmlspecialchars($dataHojeFormatada); ?></div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl">
+              <div class="app-card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="small text-muted">Salas livres</div>
+                    <div class="fs-3 fw-bold"><?php echo (int) ($indicadores['salas_livres'] ?? 0); ?></div>
+                  </div>
+                  <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--livre">
+                    <i class="bi bi-check-circle"></i>
+                  </div>
+                </div>
+                <div class="small text-muted mt-2"><?php echo htmlspecialchars($dataHojeFormatada); ?></div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl">
+              <div class="app-card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="small text-muted">Salas em manutenção</div>
+                    <div class="fs-3 fw-bold"><?php echo (int) ($indicadores['salas_manutencao'] ?? 0); ?></div>
+                  </div>
+                  <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--manut">
+                    <i class="bi bi-tools"></i>
+                  </div>
+                </div>
+                <div class="small text-muted mt-2"><?php echo htmlspecialchars($dataHojeFormatada); ?></div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl">
+              <div class="app-card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="small text-muted">Salas reservadas</div>
+                    <div class="fs-3 fw-bold"><?php echo (int) ($indicadores['salas_reservadas'] ?? 0); ?></div>
+                  </div>
+                  <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--uso">
+                    <i class="bi bi-bookmark-check"></i>
+                  </div>
+                </div>
+                <div class="small text-muted mt-2"><?php echo htmlspecialchars($dataHojeFormatada); ?></div>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
+
+          <?php if (! $isAdminHome): ?>
           <div class="row g-3 mb-3">
             <div class="col-12">
               <div class="app-card p-3 h-100">
@@ -236,6 +309,7 @@
               </div>
             </div>
           </div>
+          <?php endif; ?>
           <?php elseif (! $dashboardDocente): ?>
           <div class="app-card p-3 mb-3">
             <form method="GET" action="./" class="row g-2 align-items-end">
@@ -504,7 +578,14 @@
               <?php endforeach; ?>
             </div>
           </div>
+          <?php elseif ($dashboardGestor): ?>
+          <?php require __DIR__ . '/home_aulas_sem_docente.php'; ?>
           <?php else: ?>
+          <?php if ($isApoioHome && ! empty($aulasSemDocenteGestor)): ?>
+          <div class="mb-3">
+            <?php require __DIR__ . '/home_aulas_sem_docente.php'; ?>
+          </div>
+          <?php endif; ?>
           <?php require __DIR__ . '/home_mapa_sala.php'; ?>
           <?php endif; ?>
 

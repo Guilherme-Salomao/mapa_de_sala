@@ -21,6 +21,7 @@ class CursoModelo
                 cm.area_id,
                 cm.nome,
                 cm.carga_horaria_total,
+                COALESCE(cm.sem_uc, 0) AS sem_uc,
                 cm.status,
                 cm.criado_em,
                 cm.atualizado_em,
@@ -84,7 +85,7 @@ class CursoModelo
     public function buscarPorId(int $id): ?array
     {
         $sql = "
-            SELECT id, area_id, nome, carga_horaria_total, status
+            SELECT id, area_id, nome, carga_horaria_total, COALESCE(sem_uc, 0) AS sem_uc, status
             FROM {$this->table}
             WHERE id = :id
             LIMIT 1
@@ -173,23 +174,32 @@ class CursoModelo
                     area_id,
                     nome,
                     carga_horaria_total,
+                    sem_uc,
                     status
                 ) VALUES (
                     :area_id,
                     :nome,
                     :carga_horaria_total,
+                    :sem_uc,
                     :status
                 )
             ";
 
             $stmt = $this->conn->prepare($sql);
 
-            return $stmt->execute([
+            $salvou = $stmt->execute([
                 ':area_id'             => $dados['area_id'],
                 ':nome'                => $dados['nome'],
                 ':carga_horaria_total' => $dados['carga_horaria_total'],
+                ':sem_uc'              => $dados['sem_uc'],
                 ':status'              => $dados['status'],
             ]);
+
+            if ($salvou && (int) ($dados['sem_uc'] ?? 0) === 1) {
+                $this->garantirUcPadrao((int) $this->conn->lastInsertId(), $dados);
+            }
+
+            return $salvou;
         } catch (Throwable $e) {
             return false;
         }
@@ -203,22 +213,84 @@ class CursoModelo
                     area_id = :area_id,
                     nome = :nome,
                     carga_horaria_total = :carga_horaria_total,
+                    sem_uc = :sem_uc,
                     status = :status
                 WHERE id = :id
             ";
 
             $stmt = $this->conn->prepare($sql);
 
-            return $stmt->execute([
+            $salvou = $stmt->execute([
                 ':id'                  => $dados['id'],
                 ':area_id'             => $dados['area_id'],
                 ':nome'                => $dados['nome'],
                 ':carga_horaria_total' => $dados['carga_horaria_total'],
+                ':sem_uc'              => $dados['sem_uc'],
                 ':status'              => $dados['status'],
             ]);
+
+            if ($salvou && (int) ($dados['sem_uc'] ?? 0) === 1) {
+                $this->garantirUcPadrao((int) $dados['id'], $dados);
+            }
+
+            return $salvou;
         } catch (Throwable $e) {
             return false;
         }
+    }
+
+    private function garantirUcPadrao(int $cursoModeloId, array $dados): void
+    {
+        if ($cursoModeloId <= 0) {
+            return;
+        }
+
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM unidades_curriculares
+            WHERE curso_modelo_id = :curso_modelo_id
+              AND codigo = 'TURMA'
+            LIMIT 1
+        ");
+        $stmt->execute([':curso_modelo_id' => $cursoModeloId]);
+        $uc = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($uc) {
+            $update = $this->conn->prepare("
+                UPDATE unidades_curriculares
+                SET nome = :nome,
+                    carga_horaria = :carga_horaria,
+                    status = 'Ativa'
+                WHERE id = :id
+            ");
+            $update->execute([
+                ':id' => (int) $uc['id'],
+                ':nome' => (string) $dados['nome'],
+                ':carga_horaria' => (float) $dados['carga_horaria_total'],
+            ]);
+            return;
+        }
+
+        $insert = $this->conn->prepare("
+            INSERT INTO unidades_curriculares (
+                curso_modelo_id,
+                codigo,
+                nome,
+                carga_horaria,
+                status
+            ) VALUES (
+                :curso_modelo_id,
+                'TURMA',
+                :nome,
+                :carga_horaria,
+                'Ativa'
+            )
+        ");
+        $insert->execute([
+            ':curso_modelo_id' => $cursoModeloId,
+            ':nome' => (string) $dados['nome'],
+            ':carga_horaria' => (float) $dados['carga_horaria_total'],
+        ]);
     }
 
     public function excluir(int $id): bool

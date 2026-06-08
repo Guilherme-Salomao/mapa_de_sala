@@ -20,6 +20,7 @@
         'area_id'             => $_GET['area_id'] ?? '',
         'nome'                => $_GET['nome'] ?? '',
         'carga_horaria_total' => $_GET['carga_horaria_total'] ?? '',
+        'sem_uc'              => $_GET['sem_uc'] ?? 0,
         'status'              => $_GET['status'] ?? 'Ativo',
     ];
 

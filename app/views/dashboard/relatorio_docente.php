@@ -21,11 +21,13 @@
         'horas_planejamento' => 0,
         'horas_curso' => 0,
         'horas_parada_pedagogica' => 0,
+        'horas_compensacao' => 0,
         'total_horas' => 0,
         'percentual_aula' => 0,
         'percentual_planejamento' => 0,
         'percentual_curso' => 0,
         'percentual_parada_pedagogica' => 0,
+        'percentual_compensacao' => 0,
     ];
 
     $tituloPagina = 'Relatorio Docente';
@@ -127,6 +129,23 @@
     background: #cffafe;
     border-color: #0891b2 !important;
     color: #164e63;
+  }
+
+  .periodo-ferias {
+    background: #ede9fe;
+    border-color: #7c3aed !important;
+    color: #4c1d95;
+  }
+
+  .periodo-compensacao {
+    background: #fce7f3;
+    border-color: #db2777 !important;
+    color: #831843;
+  }
+
+  .badge-compensacao {
+    background: #db2777;
+    color: #fff;
   }
 
   .relatorio-calendario thead th {
@@ -267,6 +286,10 @@
                   style="min-width: 190px;">
                   Parada Pedagógica: <?php echo number_format((float) ($resumoCarga['percentual_parada_pedagogica'] ?? 0), 1, ',', '.'); ?>%
                 </span>
+                <span class="badge badge-compensacao d-inline-flex align-items-center justify-content-center fs-6 py-2"
+                  style="min-width: 190px;">
+                  Compensação: <?php echo number_format((float) ($resumoCarga['percentual_compensacao'] ?? 0), 1, ',', '.'); ?>%
+                </span>
               </div>
             </div>
           </div>
@@ -313,6 +336,9 @@
                         </div>
                         <?php endif; ?>
                         <div class="relatorio-turma"><?php echo htmlspecialchars($evento['turma'] ?? ''); ?></div>
+                        <?php if (! empty($evento['observacoes'])): ?>
+                        <div class="text-center"><?php echo htmlspecialchars($evento['observacoes']); ?></div>
+                        <?php endif; ?>
                         <?php if (($evento['tipo'] ?? '') === 'calendario' && ! empty($evento['titulo_calendario'])): ?>
                         <div class="text-center"><?php echo htmlspecialchars($evento['titulo_calendario']); ?></div>
                         <?php endif; ?>

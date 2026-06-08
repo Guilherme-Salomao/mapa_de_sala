@@ -19,6 +19,7 @@
     $docenteForm = [
         'usuario_id'      => $_GET['usuario_id'] ?? '',
         'area_atuacao'   => $_GET['area_atuacao'] ?? '',
+        'areas_ids'      => array_values(array_filter(array_map('intval', (array) ($_GET['areas_ids'] ?? [])))),
         'status'         => $_GET['status'] ?? 'Ativo',
         'observacoes'    => $_GET['observacoes'] ?? '',
         'unidades_curriculares' => [],

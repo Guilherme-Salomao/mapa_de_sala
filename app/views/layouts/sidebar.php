@@ -13,31 +13,17 @@
       <span>Dashboard</span>
     </a>
 
-    <?php if (! $isProfessorMenu && ! $isGestorMenu): ?>
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'perfil' ? 'active' : '' ?>"
-      href="./?page=perfil">
-      <i class="bi bi-person-circle"></i>
-      <span>Meu Cadastro</span>
-    </a>
-    <?php endif; ?>
-
     <?php if ($isApoioMenu): ?>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'gestao_salas' ? 'active' : '' ?>"
+      href="./?page=gestao_salas">
+      <i class="bi bi-arrow-left-right"></i>
+      <span>Gestão de Salas</span>
+    </a>
+
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'quadro_horario' ? 'active' : '' ?>"
       href="./?page=quadro_horario">
       <i class="bi bi-calendar-week"></i>
       <span>Quadro Horário</span>
-    </a>
-
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'gestao_salas' ? 'active' : '' ?>"
-      href="./?page=gestao_salas">
-      <i class="bi bi-arrow-left-right"></i>
-      <span>Gestão de Sala</span>
-    </a>
-
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'salas' ? 'active' : '' ?>"
-      href="./?page=salas">
-      <i class="bi bi-door-closed"></i>
-      <span>Salas</span>
     </a>
 
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_salas' ? 'active' : '' ?>"
@@ -49,81 +35,39 @@
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_turma' ? 'active' : '' ?>"
       href="./?page=relatorio_turma">
       <i class="bi bi-table"></i>
-      <span>Relatório de Turmas</span>
+      <span>Relatório da Turma</span>
     </a>
 
-    <a class="app-side-link <?php echo in_array(($paginaAtiva ?? ''), ['aprendizagem', 'aceleracao'], true) ? 'active' : '' ?>"
-      href="./?page=aceleracao">
-      <i class="bi bi-lightning-charge"></i>
-      <span>Aceleração</span>
-    </a>
-
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'calendario' ? 'active' : '' ?>"
-      href="./?page=calendario">
-      <i class="bi bi-calendar-x"></i>
-      <span>Calendário</span>
-    </a>
-
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'educacao_corporativa' ? 'active' : '' ?>"
-      href="./?page=educacao_corporativa">
-      <i class="bi bi-mortarboard"></i>
-      <span>Educação Corporativa</span>
-    </a>
-
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'ferias' ? 'active' : '' ?>"
-      href="./?page=ferias">
-      <i class="bi bi-calendar2-check"></i>
-      <span>Férias</span>
-    </a>
-
-    <?php if ($isProfessorMenu): ?>
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_turma' ? 'active' : '' ?>"
-      href="./?page=relatorio_turma">
-      <i class="bi bi-table"></i>
-      <span>Relatório Turma</span>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_turmas_sem_docente' ? 'active' : '' ?>"
+      href="./?page=relatorio_turmas_sem_docente">
+      <i class="bi bi-person-exclamation"></i>
+      <span>Aulas sem Docente</span>
     </a>
     <?php endif; ?>
 
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'cursos' ? 'active' : '' ?>"
-      href="./?page=cursos">
-      <i class="bi bi-journal-bookmark"></i>
-      <span>Cursos</span>
-    </a>
-
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'ucs' ? 'active' : '' ?>"
-      href="./?page=ucs">
-      <i class="bi bi-list-check"></i>
-      <span>UCs</span>
-    </a>
-
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'turmas' ? 'active' : '' ?>"
-      href="./?page=turmas">
-      <i class="bi bi-calendar3"></i>
-      <span>Turmas</span>
-    </a>
-
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'docentes' ? 'active' : '' ?>"
-      href="./?page=docentes">
-      <i class="bi bi-person-badge"></i>
-      <span>Docentes</span>
-    </a>
-    <?php elseif ($isGestorMenu): ?>
+    <?php if ($isAdminMenu || $isGestorMenu): ?>
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_gestor' ? 'active' : '' ?>"
       href="./?page=relatorio_gestor">
       <i class="bi bi-bar-chart-line"></i>
       <span>Relatório Gestor</span>
     </a>
 
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_turma' ? 'active' : '' ?>"
+      href="./?page=relatorio_turma">
+      <i class="bi bi-table"></i>
+      <span>Relatório da Turma</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_turmas_sem_docente' ? 'active' : '' ?>"
+      href="./?page=relatorio_turmas_sem_docente">
+      <i class="bi bi-person-exclamation"></i>
+      <span>Aulas sem Docente</span>
+    </a>
+
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'quadro_horario' ? 'active' : '' ?>"
       href="./?page=quadro_horario">
       <i class="bi bi-calendar-week"></i>
       <span>Quadro Horário</span>
-    </a>
-
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_turma' ? 'active' : '' ?>"
-      href="./?page=relatorio_turma">
-      <i class="bi bi-table"></i>
-      <span>Relatório Turma</span>
     </a>
 
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_docente' ? 'active' : '' ?>"
@@ -131,7 +75,75 @@
       <i class="bi bi-clipboard-data"></i>
       <span>Relatório Docente</span>
     </a>
+    <?php endif; ?>
 
+    <?php if ($isApoioMenu): ?>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'salas' ? 'active' : '' ?>"
+      href="./?page=salas">
+      <i class="bi bi-door-closed"></i>
+      <span>Salas</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'cursos' ? 'active' : '' ?>"
+      href="./?page=cursos">
+      <i class="bi bi-journal-bookmark"></i>
+      <span>Cursos</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'ucs' ? 'active' : '' ?>"
+      href="./?page=ucs">
+      <i class="bi bi-list-check"></i>
+      <span>UCs</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'turmas' ? 'active' : '' ?>"
+      href="./?page=turmas">
+      <i class="bi bi-calendar3"></i>
+      <span>Turmas</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'docentes' ? 'active' : '' ?>"
+      href="./?page=docentes">
+      <i class="bi bi-person-badge"></i>
+      <span>Docentes</span>
+    </a>
+
+    <a class="app-side-link <?php echo in_array(($paginaAtiva ?? ''), ['aprendizagem', 'aceleracao'], true) ? 'active' : '' ?>"
+      href="./?page=aceleracao">
+      <i class="bi bi-lightning-charge"></i>
+      <span>Aceleração</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'calendario' ? 'active' : '' ?>"
+      href="./?page=calendario">
+      <i class="bi bi-calendar-x"></i>
+      <span>Calendário</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'educacao_corporativa' ? 'active' : '' ?>"
+      href="./?page=educacao_corporativa">
+      <i class="bi bi-mortarboard"></i>
+      <span>Educação Corporativa</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'ferias' ? 'active' : '' ?>"
+      href="./?page=ferias">
+      <i class="bi bi-calendar2-check"></i>
+      <span>Férias</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'compensacao' ? 'active' : '' ?>"
+      href="./?page=compensacao">
+      <i class="bi bi-calendar2-plus"></i>
+      <span>Compensação</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'perfil' ? 'active' : '' ?>"
+      href="./?page=perfil">
+      <i class="bi bi-person-circle"></i>
+      <span>Meu Cadastro</span>
+    </a>
+    <?php elseif ($isGestorMenu): ?>
     <?php if ($isProfessorMenu): ?>
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_turma' ? 'active' : '' ?>"
       href="./?page=relatorio_turma">
@@ -186,17 +198,24 @@
       <i class="bi bi-calendar2-check"></i>
       <span>Férias</span>
     </a>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'compensacao' ? 'active' : '' ?>"
+      href="./?page=compensacao">
+      <i class="bi bi-calendar2-plus"></i>
+      <span>Compensação</span>
+    </a>
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'perfil' ? 'active' : '' ?>"
       href="./?page=perfil">
       <i class="bi bi-person-circle"></i>
       <span>Meu Cadastro</span>
     </a>
     <?php else: ?>
+    <?php if (! $isAdminMenu): ?>
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'quadro_horario' ? 'active' : '' ?>"
       href="./?page=quadro_horario">
       <i class="bi bi-calendar-week"></i>
       <span>Quadro Horário</span>
     </a>
+    <?php endif; ?>
 
     <?php if (! $isProfessorMenu): ?>
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'calendario' ? 'active' : '' ?>"
@@ -211,32 +230,21 @@
       <span>Educação Corporativa</span>
     </a>
 
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_turma' ? 'active' : '' ?>"
-      href="./?page=relatorio_turma">
-      <i class="bi bi-table"></i>
-      <span>Relatório Turma</span>
-    </a>
-
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_salas' ? 'active' : '' ?>"
       href="./?page=relatorio_salas">
       <i class="bi bi-door-open"></i>
       <span>Relatório Salas</span>
     </a>
 
-    <?php if ($isAdminMenu || $isGestorMenu): ?>
-    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_gestor' ? 'active' : '' ?>"
-      href="./?page=relatorio_gestor">
-      <i class="bi bi-bar-chart-line"></i>
-      <span>Relatório Gestor</span>
-    </a>
-    <?php endif; ?>
     <?php endif; ?>
 
+    <?php if (! $isAdminMenu): ?>
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_docente' ? 'active' : '' ?>"
       href="./?page=relatorio_docente">
       <i class="bi bi-clipboard-data"></i>
       <span>Relatório Docente</span>
     </a>
+    <?php endif; ?>
 
     <?php if ($isProfessorMenu): ?>
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_turma' ? 'active' : '' ?>"
@@ -274,6 +282,12 @@
       href="./?page=ferias">
       <i class="bi bi-calendar2-check"></i>
       <span>Férias</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'compensacao' ? 'active' : '' ?>"
+      href="./?page=compensacao">
+      <i class="bi bi-calendar2-plus"></i>
+      <span>Compensação</span>
     </a>
 
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'docentes' ? 'active' : '' ?>"
@@ -305,6 +319,12 @@
       href="./?page=logs">
       <i class="bi bi-list-columns-reverse"></i>
       <span>Logs</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'perfil' ? 'active' : '' ?>"
+      href="./?page=perfil">
+      <i class="bi bi-person-circle"></i>
+      <span>Meu Cadastro</span>
     </a>
     <?php endif; ?>
     <?php endif; ?>

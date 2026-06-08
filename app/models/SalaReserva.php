@@ -94,9 +94,10 @@ class SalaReserva
                 co.nome AS turma_nome,
                 s.nome AS sala_nome,
                 uc.codigo AS uc_codigo,
-                uc.nome AS uc_nome
+                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN co.nome ELSE uc.nome END AS uc_nome
             FROM quadro_horario qh
             INNER JOIN cursos_ofertas co ON co.id = qh.curso_oferta_id
+            LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             INNER JOIN unidades_curriculares uc ON uc.id = qh.unidade_curricular_id
             LEFT JOIN salas s ON s.id = qh.sala_id
             WHERE qh.status = 'Ativa'

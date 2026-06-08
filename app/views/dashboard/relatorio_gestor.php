@@ -18,6 +18,7 @@
         'percentual_curso' => 0,
         'percentual_planejamento' => 0,
         'percentual_parada_pedagogica' => 0,
+        'percentual_compensacao' => 0,
     ];
 
     $tituloPagina = 'Relatório Gestor';
@@ -63,6 +64,10 @@
 
   .gestor-resumo-card.parada {
     border-left-color: #0dcaf0;
+  }
+
+  .gestor-resumo-card.compensacao {
+    border-left-color: #db2777;
   }
 
   .gestor-progress {
@@ -152,6 +157,12 @@
                 <div class="fs-3 fw-bold"><?php echo formatarPercentualGestor((float) ($totais['percentual_parada_pedagogica'] ?? 0)); ?></div>
               </div>
             </div>
+            <div class="col-12 col-md-6 col-xl">
+              <div class="app-card gestor-resumo-card compensacao p-3 h-100">
+                <div class="small text-muted">Compensação</div>
+                <div class="fs-3 fw-bold"><?php echo formatarPercentualGestor((float) ($totais['percentual_compensacao'] ?? 0)); ?></div>
+              </div>
+            </div>
           </div>
 
           <div class="app-card p-3">
@@ -170,6 +181,7 @@
                     <th class="text-end">Curso</th>
                     <th class="text-end">Planejamento</th>
                     <th class="text-end">Parada pedagógica</th>
+                    <th class="text-end">Compensação</th>
                     <th class="text-end">Total</th>
                     <th style="min-width: 220px;">Distribuição</th>
                   </tr>
@@ -202,6 +214,10 @@
                       <div class="fw-semibold"><?php echo formatarPercentualGestor((float) ($resumo['percentual_parada_pedagogica'] ?? 0)); ?></div>
                       <div class="small text-muted"><?php echo formatarHorasGestor((float) ($resumo['horas_parada_pedagogica'] ?? 0)); ?></div>
                     </td>
+                    <td class="text-end">
+                      <div class="fw-semibold"><?php echo formatarPercentualGestor((float) ($resumo['percentual_compensacao'] ?? 0)); ?></div>
+                      <div class="small text-muted"><?php echo formatarHorasGestor((float) ($resumo['horas_compensacao'] ?? 0)); ?></div>
+                    </td>
                     <td class="text-end"><?php echo formatarHorasGestor((float) ($resumo['total_horas'] ?? 0)); ?></td>
                     <td>
                       <div class="progress gestor-progress" role="progressbar">
@@ -213,13 +229,15 @@
                           style="width: <?php echo (float) ($resumo['percentual_planejamento'] ?? 0); ?>%"></div>
                         <div class="progress-bar bg-info"
                           style="width: <?php echo (float) ($resumo['percentual_parada_pedagogica'] ?? 0); ?>%"></div>
+                        <div class="progress-bar"
+                          style="width: <?php echo (float) ($resumo['percentual_compensacao'] ?? 0); ?>%; background-color: #db2777;"></div>
                       </div>
                     </td>
                   </tr>
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="8" class="text-center text-muted py-4">
+                    <td colspan="9" class="text-center text-muted py-4">
                       Nenhum docente ativo encontrado para o período.
                     </td>
                   </tr>

@@ -20,6 +20,7 @@
         'area_id'             => '',
         'nome'                => '',
         'carga_horaria_total' => '',
+        'sem_uc'              => 0,
         'status'              => 'Ativo',
     ];
 

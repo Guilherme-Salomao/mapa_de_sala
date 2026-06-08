@@ -108,7 +108,7 @@ class DocenteController
         }
 
         $usuariosDisponiveis = $this->docenteModel->listarUsuariosDisponiveis((int) $docenteForm['usuario_id']);
-        $areas = $this->docenteModel->listarAreas($access->escopoAreaAtuacao());
+        $areas = $this->docenteModel->listarAreas($cadastroProprioDocente ? ['tipo' => 'todos', 'ids' => []] : $access->escopoAreaAtuacao());
         $cursoModelos = $this->docenteModel->listarCursoModelosComUc();
         $unidadesCurriculares = $this->docenteModel->listarUnidadesCurriculares();
         $somenteVinculosUc = false;
@@ -136,7 +136,6 @@ class DocenteController
             }
 
             $dados['usuario_id'] = (int) $docenteAtual['usuario_id'];
-            $dados['area_atuacao'] = (string) $docenteAtual['area_atuacao'];
             $dados['status'] = (string) $docenteAtual['status'];
 
             $erroPerfil = $this->validarPerfilProprio($dados);
@@ -223,7 +222,8 @@ class DocenteController
         return [
             'usuario_id'      => (int) ($_POST['usuario_id'] ?? 0),
             'horas_semanais' => $this->totalHorasEscala($escala),
-            'area_atuacao'   => trim($_POST['area_atuacao'] ?? ''),
+            'area_atuacao'   => $this->areaPrincipalPost(),
+            'areas_ids'      => $this->obterAreasPost(),
             'status'         => trim($_POST['status'] ?? 'Ativo'),
             'observacoes'    => trim($_POST['observacoes'] ?? ''),
             'escala'         => $escala,
@@ -271,7 +271,34 @@ class DocenteController
             && $dados['horas_semanais'] > 0
             && $dados['horas_semanais'] <= 60
             && $dados['area_atuacao'] !== ''
+            && ! empty($dados['areas_ids'])
             && in_array($dados['status'], ['Ativo', 'Inativo'], true);
+    }
+
+    private function obterAreasPost(): array
+    {
+        $areas = $_POST['areas_ids'] ?? [];
+
+        if (! is_array($areas)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map('intval', $areas))));
+    }
+
+    private function areaPrincipalPost(): string
+    {
+        $areas = $this->obterAreasPost();
+        $areaId = (int) ($areas[0] ?? 0);
+
+        if ($areaId <= 0) {
+            return trim($_POST['area_atuacao'] ?? '');
+        }
+
+        $access = new AccessControl();
+        $escopo = $access->nivel() === 'Professor' ? ['tipo' => 'todos', 'ids' => []] : $access->escopoAreaAtuacao();
+
+        return (string) ($this->docenteModel->buscarNomeArea($areaId, $escopo) ?? '');
     }
 
     private function obterEscalaPost(): array
@@ -368,6 +395,7 @@ class DocenteController
             'action'          => 'cadastrar',
             'usuario_id'      => $dados['usuario_id'] > 0 ? $dados['usuario_id'] : '',
             'area_atuacao'   => $dados['area_atuacao'],
+            'areas_ids'       => $dados['areas_ids'] ?? [],
             'status'         => $dados['status'],
             'observacoes'    => $dados['observacoes'],
         ]);

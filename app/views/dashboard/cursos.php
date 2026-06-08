@@ -269,7 +269,7 @@
 
     inputsUc.forEach(function(input) {
       input.disabled = !gerarUc;
-      input.required = gerarUc && input.type !== "checkbox";
+      input.required = gerarUc && input.type !== "checkbox" && input.dataset.requiredUc !== "0";
     });
   });
   </script>

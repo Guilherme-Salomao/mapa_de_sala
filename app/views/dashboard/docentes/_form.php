@@ -1,6 +1,7 @@
 <?php
     $somenteVinculosUc      = $somenteVinculosUc ?? false;
     $cadastroProprioDocente = $cadastroProprioDocente ?? false;
+    $areasSelecionadas      = array_map('intval', $docenteForm['areas_ids'] ?? []);
 ?>
 
 <form id="formDocente" method="POST" action="<?php echo $formAction; ?>" novalidate>
@@ -58,7 +59,7 @@
     <?php endif; ?>
 
     <?php if (! $somenteVinculosUc): ?>
-    <div class="col-12 col-lg-5">
+    <div class="col-12 col-lg-9">
       <label for="usuario_id" class="form-label">Usuário vinculado</label>
       <?php if ($cadastroProprioDocente): ?>
       <input type="hidden" name="usuario_id" value="<?php echo (int) ($docenteForm['usuario_id'] ?? 0); ?>">
@@ -88,29 +89,6 @@
       <?php endif; ?>
     </div>
 
-    <div class="col-12 col-md-6 col-lg-4">
-      <label for="area_atuacao" class="form-label">Área de atuação</label>
-      <?php if ($cadastroProprioDocente): ?>
-      <input type="hidden" name="area_atuacao"
-        value="<?php echo htmlspecialchars($docenteForm['area_atuacao'] ?? ''); ?>">
-      <input type="text" class="form-control" id="area_atuacao"
-        value="<?php echo htmlspecialchars($docenteForm['area_atuacao'] ?? ''); ?>" disabled>
-      <?php else: ?>
-      <select class="form-select" id="area_atuacao" name="area_atuacao" required>
-        <option value="" <?php echo empty($docenteForm['area_atuacao']) ? 'selected' : ''; ?> disabled>
-          Selecione...
-        </option>
-        <?php foreach (($areas ?? []) as $area): ?>
-        <option value="<?php echo htmlspecialchars($area['nome'] ?? ''); ?>"
-          <?php echo(($docenteForm['area_atuacao'] ?? '') === ($area['nome'] ?? '')) ? 'selected' : ''; ?>>
-          <?php echo htmlspecialchars($area['nome'] ?? ''); ?>
-        </option>
-        <?php endforeach; ?>
-      </select>
-      <div class="invalid-feedback">Selecione a área de atuação.</div>
-      <?php endif; ?>
-    </div>
-
     <div class="col-12 col-md-6 col-lg-3">
       <label for="status" class="form-label">Status</label>
       <?php if ($cadastroProprioDocente): ?>
@@ -128,6 +106,31 @@
       </select>
       <div class="invalid-feedback">Selecione o status.</div>
       <?php endif; ?>
+    </div>
+
+    <div class="col-12" id="areasDocenteWrap">
+      <label class="form-label">Área de atuação</label>
+      <div class="row g-2">
+        <?php foreach (($areas ?? []) as $area): ?>
+        <?php
+            $areaId = (int) ($area['id'] ?? 0);
+            $areaSelecionada = in_array($areaId, $areasSelecionadas, true)
+                || (($docenteForm['area_atuacao'] ?? '') === ($area['nome'] ?? ''));
+        ?>
+        <div class="col-12 col-md-4 col-lg-3">
+          <label class="form-check border rounded p-2 d-flex align-items-center gap-2"
+            for="area_docente_<?php echo $areaId; ?>">
+            <input class="form-check-input area-docente-check m-0" type="checkbox" name="areas_ids[]"
+              id="area_docente_<?php echo $areaId; ?>" value="<?php echo $areaId; ?>"
+              <?php echo $areaSelecionada ? 'checked' : ''; ?>>
+            <span><?php echo htmlspecialchars($area['nome'] ?? ''); ?></span>
+          </label>
+        </div>
+        <?php endforeach; ?>
+      </div>
+      <div class="invalid-feedback d-block" id="areasDocenteFeedback" style="display: none !important;">
+        Selecione pelo menos uma área de atuação.
+      </div>
     </div>
     <?php endif; ?>
 
@@ -295,6 +298,9 @@ document.addEventListener("DOMContentLoaded", function() {
   const listaUcs = document.getElementById("ucsSelecionadasLista");
   const vazioUcs = document.getElementById("ucsSelecionadasVazio");
   const totalUcsSelecionadas = document.getElementById("totalUcsSelecionadas");
+  const areasDocenteWrap = document.getElementById("areasDocenteWrap");
+  const areasDocenteFeedback = document.getElementById("areasDocenteFeedback");
+  const areasDocenteChecks = Array.from(document.querySelectorAll(".area-docente-check"));
   const ucsSelecionadas = new Map();
   const ucsIniciais = <?php echo json_encode(array_map('intval', $docenteForm['unidades_curriculares'] ?? [])); ?>;
 
@@ -320,6 +326,26 @@ document.addEventListener("DOMContentLoaded", function() {
         ? "As senhas nao conferem."
         : ""
     );
+  }
+
+  function validarAreasDocente() {
+    if (!areasDocenteChecks.length) return true;
+
+    const valido = areasDocenteChecks.some(function(check) {
+      return check.checked;
+    });
+
+    areasDocenteChecks[0].setCustomValidity(valido ? "" : "Selecione pelo menos uma area.");
+
+    if (areasDocenteWrap) {
+      areasDocenteWrap.classList.toggle("border-danger", !valido);
+    }
+
+    if (areasDocenteFeedback) {
+      areasDocenteFeedback.style.setProperty("display", valido ? "none" : "block", "important");
+    }
+
+    return valido;
   }
 
   function atualizarTotalEscala() {
@@ -475,6 +501,10 @@ document.addEventListener("DOMContentLoaded", function() {
     input.addEventListener("input", atualizarTotalEscala);
   });
 
+  areasDocenteChecks.forEach(function(check) {
+    check.addEventListener("change", validarAreasDocente);
+  });
+
   if (senha) {
     senha.addEventListener("input", validarSenhas);
   }
@@ -526,6 +556,7 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   atualizarFiltroUc();
+  validarAreasDocente();
   atualizarTotalEscala();
   renderizarUcs();
 });

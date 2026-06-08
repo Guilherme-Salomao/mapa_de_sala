@@ -125,8 +125,10 @@ class AprendizagemQuadro
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
             INNER JOIN docente_unidades_curriculares duc ON duc.docente_id = d.id
+            LEFT JOIN docente_areas da ON da.docente_id = d.id
+            LEFT JOIN areas a ON a.id = da.area_id
             WHERE d.status = 'Ativo'
-              AND d.area_atuacao = 'Aprendizagem'
+              AND (d.area_atuacao = 'Aprendizagem' OR a.nome = 'Aprendizagem')
             GROUP BY d.id, u.nome, d.area_atuacao
             ORDER BY u.nome ASC
         ";
@@ -385,6 +387,10 @@ class AprendizagemQuadro
             return 'docente em ferias';
         }
 
+        if ($this->docenteEmCompensacao($docenteId, $data)) {
+            return 'docente em compensacao';
+        }
+
         return null;
     }
 
@@ -561,6 +567,25 @@ class AprendizagemQuadro
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    private function docenteEmCompensacao(int $docenteId, string $data): bool
+    {
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM docente_compensacoes
+            WHERE docente_id = :docente_id
+              AND status = 'Ativo'
+              AND data_inicio <= :data
+              AND data_fim >= :data
+            LIMIT 1
+        ");
+        $stmt->execute([
+            ':docente_id' => $docenteId,
+            ':data' => $data,
+        ]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     private function docenteVinculadoUc(int $docenteId, int $ucId): bool
     {
         $stmt = $this->conn->prepare("
@@ -581,11 +606,13 @@ class AprendizagemQuadro
     private function docenteAreaAprendizagem(int $docenteId): bool
     {
         $stmt = $this->conn->prepare("
-            SELECT id
-            FROM docentes
-            WHERE id = :docente_id
-              AND status = 'Ativo'
-              AND area_atuacao = 'Aprendizagem'
+            SELECT d.id
+            FROM docentes d
+            LEFT JOIN docente_areas da ON da.docente_id = d.id
+            LEFT JOIN areas a ON a.id = da.area_id
+            WHERE d.id = :docente_id
+              AND d.status = 'Ativo'
+              AND (d.area_atuacao = 'Aprendizagem' OR a.nome = 'Aprendizagem')
             LIMIT 1
         ");
         $stmt->execute([':docente_id' => $docenteId]);

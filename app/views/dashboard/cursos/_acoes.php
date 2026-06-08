@@ -4,7 +4,12 @@
     $cursoAreaId = (int) ($curso['curso_area_id'] ?? 0);
     $ucsTurma = $ucsPorCursoModelo[$cursoModeloId] ?? [];
     $docentesGeracaoTurma = array_values(array_filter(($docentesGeracao ?? []), static function (array $docente) use ($cursoAreaId): bool {
-        return $cursoAreaId <= 0 || (int) ($docente['area_id'] ?? 0) === $cursoAreaId;
+        $areasDocente = array_filter(array_map('intval', explode(',', (string) ($docente['area_ids'] ?? ''))));
+        if (empty($areasDocente) && ! empty($docente['area_id'])) {
+            $areasDocente[] = (int) $docente['area_id'];
+        }
+
+        return $cursoAreaId <= 0 || in_array($cursoAreaId, $areasDocente, true);
     }));
 ?>
 
@@ -61,7 +66,7 @@
             <div class="mb-3 text-start">
               <label class="form-label" for="data_fim_<?php echo $cursoId; ?>">Data final</label>
               <input type="date" class="form-control js-gerar-uc-input" id="data_fim_<?php echo $cursoId; ?>"
-                name="data_fim" disabled>
+                name="data_fim" data-required-uc="0" disabled>
             </div>
 
             <?php if ((int) ($curso['integral'] ?? 0) === 1): ?>
@@ -87,7 +92,14 @@
                 <option value="">Selecione...</option>
                 <?php foreach ($ucsTurma as $ucTurma): ?>
                 <option value="<?php echo (int) ($ucTurma['id'] ?? 0); ?>">
-                  <?php echo htmlspecialchars(($ucTurma['codigo'] ?? '') . ' - ' . ($ucTurma['nome'] ?? '') . ' (' . (int) ($ucTurma['carga_horaria'] ?? 0) . 'h)'); ?>
+                  <?php
+                      $cargaUcMinutos = (int) round(((float) ($ucTurma['carga_horaria'] ?? 0)) * 60);
+                      $cargaUcTexto = intdiv($cargaUcMinutos, 60) . 'h';
+                      if (($cargaUcMinutos % 60) > 0) {
+                          $cargaUcTexto .= ' e ' . ($cargaUcMinutos % 60) . 'min';
+                      }
+                      echo htmlspecialchars(($ucTurma['codigo'] ?? '') . ' - ' . ($ucTurma['nome'] ?? '') . ' (' . $cargaUcTexto . ')');
+                  ?>
                 </option>
                 <?php endforeach; ?>
               </select>

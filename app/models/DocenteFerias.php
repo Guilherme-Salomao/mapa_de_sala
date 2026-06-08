@@ -5,9 +5,15 @@ require_once __DIR__ . '/../core/Database.php';
 class DocenteFerias
 {
     private PDO $conn;
+    private string $table;
 
-    public function __construct()
+    public function __construct(string $table = 'docente_ferias')
     {
+        if (! in_array($table, ['docente_ferias', 'docente_compensacoes'], true)) {
+            throw new InvalidArgumentException('Tabela de período docente inválida.');
+        }
+
+        $this->table = $table;
         $database = new Database();
         $this->conn = $database->connect();
     }
@@ -17,12 +23,17 @@ class DocenteFerias
         $sql = "
             SELECT
                 df.*,
+                DATEDIFF(df.data_fim, df.data_inicio) + 1 AS quantidade_dias,
                 u.nome AS docente_nome,
-                d.area_atuacao
-            FROM docente_ferias df
+                COALESCE((
+                    SELECT GROUP_CONCAT(a2.nome ORDER BY a2.nome SEPARATOR ', ')
+                    FROM docente_areas da2
+                    INNER JOIN areas a2 ON a2.id = da2.area_id
+                    WHERE da2.docente_id = d.id
+                ), d.area_atuacao) AS area_atuacao
+            FROM {$this->table} df
             INNER JOIN docentes d ON d.id = df.docente_id
             INNER JOIN usuarios u ON u.id = d.usuario_id
-            LEFT JOIN areas a ON a.nome = d.area_atuacao
             WHERE df.data_inicio <= :data_fim
               AND df.data_fim >= :data_inicio
         ";
@@ -44,9 +55,8 @@ class DocenteFerias
     {
         $sql = "
             SELECT df.*
-            FROM docente_ferias df
+            FROM {$this->table} df
             INNER JOIN docentes d ON d.id = df.docente_id
-            LEFT JOIN areas a ON a.nome = d.area_atuacao
             WHERE df.id = :id
         ";
         $params = [':id' => $id];
@@ -63,10 +73,17 @@ class DocenteFerias
     public function listarDocentes(array $escopo, ?int $docenteRestritoId = null): array
     {
         $sql = "
-            SELECT d.id, u.nome, d.area_atuacao
+            SELECT
+                d.id,
+                u.nome,
+                COALESCE((
+                    SELECT GROUP_CONCAT(a2.nome ORDER BY a2.nome SEPARATOR ', ')
+                    FROM docente_areas da2
+                    INNER JOIN areas a2 ON a2.id = da2.area_id
+                    WHERE da2.docente_id = d.id
+                ), d.area_atuacao) AS area_atuacao
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
-            LEFT JOIN areas a ON a.nome = d.area_atuacao
             WHERE d.status = 'Ativo'
               AND u.status = 'Ativo'
         ";
@@ -90,7 +107,7 @@ class DocenteFerias
     {
         $sql = "
             SELECT id
-            FROM docente_ferias
+            FROM {$this->table}
             WHERE docente_id = :docente_id
               AND status = 'Ativo'
               AND data_inicio <= :data_fim
@@ -117,7 +134,7 @@ class DocenteFerias
     public function salvar(array $dados): bool
     {
         $stmt = $this->conn->prepare("
-            INSERT INTO docente_ferias (
+            INSERT INTO {$this->table} (
                 docente_id,
                 data_inicio,
                 data_fim,
@@ -144,7 +161,7 @@ class DocenteFerias
     public function atualizar(array $dados): bool
     {
         $stmt = $this->conn->prepare("
-            UPDATE docente_ferias SET
+            UPDATE {$this->table} SET
                 docente_id = :docente_id,
                 data_inicio = :data_inicio,
                 data_fim = :data_fim,
@@ -165,7 +182,7 @@ class DocenteFerias
 
     public function excluir(int $id): bool
     {
-        $stmt = $this->conn->prepare("DELETE FROM docente_ferias WHERE id = :id");
+        $stmt = $this->conn->prepare("DELETE FROM {$this->table} WHERE id = :id");
 
         return $stmt->execute([':id' => $id]);
     }
@@ -203,6 +220,19 @@ class DocenteFerias
             $params[$placeholder] = $id;
         }
 
-        $sql .= " AND a.id IN (" . implode(',', $placeholders) . ")";
+        $sql .= " AND EXISTS (
+            SELECT 1
+            FROM areas a_escopo
+            WHERE a_escopo.id IN (" . implode(',', $placeholders) . ")
+              AND (
+                a_escopo.nome = d.area_atuacao
+                OR EXISTS (
+                    SELECT 1
+                    FROM docente_areas da_escopo
+                    WHERE da_escopo.docente_id = d.id
+                      AND da_escopo.area_id = a_escopo.id
+                )
+              )
+        )";
     }
 }

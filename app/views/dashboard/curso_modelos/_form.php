@@ -1,3 +1,17 @@
+<?php
+    $formatarCargaCursoForm = static function ($horas): string {
+        if ($horas === '' || $horas === null) {
+            return '';
+        }
+
+        $minutosTotais = (int) round(((float) $horas) * 60);
+        $horasInteiras = intdiv($minutosTotais, 60);
+        $minutos = $minutosTotais % 60;
+
+        return $horasInteiras . 'h' . ($minutos > 0 ? ' e ' . $minutos . 'min' : '');
+    };
+?>
+
 <form id="formCursoModelo" method="POST" action="<?php echo $formAction; ?>" novalidate>
   <?php if ($modoEdicao): ?>
   <input type="hidden" name="id" value="<?php echo (int) ($cursoForm['id'] ?? 0); ?>">
@@ -31,11 +45,22 @@
         <span class="input-group-text app-input-icon">
           <i class="bi bi-hourglass-split"></i>
         </span>
-        <input type="number" class="form-control" id="carga_horaria_total" name="carga_horaria_total" min="1"
-          step="1" placeholder="Ex.: 1200"
-          value="<?php echo htmlspecialchars($cursoForm['carga_horaria_total'] ?? ''); ?>" required>
+        <input type="text" class="form-control" id="carga_horaria_total" name="carga_horaria_total"
+          inputmode="decimal" placeholder="Ex.: 10h30 ou 10,30"
+          value="<?php echo htmlspecialchars($formatarCargaCursoForm($cursoForm['carga_horaria_total'] ?? '')); ?>" required>
         <span class="input-group-text">h</span>
-        <div class="invalid-feedback">Informe a carga horária total.</div>
+        <div class="invalid-feedback">Informe a carga horária total. Ex.: 10h30 ou 10,30.</div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <label class="form-check border rounded p-2 d-flex align-items-center gap-2">
+        <input class="form-check-input m-0" type="checkbox" id="sem_uc" name="sem_uc" value="1"
+          <?php echo ! empty($cursoForm['sem_uc']) ? 'checked' : ''; ?>>
+        <span>Curso sem UC</span>
+      </label>
+      <div class="form-text">
+        Use quando o curso não possuir unidades curriculares. O quadro horário usará o nome da turma como UC.
       </div>
     </div>
 

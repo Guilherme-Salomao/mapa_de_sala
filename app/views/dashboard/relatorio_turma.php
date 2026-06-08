@@ -28,19 +28,38 @@
         $horas = intdiv($minutos, 60);
         $restante = $minutos % 60;
 
-        return $sinal . $horas . 'h' . ($restante > 0 ? str_pad((string) $restante, 2, '0', STR_PAD_LEFT) : '');
+        return $sinal . $horas . 'h' . ($restante > 0 ? ' e ' . $restante . 'min' : '');
     };
 
     $totalCargaMinutos = 0;
     $totalLancadasMinutos = 0;
     $totalDadasMinutos = 0;
+    $cargaConclusaoMinutos = 0;
+    $lancadasConclusaoMinutos = 0;
+    $ucConclusaoPendente = false;
+    $uc12Pendente = false;
 
     foreach ($linhas as $linhaResumo) {
-        $totalCargaMinutos += (int) ($linhaResumo['carga_horaria'] ?? 0) * 60;
-        $totalLancadasMinutos += (int) ($linhaResumo['minutos_lancados'] ?? 0);
+        $cargaLinhaMinutos = (int) round(((float) ($linhaResumo['carga_horaria'] ?? 0)) * 60);
+        $lancadasLinhaMinutos = (int) ($linhaResumo['minutos_lancados'] ?? 0);
+        $totalCargaMinutos += $cargaLinhaMinutos;
+        $totalLancadasMinutos += $lancadasLinhaMinutos;
+
+        if ((int) ($linhaResumo['conta_conclusao'] ?? 1) === 1) {
+            $cargaConclusaoMinutos += $cargaLinhaMinutos;
+            $lancadasConclusaoMinutos += $lancadasLinhaMinutos;
+
+            if ($lancadasLinhaMinutos < $cargaLinhaMinutos) {
+                $ucConclusaoPendente = true;
+            }
+        } elseif ($lancadasLinhaMinutos < $cargaLinhaMinutos) {
+            $uc12Pendente = true;
+        }
     }
 
-    $turmaConcluida = $totalCargaMinutos > 0 && $totalLancadasMinutos >= $totalCargaMinutos;
+    $turmaConcluida = $cargaConclusaoMinutos > 0
+        && $lancadasConclusaoMinutos >= $cargaConclusaoMinutos
+        && ! $ucConclusaoPendente;
     $corDataFinal = $turmaConcluida ? '#198754' : '#f97316';
     $totalDadasMinutos = $totalLancadasMinutos;
 
@@ -166,10 +185,16 @@
                   <?php if (! empty($resumoTurmas)): ?>
                   <?php foreach ($resumoTurmas as $resumo): ?>
                   <?php
-                      $cargaResumoMinutos = (int) ($resumo['carga_horaria_total'] ?? 0) * 60;
+                      $cargaResumoMinutos = (int) round(((float) ($resumo['carga_horaria_total'] ?? 0)) * 60);
                       $lancadasResumoMinutos = (int) ($resumo['minutos_lancados'] ?? 0);
                       $faltantesResumoMinutos = max($cargaResumoMinutos - $lancadasResumoMinutos, 0);
-                      $concluidaResumo = $cargaResumoMinutos > 0 && $lancadasResumoMinutos >= $cargaResumoMinutos;
+                      $ucsPendentesResumo = (int) ($resumo['ucs_pendentes_conclusao'] ?? 0);
+                      $concluidaResumo = $cargaResumoMinutos > 0
+                          && $lancadasResumoMinutos >= $cargaResumoMinutos
+                          && $ucsPendentesResumo === 0;
+                      $cargaUc12Resumo = (int) ($resumo['uc12_carga_minutos'] ?? 0);
+                      $lancadasUc12Resumo = (int) ($resumo['uc12_minutos_lancados'] ?? 0);
+                      $uc12PendenteResumo = $cargaUc12Resumo > 0 && $lancadasUc12Resumo < $cargaUc12Resumo;
                       $dataFimResumo = $concluidaResumo ? ($resumo['ultima_aula'] ?? null) : null;
                   ?>
                   <tr>
@@ -187,9 +212,12 @@
                       <?php echo htmlspecialchars($formatarDataTurma($dataFimResumo)); ?>
                     </td>
                     <td class="text-center">
-                      <span class="badge <?php echo $concluidaResumo ? 'badge-concluida' : 'badge-andamento'; ?>">
+                      <span class="badge <?php echo $concluidaResumo && ! $uc12PendenteResumo ? 'badge-concluida' : 'badge-andamento'; ?>">
                         <?php echo $concluidaResumo ? 'Carga atingida' : 'Em andamento'; ?>
                       </span>
+                      <?php if ($concluidaResumo && $uc12PendenteResumo): ?>
+                      <div class="small fw-bold text-warning mt-1">Falta UC12</div>
+                      <?php endif; ?>
                     </td>
                   </tr>
                   <?php endforeach; ?>
@@ -256,6 +284,11 @@
           </div>
 
           <div class="app-card p-3">
+            <?php if ($turmaConcluida && $uc12Pendente): ?>
+            <div class="alert alert-warning py-2 mb-3 text-center fw-semibold">
+              Carga principal atingida. Falta concluir a UC12.
+            </div>
+            <?php endif; ?>
             <div class="table-responsive">
               <table class="table table-bordered relatorio-turma-table mb-0">
                 <thead>
@@ -273,7 +306,7 @@
                   <?php if (! empty($linhas)): ?>
                   <?php foreach ($linhas as $linha): ?>
                   <?php
-                      $cargaHorariaMinutos = (int) ($linha['carga_horaria'] ?? 0) * 60;
+                      $cargaHorariaMinutos = (int) round(((float) ($linha['carga_horaria'] ?? 0)) * 60);
                       $horasLancadasMinutos = (int) ($linha['minutos_lancados'] ?? 0);
                       $horasDadasMinutos = $horasLancadasMinutos;
                       $aLancarMinutos = $cargaHorariaMinutos - $horasLancadasMinutos;

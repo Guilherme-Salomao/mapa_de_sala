@@ -50,7 +50,7 @@ class AccessControl
         }
 
         if ($nivel === 'Professor') {
-            return in_array($pagina, ['home', 'quadro_horario', 'relatorio_docente', 'relatorio_turma', 'docentes', 'cursos', 'turmas', 'ucs', 'aprendizagem', 'aceleracao', 'ferias'], true);
+            return in_array($pagina, ['home', 'quadro_horario', 'relatorio_docente', 'relatorio_turma', 'docentes', 'cursos', 'turmas', 'ucs', 'aprendizagem', 'aceleracao', 'ferias', 'compensacao'], true);
         }
 
         return false;
@@ -128,10 +128,23 @@ class AccessControl
         }
 
         if ($this->usaFiltroUcDocente()) {
-            return ['tipo' => 'ucs', 'ids' => $this->ucsDocente()];
+            return ['tipo' => 'areas', 'ids' => $this->areasDocente()];
         }
 
         return ['tipo' => 'todos', 'ids' => []];
+    }
+
+    public function escopoUcDocente(): array
+    {
+        if ($this->isAdmin()) {
+            return ['tipo' => 'todos', 'ids' => []];
+        }
+
+        if ($this->usaFiltroUcDocente()) {
+            return ['tipo' => 'ucs', 'ids' => $this->ucsDocente()];
+        }
+
+        return $this->escopoAreaAtuacao();
     }
 
     public function escopoAreaAtuacao(): array
@@ -154,9 +167,10 @@ class AccessControl
     public function areasDocente(): array
     {
         $sql = "
-            SELECT a.id
+            SELECT DISTINCT a.id
             FROM docentes d
-            INNER JOIN areas a ON a.nome = d.area_atuacao
+            LEFT JOIN docente_areas da ON da.docente_id = d.id
+            LEFT JOIN areas a ON a.id = da.area_id
             WHERE d.usuario_id = :usuario_id
               AND d.status = 'Ativo'
               AND a.status = 'Ativa'
@@ -164,7 +178,24 @@ class AccessControl
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([':usuario_id' => $this->usuarioId()]);
+        $ids = array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'id'));
 
-        return array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'id'));
+        if (! empty($ids)) {
+            return $ids;
+        }
+
+        $sqlFallback = "
+            SELECT DISTINCT a.id
+            FROM docentes d
+            INNER JOIN areas a ON a.nome = d.area_atuacao
+            WHERE d.usuario_id = :usuario_id
+              AND d.status = 'Ativo'
+              AND a.status = 'Ativa'
+        ";
+
+        $stmtFallback = $this->conn->prepare($sqlFallback);
+        $stmtFallback->execute([':usuario_id' => $this->usuarioId()]);
+
+        return array_map('intval', array_column($stmtFallback->fetchAll(PDO::FETCH_ASSOC), 'id'));
     }
 }

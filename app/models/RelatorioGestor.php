@@ -22,12 +22,43 @@ class RelatorioGestor
         foreach ($docentes as $docente) {
             $docenteId = (int) $docente['id'];
             $escala = $this->listarEscala($docenteId);
+            $datasCompensacao = $this->listarDatasCompensacaoMes($docenteId, $mes, $ano);
             $horasEscala = $this->calcularHorasEscalaMes($escala, $mes, $ano, $feriadosIntegrais);
-            $horasCurso = $this->calcularHorasCursoMes($docenteId, $escala, $mes, $ano, $feriadosIntegrais, $paradasPedagogicas);
-            $horasAula = $this->calcularHorasAulaMes($docenteId, $mes, $ano, $feriadosIntegrais);
-            $horasParadaPedagogica = $this->calcularHorasParadaPedagogicaMes($escala, $paradasPedagogicas, $feriadosIntegrais);
-            $horasPlanejamento = max($horasEscala - $horasCurso - $horasAula - $horasParadaPedagogica, 0);
-            $total = $horasAula + $horasCurso + $horasPlanejamento + $horasParadaPedagogica;
+            $horasCompensacao = $this->calcularHorasCompensacaoMes($escala, $datasCompensacao, $feriadosIntegrais);
+            $horasCurso = $this->calcularHorasCursoMes(
+                $docenteId,
+                $escala,
+                $mes,
+                $ano,
+                $feriadosIntegrais,
+                $paradasPedagogicas,
+                $datasCompensacao
+            );
+            $horasAula = $this->calcularHorasAulaMes(
+                $docenteId,
+                $mes,
+                $ano,
+                $feriadosIntegrais,
+                $datasCompensacao
+            );
+            $horasParadaPedagogica = $this->calcularHorasParadaPedagogicaMes(
+                $escala,
+                $paradasPedagogicas,
+                $feriadosIntegrais,
+                $datasCompensacao
+            );
+            $horasPlanejamento = max(
+                $horasEscala - $horasCurso - $horasAula - $horasParadaPedagogica - $horasCompensacao,
+                0
+            );
+            $total = $horasAula + $horasCurso + $horasPlanejamento + $horasParadaPedagogica + $horasCompensacao;
+            $percentualAula = $total > 0 ? round(($horasAula / $total) * 100, 1) : 0;
+            $percentualCurso = $total > 0 ? round(($horasCurso / $total) * 100, 1) : 0;
+            $percentualPlanejamento = $total > 0 ? round(($horasPlanejamento / $total) * 100, 1) : 0;
+            $percentualParada = $total > 0 ? round(($horasParadaPedagogica / $total) * 100, 1) : 0;
+            $percentualCompensacao = $total > 0
+                ? max(0, round(100 - $percentualAula - $percentualCurso - $percentualPlanejamento - $percentualParada, 1))
+                : 0;
 
             $linhas[] = [
                 'docente_id' => $docenteId,
@@ -39,11 +70,13 @@ class RelatorioGestor
                 'horas_curso' => $horasCurso,
                 'horas_planejamento' => $horasPlanejamento,
                 'horas_parada_pedagogica' => $horasParadaPedagogica,
+                'horas_compensacao' => $horasCompensacao,
                 'total_horas' => $total,
-                'percentual_aula' => $total > 0 ? round(($horasAula / $total) * 100, 1) : 0,
-                'percentual_curso' => $total > 0 ? round(($horasCurso / $total) * 100, 1) : 0,
-                'percentual_planejamento' => $total > 0 ? round(($horasPlanejamento / $total) * 100, 1) : 0,
-                'percentual_parada_pedagogica' => $total > 0 ? round(($horasParadaPedagogica / $total) * 100, 1) : 0,
+                'percentual_aula' => $percentualAula,
+                'percentual_curso' => $percentualCurso,
+                'percentual_planejamento' => $percentualPlanejamento,
+                'percentual_parada_pedagogica' => $percentualParada,
+                'percentual_compensacao' => $percentualCompensacao,
             ];
         }
 
@@ -53,10 +86,19 @@ class RelatorioGestor
     private function listarDocentes(array $escopo): array
     {
         $sql = "
-            SELECT d.id, d.area_atuacao, d.horas_semanais, u.nome, u.email
+            SELECT
+                d.id,
+                COALESCE((
+                    SELECT GROUP_CONCAT(a2.nome ORDER BY a2.nome SEPARATOR ', ')
+                    FROM docente_areas da2
+                    INNER JOIN areas a2 ON a2.id = da2.area_id
+                    WHERE da2.docente_id = d.id
+                ), d.area_atuacao) AS area_atuacao,
+                d.horas_semanais,
+                u.nome,
+                u.email
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
-            LEFT JOIN areas a ON a.nome = d.area_atuacao
             WHERE d.status = 'Ativo'
         ";
 
@@ -85,7 +127,13 @@ class RelatorioGestor
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    private function calcularHorasAulaMes(int $docenteId, int $mes, int $ano, array $feriadosIntegrais): float
+    private function calcularHorasAulaMes(
+        int $docenteId,
+        int $mes,
+        int $ano,
+        array $feriadosIntegrais,
+        array $datasCompensacao
+    ): float
     {
         $inicio = sprintf('%04d-%02d-01', $ano, $mes);
         $fim = date('Y-m-t', strtotime($inicio));
@@ -110,7 +158,9 @@ class RelatorioGestor
         $horas = 0.0;
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $resultado) {
-            if (! isset($feriadosIntegrais[(string) ($resultado['data_aula'] ?? '')])) {
+            $dataAula = (string) ($resultado['data_aula'] ?? '');
+
+            if (! isset($feriadosIntegrais[$dataAula]) && ! isset($datasCompensacao[$dataAula])) {
                 $horas += (float) ($resultado['horas'] ?? 0);
             }
         }
@@ -118,7 +168,15 @@ class RelatorioGestor
         return round($horas, 2);
     }
 
-    private function calcularHorasCursoMes(int $docenteId, array $escala, int $mes, int $ano, array $feriadosIntegrais, array $paradasPedagogicas): float
+    private function calcularHorasCursoMes(
+        int $docenteId,
+        array $escala,
+        int $mes,
+        int $ano,
+        array $feriadosIntegrais,
+        array $paradasPedagogicas,
+        array $datasCompensacao
+    ): float
     {
         $inicio = sprintf('%04d-%02d-01', $ano, $mes);
         $fim = date('Y-m-t', strtotime($inicio));
@@ -144,7 +202,11 @@ class RelatorioGestor
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $curso) {
             $data = (string) $curso['data'];
 
-            if (! isset($feriadosIntegrais[$data]) && ! isset($paradasPedagogicas[$data])) {
+            if (
+                ! isset($feriadosIntegrais[$data])
+                && ! isset($paradasPedagogicas[$data])
+                && ! isset($datasCompensacao[$data])
+            ) {
                 $horas += $this->horasEscalaData($escala, $data);
             }
         }
@@ -169,11 +231,65 @@ class RelatorioGestor
         return round($horas, 2);
     }
 
-    private function calcularHorasParadaPedagogicaMes(array $escala, array $paradasPedagogicas, array $feriadosIntegrais): float
+    private function calcularHorasParadaPedagogicaMes(
+        array $escala,
+        array $paradasPedagogicas,
+        array $feriadosIntegrais,
+        array $datasCompensacao
+    ): float
     {
         $horas = 0.0;
 
         foreach (array_keys($paradasPedagogicas) as $data) {
+            if (! isset($feriadosIntegrais[$data]) && ! isset($datasCompensacao[$data])) {
+                $horas += $this->horasEscalaData($escala, $data);
+            }
+        }
+
+        return round($horas, 2);
+    }
+
+    private function listarDatasCompensacaoMes(int $docenteId, int $mes, int $ano): array
+    {
+        $inicio = sprintf('%04d-%02d-01', $ano, $mes);
+        $fim = date('Y-m-t', strtotime($inicio));
+        $stmt = $this->conn->prepare("
+            SELECT data_inicio, data_fim
+            FROM docente_compensacoes
+            WHERE docente_id = :docente_id
+              AND status = 'Ativo'
+              AND data_inicio <= :fim
+              AND data_fim >= :inicio
+        ");
+        $stmt->execute([
+            ':docente_id' => $docenteId,
+            ':inicio' => $inicio,
+            ':fim' => $fim,
+        ]);
+
+        $datas = [];
+
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $periodo) {
+            $dataAtual = max($inicio, (string) ($periodo['data_inicio'] ?? ''));
+            $dataFim = min($fim, (string) ($periodo['data_fim'] ?? $dataAtual));
+
+            while ($dataAtual !== '' && $dataAtual <= $dataFim) {
+                $datas[$dataAtual] = true;
+                $dataAtual = date('Y-m-d', strtotime($dataAtual . ' +1 day'));
+            }
+        }
+
+        return $datas;
+    }
+
+    private function calcularHorasCompensacaoMes(
+        array $escala,
+        array $datasCompensacao,
+        array $feriadosIntegrais
+    ): float {
+        $horas = 0.0;
+
+        foreach (array_keys($datasCompensacao) as $data) {
             if (! isset($feriadosIntegrais[$data])) {
                 $horas += $this->horasEscalaData($escala, $data);
             }
@@ -309,6 +425,19 @@ class RelatorioGestor
             $params[$placeholder] = $id;
         }
 
-        $sql .= " AND a.id IN (" . implode(',', $placeholders) . ")";
+        $sql .= " AND EXISTS (
+            SELECT 1
+            FROM areas a_escopo
+            WHERE a_escopo.id IN (" . implode(',', $placeholders) . ")
+              AND (
+                a_escopo.nome = d.area_atuacao
+                OR EXISTS (
+                    SELECT 1
+                    FROM docente_areas da_escopo
+                    WHERE da_escopo.docente_id = d.id
+                      AND da_escopo.area_id = a_escopo.id
+                )
+              )
+        )";
     }
 }

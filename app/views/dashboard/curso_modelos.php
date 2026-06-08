@@ -15,6 +15,13 @@
     $status = $status ?? ($_GET['status'] ?? 'todos');
     $cursos = $cursos ?? [];
     $totalCursos = $totalCursos ?? count($cursos);
+    $formatarCargaCurso = static function ($horas): string {
+        $minutos = (int) round(((float) $horas) * 60);
+        $horasInteiras = intdiv($minutos, 60);
+        $minutosRestantes = $minutos % 60;
+
+        return $horasInteiras . 'h' . ($minutosRestantes > 0 ? ' e ' . $minutosRestantes . 'min' : '');
+    };
 
     $tituloPagina = 'Manutenção de Cursos';
     $subtituloPagina = 'Gerencie os modelos de curso usados pelas turmas e UCs';
@@ -83,6 +90,7 @@
                     <th>Curso</th>
                     <th>Area</th>
                     <th>Carga horária total</th>
+                    <th>Estrutura</th>
                     <th>Status</th>
                     <th class="text-end">Ações</th>
                   </tr>
@@ -94,7 +102,12 @@
                   <tr>
                     <td class="fw-semibold"><?php echo htmlspecialchars($curso['nome'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($curso['area_nome'] ?? 'Não informada'); ?></td>
-                    <td><?php echo (int) ($curso['carga_horaria_total'] ?? 0); ?>h</td>
+                    <td><?php echo htmlspecialchars($formatarCargaCurso($curso['carga_horaria_total'] ?? 0)); ?></td>
+                    <td>
+                      <span class="badge <?php echo ! empty($curso['sem_uc']) ? 'text-bg-warning' : 'text-bg-primary'; ?>">
+                        <?php echo ! empty($curso['sem_uc']) ? 'Sem UC' : 'Com UC'; ?>
+                      </span>
+                    </td>
                     <td>
                       <?php
                           $statusCurso = $curso['status'] ?? 'Ativo';
@@ -111,7 +124,7 @@
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="5" class="text-center text-muted py-4">
+                    <td colspan="6" class="text-center text-muted py-4">
                       Nenhum curso encontrado.
                     </td>
                   </tr>

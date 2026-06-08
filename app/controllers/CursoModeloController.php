@@ -156,7 +156,8 @@ class CursoModeloController
         return [
             'area_id'             => (int) ($_POST['area_id'] ?? 0),
             'nome'                => trim($_POST['nome'] ?? ''),
-            'carga_horaria_total' => (int) ($_POST['carga_horaria_total'] ?? 0),
+            'carga_horaria_total' => $this->normalizarHoras($_POST['carga_horaria_total'] ?? 0),
+            'sem_uc'              => isset($_POST['sem_uc']) ? 1 : 0,
             'status'              => trim($_POST['status'] ?? 'Ativo'),
         ];
     }
@@ -177,8 +178,29 @@ class CursoModeloController
             'area_id'             => $dados['area_id'] > 0 ? $dados['area_id'] : '',
             'nome'                => $dados['nome'],
             'carga_horaria_total' => $dados['carga_horaria_total'] > 0 ? $dados['carga_horaria_total'] : '',
+            'sem_uc'              => $dados['sem_uc'],
             'status'              => $dados['status'],
         ]);
+    }
+
+    private function normalizarHoras($valor): float
+    {
+        $valor = strtolower(trim((string) $valor));
+
+        if (preg_match('/^(\d{1,5})\s*h(?:\s*e)?\s*(\d{1,2})?\s*(?:min)?$/', $valor, $matches)) {
+            $horas = (int) $matches[1];
+            $minutos = isset($matches[2]) && $matches[2] !== '' ? (int) $matches[2] : 0;
+
+            return $minutos < 60 ? round($horas + ($minutos / 60), 2) : 0.0;
+        }
+
+        if (preg_match('/^(\d{1,5})[:,](\d{1,2})$/', $valor, $matches)) {
+            $minutos = (int) $matches[2];
+
+            return $minutos < 60 ? round(((int) $matches[1]) + ($minutos / 60), 2) : 0.0;
+        }
+
+        return is_numeric($valor) ? round((float) $valor, 2) : 0.0;
     }
 
     private function redirecionar(string $url): void

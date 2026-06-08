@@ -14,9 +14,11 @@ require_once __DIR__ . '/../app/controllers/RelatorioDocenteController.php';
 require_once __DIR__ . '/../app/controllers/RelatorioGestorController.php';
 require_once __DIR__ . '/../app/controllers/RelatorioTurmaController.php';
 require_once __DIR__ . '/../app/controllers/RelatorioSalaController.php';
+require_once __DIR__ . '/../app/controllers/RelatorioTurmaSemDocenteController.php';
 require_once __DIR__ . '/../app/controllers/CalendarioBloqueioController.php';
 require_once __DIR__ . '/../app/controllers/EducacaoCorporativaController.php';
 require_once __DIR__ . '/../app/controllers/DocenteFeriasController.php';
+require_once __DIR__ . '/../app/controllers/DocenteCompensacaoController.php';
 require_once __DIR__ . '/../app/controllers/AprendizagemQuadroController.php';
 require_once __DIR__ . '/../app/controllers/SistemaLogController.php';
 require_once __DIR__ . '/../app/core/AuditLog.php';
@@ -25,7 +27,7 @@ require_once __DIR__ . '/../app/core/AccessControl.php';
 $page   = $_GET['page'] ?? 'login';
 $action = $_GET['action'] ?? '';
 
-$rotasPermitidas = ['login', 'cadastro', 'esqueci_senha', 'perfil', 'home', 'usuarios', 'salas', 'gestao_salas', 'docentes', 'cursos', 'turmas', 'ucs', 'quadro_horario', 'calendario', 'educacao_corporativa', 'ferias', 'aprendizagem', 'aceleracao', 'relatorio_docente', 'relatorio_gestor', 'relatorio_turma', 'relatorio_salas', 'logs', 'logout'];
+$rotasPermitidas = ['login', 'cadastro', 'esqueci_senha', 'perfil', 'home', 'usuarios', 'salas', 'gestao_salas', 'docentes', 'cursos', 'turmas', 'ucs', 'quadro_horario', 'calendario', 'educacao_corporativa', 'ferias', 'compensacao', 'aprendizagem', 'aceleracao', 'relatorio_docente', 'relatorio_gestor', 'relatorio_turma', 'relatorio_salas', 'relatorio_turmas_sem_docente', 'logs', 'logout'];
 
 if (! in_array($page, $rotasPermitidas, true)) {
     $page = 'login';
@@ -257,6 +259,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($page === 'compensacao' && $action === 'salvar') {
+        $controller = new DocenteCompensacaoController();
+        $controller->salvar();
+        exit;
+    }
+
+    if ($page === 'compensacao' && $action === 'atualizar') {
+        $controller = new DocenteCompensacaoController();
+        $controller->atualizar();
+        exit;
+    }
+
+    if ($page === 'compensacao' && $action === 'excluir') {
+        $controller = new DocenteCompensacaoController();
+        $controller->excluir();
+        exit;
+    }
+
     if (in_array($page, ['aprendizagem', 'aceleracao'], true) && $action === 'salvar') {
         $controller = new AprendizagemQuadroController();
         $controller->salvar();
@@ -426,6 +446,11 @@ switch ($page) {
         $controller->index();
         break;
 
+    case 'compensacao':
+        $controller = new DocenteCompensacaoController();
+        $controller->index();
+        break;
+
     case 'aprendizagem':
     case 'aceleracao':
         $controller = new AprendizagemQuadroController();
@@ -449,6 +474,11 @@ switch ($page) {
 
     case 'relatorio_salas':
         $controller = new RelatorioSalaController();
+        $controller->index();
+        break;
+
+    case 'relatorio_turmas_sem_docente':
+        $controller = new RelatorioTurmaSemDocenteController();
         $controller->index();
         break;
 

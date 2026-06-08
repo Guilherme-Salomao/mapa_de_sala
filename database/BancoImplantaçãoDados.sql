@@ -122,6 +122,14 @@ INSERT IGNORE INTO `docentes` (`id`, `usuario_id`, `horas_semanais`, `area_atuac
 (3, 4, 32, 'Tecnologia', 'Ativo', '', '2026-05-27 19:26:58', '2026-05-27 19:26:58'),
 (4, 5, 30, 'Aprendizagem', 'Ativo', '', '2026-05-28 01:04:48', '2026-05-28 01:04:48');
 
+-- Dados: docente_areas
+INSERT IGNORE INTO docente_areas (docente_id, area_id)
+SELECT d.id, a.id
+FROM docentes d
+INNER JOIN areas a ON a.nome = d.area_atuacao
+WHERE d.area_atuacao IS NOT NULL
+  AND d.area_atuacao <> '';
+
 -- Dados: docente_escala
 INSERT IGNORE INTO `docente_escala` (`id`, `docente_id`, `dia_semana`, `periodo`, `horas`) VALUES
 (31, 2, 'Segunda', 'Tarde', 4),

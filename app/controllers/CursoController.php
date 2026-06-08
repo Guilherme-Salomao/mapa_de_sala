@@ -178,7 +178,7 @@ class CursoController
                 ? array_map('intval', $diasSemanaPost)
                 : [(int) $diasSemanaPost];
 
-            if ($dataFim === '' || strtotime($dataFim) === false || strtotime($dataFim) < strtotime($dataInicio)) {
+            if ($dataFim !== '' && (strtotime($dataFim) === false || strtotime($dataFim) < strtotime($dataInicio))) {
                 $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Informe uma data final valida para gerar a UC.'));
             }
 

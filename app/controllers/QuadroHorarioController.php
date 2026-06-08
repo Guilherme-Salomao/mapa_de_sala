@@ -276,7 +276,15 @@ class QuadroHorarioController
             return 'Selecione um horario valido para a turma.';
         }
 
-        return $this->mensagemDiaBloqueado($dados['data_aula'], $oferta, $dados['hora_inicio'] ?? null, $dados['hora_fim'] ?? null);
+        $permiteUc12ForaDia = $this->lancamentoUc12Aprendizagem($dados, $oferta);
+
+        return $this->mensagemDiaBloqueado(
+            $dados['data_aula'],
+            $oferta,
+            $dados['hora_inicio'] ?? null,
+            $dados['hora_fim'] ?? null,
+            $permiteUc12ForaDia
+        );
     }
 
     private function horarioPertenceOferta(?array $oferta, string $horaInicio, string $horaFim): bool
@@ -294,7 +302,13 @@ class QuadroHorarioController
         return false;
     }
 
-    private function mensagemDiaBloqueado(string $dataAula, ?array $oferta, ?string $horaInicio = null, ?string $horaFim = null): ?string
+    private function mensagemDiaBloqueado(
+        string $dataAula,
+        ?array $oferta,
+        ?string $horaInicio = null,
+        ?string $horaFim = null,
+        bool $ignorarDiaTurma = false
+    ): ?string
     {
         $timestamp = strtotime($dataAula);
 
@@ -308,7 +322,7 @@ class QuadroHorarioController
             return 'Domingo nao permite lancamento de aula.';
         }
 
-        if (! $this->turmaTemAulaNoDia($oferta, $diaSemana)) {
+        if (! $ignorarDiaTurma && ! $this->turmaTemAulaNoDia($oferta, $diaSemana)) {
             return 'Esta turma nao possui aula configurada para este dia da semana.';
         }
 
@@ -317,7 +331,7 @@ class QuadroHorarioController
             (string) ($oferta['hora_fim'] ?? '')
         ));
 
-        if ($diaSemana === 6 && in_array($periodo, ['tarde', 'noite'], true)) {
+        if (! $ignorarDiaTurma && $diaSemana === 6 && in_array($periodo, ['tarde', 'noite'], true)) {
             return 'Turmas dos periodos Tarde e Noite nao permitem lancamento no sabado.';
         }
 
@@ -334,6 +348,36 @@ class QuadroHorarioController
         }
 
         return null;
+    }
+
+    private function lancamentoUc12Aprendizagem(array $dados, ?array $oferta): bool
+    {
+        if (strcasecmp(trim((string) ($oferta['area_nome'] ?? '')), 'Aprendizagem') !== 0) {
+            return false;
+        }
+
+        $ids = [];
+
+        if ((int) ($dados['divisao_por_hora'] ?? 0) === 1) {
+            $ids = array_values(array_filter(array_map('intval', $dados['ucs_por_bloco'] ?? [])));
+        } else {
+            $ids[] = (int) ($dados['unidade_curricular_id'] ?? 0);
+        }
+
+        if (empty($ids)) {
+            return false;
+        }
+
+        foreach (array_unique($ids) as $id) {
+            $uc = $this->quadroModel->buscarUnidadeCurricular($id);
+            $codigo = strtoupper(str_replace(['-', ' '], '', trim((string) ($uc['codigo'] ?? ''))));
+
+            if (! $uc || (int) ($uc['curso_modelo_id'] ?? 0) !== (int) ($oferta['curso_modelo_id'] ?? 0) || $codigo !== 'UC12') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function turmaTemAulaNoDia(?array $oferta, int $diaSemana): bool
@@ -441,6 +485,7 @@ class QuadroHorarioController
         $horariosOferta = $this->horariosOferta($oferta);
         $horaInicio = substr((string) $oferta['hora_inicio'], 0, 5);
         $horaFim = substr((string) $oferta['hora_fim'], 0, 5);
+        $permiteUc12ForaDia = strcasecmp(trim((string) ($oferta['area_nome'] ?? '')), 'Aprendizagem') === 0;
 
         foreach ($horariosOferta as $horarioOferta) {
             foreach ($this->montarBlocos($horarioOferta['inicio'], $horarioOferta['fim'], true) as $bloco) {
@@ -465,8 +510,13 @@ class QuadroHorarioController
 
             if (
                 $diaSemana === 0
-                || ! $this->turmaTemAulaNoDia($oferta, $diaSemana)
-                || ($diaSemana === 6 && in_array(strtolower($this->periodoPorHorario($horaInicio, $horaFim)), ['tarde', 'noite'], true))
+                || (
+                    ! $permiteUc12ForaDia
+                    && (
+                        ! $this->turmaTemAulaNoDia($oferta, $diaSemana)
+                        || ($diaSemana === 6 && in_array(strtolower($this->periodoPorHorario($horaInicio, $horaFim)), ['tarde', 'noite'], true))
+                    )
+                )
             ) {
                 $salasPorData[$data] = [];
                 $docentesPorData[$data] = [];
@@ -528,7 +578,7 @@ class QuadroHorarioController
             foreach ($blocos as $bloco) {
                 $chaveBloco = $this->chaveBloco($bloco);
 
-                if ($this->mensagemDiaBloqueado($data, $oferta, $bloco['inicio'], $bloco['fim']) !== null) {
+                if ($this->mensagemDiaBloqueado($data, $oferta, $bloco['inicio'], $bloco['fim'], $permiteUc12ForaDia) !== null) {
                     $docentesPorBloco[$data][$chaveBloco] = [];
                     continue;
                 }
@@ -783,6 +833,10 @@ class QuadroHorarioController
                     return 'O docente selecionado esta de ferias nesta data.';
                 }
 
+                if ($this->quadroModel->docenteEmCompensacao((int) $docenteId, $dados['data_aula'])) {
+                    return 'O docente selecionado esta em compensacao nesta data.';
+                }
+
                 if (! $this->docenteDisponivel((int) $docenteId, $dados['data_aula'], $bloco['inicio'], $bloco['fim'], $ignorarId, $exigirEscala)) {
                     return 'Um dos docentes nao esta disponivel neste dia ou periodo.';
                 }
@@ -797,6 +851,7 @@ class QuadroHorarioController
         return (! $exigirEscala || $this->quadroModel->docenteTemEscala($docenteId, $data, $horaInicio, $horaFim))
             && ! $this->educacaoModel->docenteEmCurso($docenteId, $data)
             && ! $this->quadroModel->docenteEmFerias($docenteId, $data)
+            && ! $this->quadroModel->docenteEmCompensacao($docenteId, $data)
             && ! $this->quadroModel->encontrarConflitoDocente($docenteId, $data, $horaInicio, $horaFim, $ignorarId);
     }
 

@@ -3,4 +3,9 @@
 #1 D:\xampp\htdocs\mapa_de_sala\app\controllers\CursoController.php(23): Curso->listar('', 'todos', Array)
 #2 D:\xampp\htdocs\mapa_de_sala\routes\web.php(370): CursoController->index()
 #3 D:\xampp\htdocs\mapa_de_sala\public\index.php(64): require_once('D:\\xampp\\htdocs...')
+#4 {main}[2026-06-03 21:11:21] Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'mapa_de_sala.docente_areas' doesn't exist in D:\xampp\htdocs\mapa_de_sala\app\models\Docente.php:139
+#0 D:\xampp\htdocs\mapa_de_sala\app\models\Docente.php(139): PDOStatement->execute(Array)
+#1 D:\xampp\htdocs\mapa_de_sala\app\controllers\DocenteController.php(104): Docente->buscarPorId(1, Array)
+#2 D:\xampp\htdocs\mapa_de_sala\routes\web.php(350): DocenteController->editar()
+#3 D:\xampp\htdocs\mapa_de_sala\public\index.php(64): require_once('D:\\xampp\\htdocs...')
 #4 {main}
