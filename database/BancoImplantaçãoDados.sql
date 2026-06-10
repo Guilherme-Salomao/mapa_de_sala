@@ -265,8 +265,8 @@ INSERT IGNORE INTO `calendario_bloqueios` (`id`, `data`, `data_fim`, `hora_inici
 (37, '2026-12-07', '2026-12-18', NULL, NULL, 'Recesso Escolar', 'Recesso', '', 'Ativo', '2026-05-28 00:45:34', '2026-05-28 00:45:34');
 
 -- Dados: educacao_corporativa_docentes
-INSERT IGNORE INTO `educacao_corporativa_docentes` (`id`, `docente_id`, `data`, `titulo`, `descricao`, `status`, `criado_em`, `atualizado_em`) VALUES
-(1, 2, '2026-05-26', 'Educor: Mentoria com o mestre', '', 'Ativo', '2026-05-26 17:14:10', '2026-05-26 17:14:10');
+INSERT IGNORE INTO `educacao_corporativa_docentes` (`id`, `docente_id`, `data`, `dia_inteiro`, `hora_inicio`, `hora_fim`, `titulo`, `descricao`, `status`, `criado_em`, `atualizado_em`) VALUES
+(1, 2, '2026-05-26', 1, NULL, NULL, 'Educor: Mentoria com o mestre', '', 'Ativo', '2026-05-26 17:14:10', '2026-05-26 17:14:10');
 
 -- Dados: sala_trocas
 INSERT IGNORE INTO `sala_trocas` (`id`, `quadro_horario_id`, `sala_origem_id`, `sala_destino_id`, `motivo`, `usuario_id`, `criado_em`) VALUES

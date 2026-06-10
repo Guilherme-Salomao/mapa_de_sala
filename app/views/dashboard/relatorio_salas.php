@@ -193,7 +193,7 @@
                     </td>
                     <td><?php echo htmlspecialchars($sala['tipo'] ?? ''); ?></td>
                     <td><?php echo (int) ($sala['capacidade'] ?? 0); ?></td>
-                    <?php foreach (['Manha', 'Tarde', 'Noite'] as $turnoChave): ?>
+                    <?php foreach (['Manhã', 'Tarde', 'Noite'] as $turnoChave): ?>
                     <?php
                         $turnoSala     = $sala['turnos'][$turnoChave] ?? ['situacao' => 'inativa', 'aulas' => [], 'reservas' => []];
                         $detalhesTurno = detalhesTurnoSala($turnoSala);

@@ -182,12 +182,12 @@ class RelatorioGestor
         $fim = date('Y-m-t', strtotime($inicio));
 
         $sql = "
-            SELECT data
+            SELECT data, dia_inteiro, hora_inicio, hora_fim
             FROM educacao_corporativa_docentes
             WHERE docente_id = :docente_id
               AND status = 'Ativo'
               AND data BETWEEN :inicio AND :fim
-            GROUP BY data
+            ORDER BY data ASC, hora_inicio ASC
         ";
 
         $stmt = $this->conn->prepare($sql);
@@ -207,7 +207,20 @@ class RelatorioGestor
                 && ! isset($paradasPedagogicas[$data])
                 && ! isset($datasCompensacao[$data])
             ) {
-                $horas += $this->horasEscalaData($escala, $data);
+                if (
+                    (int) ($curso['dia_inteiro'] ?? 1) === 1
+                    || empty($curso['hora_inicio'])
+                    || empty($curso['hora_fim'])
+                ) {
+                    $horas += $this->horasEscalaData($escala, $data);
+                } else {
+                    $inicioCurso = strtotime((string) $curso['hora_inicio']);
+                    $fimCurso = strtotime((string) $curso['hora_fim']);
+
+                    if ($inicioCurso !== false && $fimCurso !== false && $fimCurso > $inicioCurso) {
+                        $horas += ($fimCurso - $inicioCurso) / 3600;
+                    }
+                }
             }
         }
 

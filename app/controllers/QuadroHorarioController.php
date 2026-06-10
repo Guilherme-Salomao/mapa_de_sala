@@ -116,11 +116,17 @@ class QuadroHorarioController
         $dados = $this->obterDadosPost();
         $dados['id'] = (int) ($_POST['id'] ?? 0);
         $queryBase = $this->queryRetorno($dados);
+        $aulaExistente = $dados['id'] > 0 ? $this->quadroModel->buscarAula($dados['id']) : null;
 
-        if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
+        if (
+            ! $aulaExistente
+            || (int) ($aulaExistente['curso_oferta_id'] ?? 0) !== (int) $dados['curso_oferta_id']
+            || ! $this->validarDados($dados)
+        ) {
             $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
+        $dados['aprendizagem_quadro_id'] = $aulaExistente['aprendizagem_quadro_id'] ?? null;
         $erroDia = $this->validarDiaPermitido($dados);
 
         if ($erroDia !== null) {
@@ -272,29 +278,48 @@ class QuadroHorarioController
 
         $oferta = $this->quadroModel->buscarOferta((int) $dados['curso_oferta_id']);
 
-        if (! $this->horarioPertenceOferta($oferta, (string) ($dados['hora_inicio'] ?? ''), (string) ($dados['hora_fim'] ?? ''))) {
-            return 'Selecione um horario valido para a turma.';
+        if (! $this->horarioPertenceOferta($oferta, (string) ($dados['hora_inicio'] ?? ''), (string) ($dados['hora_fim'] ?? ''), 30)) {
+            return 'O horário pode iniciar até 30 minutos antes e terminar até 30 minutos depois do horário da turma.';
         }
 
-        $permiteUc12ForaDia = $this->lancamentoUc12Aprendizagem($dados, $oferta);
+        $permiteForaDiaTurma = ! empty($dados['aprendizagem_quadro_id'])
+            || $this->lancamentoUc12Aprendizagem($dados, $oferta);
 
         return $this->mensagemDiaBloqueado(
             $dados['data_aula'],
             $oferta,
             $dados['hora_inicio'] ?? null,
             $dados['hora_fim'] ?? null,
-            $permiteUc12ForaDia
+            $permiteForaDiaTurma
         );
     }
 
-    private function horarioPertenceOferta(?array $oferta, string $horaInicio, string $horaFim): bool
+    private function horarioPertenceOferta(
+        ?array $oferta,
+        string $horaInicio,
+        string $horaFim,
+        int $toleranciaMinutos = 0
+    ): bool
     {
-        if (! $oferta || strtotime($horaInicio) === false || strtotime($horaFim) === false || strtotime($horaInicio) >= strtotime($horaFim)) {
+        $inicioAula = strtotime($horaInicio);
+        $fimAula = strtotime($horaFim);
+
+        if (! $oferta || $inicioAula === false || $fimAula === false || $inicioAula >= $fimAula) {
             return false;
         }
 
         foreach ($this->horariosOferta($oferta) as $horarioOferta) {
-            if ($horaInicio >= $horarioOferta['inicio'] && $horaFim <= $horarioOferta['fim']) {
+            $inicioOferta = strtotime((string) $horarioOferta['inicio']);
+            $fimOferta = strtotime((string) $horarioOferta['fim']);
+
+            if ($inicioOferta === false || $fimOferta === false) {
+                continue;
+            }
+
+            $inicioPermitido = $inicioOferta - ($toleranciaMinutos * 60);
+            $fimPermitido = $fimOferta + ($toleranciaMinutos * 60);
+
+            if ($inicioAula >= $inicioPermitido && $fimAula <= $fimPermitido) {
                 return true;
             }
         }
@@ -849,7 +874,7 @@ class QuadroHorarioController
     private function docenteDisponivel(int $docenteId, string $data, string $horaInicio, string $horaFim, ?int $ignorarId = null, bool $exigirEscala = true): bool
     {
         return (! $exigirEscala || $this->quadroModel->docenteTemEscala($docenteId, $data, $horaInicio, $horaFim))
-            && ! $this->educacaoModel->docenteEmCurso($docenteId, $data)
+            && ! $this->educacaoModel->docenteEmCurso($docenteId, $data, null, $horaInicio, $horaFim)
             && ! $this->quadroModel->docenteEmFerias($docenteId, $data)
             && ! $this->quadroModel->docenteEmCompensacao($docenteId, $data)
             && ! $this->quadroModel->encontrarConflitoDocente($docenteId, $data, $horaInicio, $horaFim, $ignorarId);

@@ -150,7 +150,7 @@ class RelatorioDocenteController
             $data = sprintf('%04d-%02d-%02d', $ano, $mes, $dia);
             $diaKey = $this->diaSemanaPorData($data);
             $aulasData = $aulasPorData[$data] ?? [];
-            $cursoData = $cursosPorData[$data][0] ?? null;
+            $cursosData = $cursosPorData[$data] ?? [];
             $escalaData = $escalaPorDia[$diaKey] ?? [];
             $periodosComAula = [];
             $diaInteiroBloqueado = false;
@@ -235,27 +235,46 @@ class RelatorioDocenteController
                 ];
             }
 
-            if ($cursoData && ! empty($escalaData)) {
+            foreach ($cursosData as $cursoData) {
+                $diaInteiroCurso = (int) ($cursoData['dia_inteiro'] ?? 1) === 1
+                    || empty($cursoData['hora_inicio'])
+                    || empty($cursoData['hora_fim']);
                 $periodosCurso = [];
                 $horasCurso = 0.0;
+                $horaCurso = '';
 
-                foreach ($escalaData as $itemEscala) {
-                    $periodosCurso[] = $itemEscala['periodo'];
-                    $horasCurso += (float) ($itemEscala['horas'] ?? 0);
+                if ($diaInteiroCurso) {
+                    foreach ($escalaData as $periodoKey => $itemEscala) {
+                        $periodosCurso[] = $itemEscala['periodo'];
+                        $periodosComAula[$periodoKey] = true;
+                        $horasCurso += (float) ($itemEscala['horas'] ?? 0);
+                    }
+                } else {
+                    $periodoCursoKey = $this->periodoPorHorario(
+                        (string) $cursoData['hora_inicio'],
+                        (string) $cursoData['hora_fim']
+                    );
+                    $periodosCurso[] = $this->periodoLabel($periodoCursoKey);
+                    $periodosComAula[$periodoCursoKey] = true;
+                    $horasCurso = $this->horasEntre(
+                        (string) $cursoData['hora_inicio'],
+                        (string) $cursoData['hora_fim']
+                    );
+                    $horaCurso = substr((string) $cursoData['hora_inicio'], 0, 5)
+                        . ' - '
+                        . substr((string) $cursoData['hora_fim'], 0, 5);
                 }
 
                 $eventosPorData[$data][] = [
                     'tipo' => 'curso',
                     'periodo' => implode(' / ', array_unique($periodosCurso)),
                     'periodo_key' => 'curso',
-                    'hora' => $this->formatarHoras($horasCurso),
+                    'hora' => $horaCurso !== '' ? $horaCurso : $this->formatarHoras($horasCurso),
                     'horas_numero' => $horasCurso,
                     'turma' => 'Curso: ' . ($cursoData['titulo'] ?? ''),
                     'uc' => '',
                     'sala' => '',
                 ];
-
-                continue;
             }
 
             if ($diaInteiroBloqueado || $temParadaPedagogica) {
@@ -522,7 +541,7 @@ class RelatorioDocenteController
     private function periodoLabel(string $periodo): string
     {
         return [
-            'manha' => 'Manha',
+            'manha' => 'Manhã',
             'tarde' => 'Tarde',
             'noite' => 'Noite',
         ][$periodo] ?? '';

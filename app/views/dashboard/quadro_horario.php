@@ -225,7 +225,7 @@
 
         $periodos = [];
         $faixas = [
-            'Manha' => ['00:00', '12:00'],
+            'Manhã' => ['00:00', '12:00'],
             'Tarde' => ['12:00', '18:00'],
             'Noite' => ['18:00', '23:59'],
         ];
@@ -467,10 +467,6 @@
                           <input type="hidden" name="mes" value="<?php echo $mes; ?>">
                           <input type="hidden" name="ano" value="<?php echo $ano; ?>">
                           <input type="hidden" name="data_aula" value="<?php echo $dataIso; ?>">
-                          <input type="hidden" name="hora_inicio"
-                            value="<?php echo htmlspecialchars($horarioLancamentoDia['inicio'] ?? $horaInicioOfertaDia); ?>">
-                          <input type="hidden" name="hora_fim"
-                            value="<?php echo htmlspecialchars($horarioLancamentoDia['fim'] ?? $horaFimOfertaDia); ?>">
                           <input type="hidden" name="status" value="Ativa">
 
                           <div class="mb-2">
@@ -486,9 +482,28 @@
                             </select>
                             <?php else: ?>
                             <div class="small fw-semibold">
-                              Horário: <?php echo htmlspecialchars(($horarioLancamentoDia['inicio'] ?? $horaInicioOfertaDia) . ' - ' . ($horarioLancamentoDia['fim'] ?? $horaFimOfertaDia)); ?>
+                              Horário da turma:
+                              <?php echo htmlspecialchars(($horarioLancamentoDia['inicio'] ?? $horaInicioOfertaDia) . ' - ' . ($horarioLancamentoDia['fim'] ?? $horaFimOfertaDia)); ?>
                             </div>
                             <?php endif; ?>
+
+                            <div class="row g-2 mt-1 mb-2">
+                              <div class="col-6">
+                                <label class="form-label small mb-1">Hora inicial</label>
+                                <input type="time" class="form-control form-control-sm" name="hora_inicio"
+                                  value="<?php echo htmlspecialchars($horarioLancamentoDia['inicio'] ?? $horaInicioOfertaDia); ?>"
+                                  required>
+                              </div>
+                              <div class="col-6">
+                                <label class="form-label small mb-1">Hora final</label>
+                                <input type="time" class="form-control form-control-sm" name="hora_fim"
+                                  value="<?php echo htmlspecialchars($horarioLancamentoDia['fim'] ?? $horaFimOfertaDia); ?>"
+                                  required>
+                              </div>
+                              <div class="col-12">
+                                <div class="form-text">Permitido até 30 minutos antes ou depois do horário da turma.</div>
+                              </div>
+                            </div>
                           </div>
 
                           <div class="mb-2">

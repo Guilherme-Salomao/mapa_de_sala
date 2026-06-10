@@ -8,4 +8,10 @@
 #1 D:\xampp\htdocs\mapa_de_sala\app\controllers\DocenteController.php(104): Docente->buscarPorId(1, Array)
 #2 D:\xampp\htdocs\mapa_de_sala\routes\web.php(350): DocenteController->editar()
 #3 D:\xampp\htdocs\mapa_de_sala\public\index.php(64): require_once('D:\\xampp\\htdocs...')
-#4 {main}
+#4 {main}[2026-06-10 19:29:35] Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'dia_inteiro' in 'field list' in D:\xampp\htdocs\mapa_de_sala\app\models\Home.php:933
+#0 D:\xampp\htdocs\mapa_de_sala\app\models\Home.php(933): PDOStatement->execute(Array)
+#1 D:\xampp\htdocs\mapa_de_sala\app\models\Home.php(233): Home->cursosCorporativosDocentePeriodo(1, '2026-06-08', '2026-06-13')
+#2 D:\xampp\htdocs\mapa_de_sala\app\controllers\HomeController.php(50): Home->semanaDocente(1, '2026-06-10')
+#3 D:\xampp\htdocs\mapa_de_sala\routes\web.php(315): HomeController->index()
+#4 D:\xampp\htdocs\mapa_de_sala\public\index.php(64): require_once('D:\\xampp\\htdocs...')
+#5 {main}

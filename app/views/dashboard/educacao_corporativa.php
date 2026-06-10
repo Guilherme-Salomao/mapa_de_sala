@@ -23,6 +23,9 @@
 
     $formDocenteId = (int) ($registroForm['docente_id'] ?? ($_GET['docente_id'] ?? 0));
     $formData = $registroForm['data'] ?? ($_GET['data'] ?? '');
+    $formDiaInteiro = (int) ($registroForm['dia_inteiro'] ?? ($_GET['dia_inteiro'] ?? 1)) === 1;
+    $formHoraInicio = substr((string) ($registroForm['hora_inicio'] ?? ($_GET['hora_inicio'] ?? '')), 0, 5);
+    $formHoraFim = substr((string) ($registroForm['hora_fim'] ?? ($_GET['hora_fim'] ?? '')), 0, 5);
     $formTitulo = $registroForm['titulo'] ?? ($_GET['titulo'] ?? '');
     $formDescricao = $registroForm['descricao'] ?? ($_GET['descricao'] ?? '');
     $formStatus = $registroForm['status'] ?? ($_GET['status_registro'] ?? 'Ativo');
@@ -98,6 +101,26 @@
                 <label class="form-label">Data</label>
                 <input type="date" name="data" class="form-control"
                   value="<?php echo htmlspecialchars($formData); ?>" required>
+              </div>
+
+              <div class="col-12 col-md-2">
+                <div class="form-check form-switch pt-md-4 mt-md-2">
+                  <input class="form-check-input" type="checkbox" role="switch" id="dia_inteiro"
+                    name="dia_inteiro" value="1" <?php echo $formDiaInteiro ? 'checked' : ''; ?>>
+                  <label class="form-check-label" for="dia_inteiro">Dia inteiro</label>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-2 horario-curso-wrap">
+                <label class="form-label">Hora inicial</label>
+                <input type="time" name="hora_inicio" class="form-control"
+                  value="<?php echo htmlspecialchars($formHoraInicio); ?>">
+              </div>
+
+              <div class="col-6 col-md-2 horario-curso-wrap">
+                <label class="form-label">Hora final</label>
+                <input type="time" name="hora_fim" class="form-control"
+                  value="<?php echo htmlspecialchars($formHoraFim); ?>">
               </div>
 
               <div class="col-12 col-lg-4">
@@ -179,6 +202,7 @@
                   <tr>
                     <th>Docente</th>
                     <th>Data</th>
+                    <th>Horário</th>
                     <th>Curso</th>
                     <th>Status</th>
                     <th class="text-end">Ações</th>
@@ -190,6 +214,13 @@
                   <tr>
                     <td><?php echo htmlspecialchars($registro['docente_nome'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars(date('d/m/Y', strtotime($registro['data']))); ?></td>
+                    <td>
+                      <?php if ((int) ($registro['dia_inteiro'] ?? 1) === 1 || empty($registro['hora_inicio']) || empty($registro['hora_fim'])): ?>
+                      Dia inteiro
+                      <?php else: ?>
+                      <?php echo htmlspecialchars(substr($registro['hora_inicio'], 0, 5) . ' - ' . substr($registro['hora_fim'], 0, 5)); ?>
+                      <?php endif; ?>
+                    </td>
                     <td>
                       <div class="fw-semibold"><?php echo htmlspecialchars($registro['titulo'] ?? ''); ?></div>
                       <?php if (! empty($registro['descricao'])): ?>
@@ -219,7 +250,7 @@
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="5" class="text-center text-muted py-4">
+                    <td colspan="6" class="text-center text-muted py-4">
                       Nenhum curso encontrado.
                     </td>
                   </tr>
@@ -248,6 +279,24 @@
       window.location.href = "./?page=logout";
     }
   });
+
+  function atualizarHorarioCurso() {
+    const diaInteiro = document.getElementById("dia_inteiro");
+    const campos = document.querySelectorAll(".horario-curso-wrap input");
+    const ocultar = Boolean(diaInteiro?.checked);
+
+    document.querySelectorAll(".horario-curso-wrap").forEach(function(elemento) {
+      elemento.classList.toggle("d-none", ocultar);
+    });
+
+    campos.forEach(function(campo) {
+      campo.required = !ocultar;
+      campo.disabled = ocultar;
+    });
+  }
+
+  document.getElementById("dia_inteiro")?.addEventListener("change", atualizarHorarioCurso);
+  atualizarHorarioCurso();
   </script>
 </body>
 

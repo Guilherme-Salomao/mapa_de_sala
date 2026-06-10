@@ -9,7 +9,7 @@
     <?php foreach ($aulasPorTurno as $turno => $aulasTurno): ?>
     <?php
         $iconeTurno = [
-            'Manha' => 'bi-sunrise',
+            'Manhã' => 'bi-sunrise',
             'Tarde' => 'bi-sun',
             'Noite' => 'bi-moon-stars',
         ][$turno] ?? 'bi-calendar';

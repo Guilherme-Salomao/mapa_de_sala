@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../models/EducacaoCorporativa.php';
 require_once __DIR__ . '/../models/QuadroHorario.php';
+require_once __DIR__ . '/../core/AccessControl.php';
 
 class EducacaoCorporativaController
 {
@@ -21,18 +22,24 @@ class EducacaoCorporativaController
         $busca = trim($_GET['busca'] ?? '');
         $status = trim($_GET['status'] ?? 'todos');
         $registroForm = null;
+        $access = new AccessControl();
+        $docenteRestritoId = $access->nivel() === 'Professor' ? $access->docenteId() : null;
+
+        if ($access->nivel() === 'Professor' && $docenteRestritoId === null) {
+            $this->redirecionar('./?page=home&tipo=erro&msg=' . urlencode('Seu usuário ainda não está vinculado a um docente ativo.'));
+        }
 
         if (($_GET['action'] ?? '') === 'editar') {
             $id = (int) ($_GET['id'] ?? 0);
-            $registroForm = $id > 0 ? $this->educacaoModel->buscarPorId($id) : null;
+            $registroForm = $id > 0 ? $this->educacaoModel->buscarPorId($id, $docenteRestritoId) : null;
 
             if (! $registroForm) {
                 $this->redirecionar('./?page=educacao_corporativa&tipo=erro&msg=' . urlencode('Registro nao encontrado.'));
             }
         }
 
-        $docentes = $this->educacaoModel->listarDocentes();
-        $registros = $this->educacaoModel->listar($busca, $status);
+        $docentes = $this->educacaoModel->listarDocentes($docenteRestritoId);
+        $registros = $this->educacaoModel->listar($busca, $status, $docenteRestritoId);
         $totalRegistros = count($registros);
 
         require_once __DIR__ . '/../views/dashboard/educacao_corporativa.php';
@@ -42,7 +49,8 @@ class EducacaoCorporativaController
     {
         $this->exigirLogin();
 
-        $dados = $this->obterDadosPost();
+        $access = new AccessControl();
+        $dados = $this->obterDadosPost($access);
         $queryBase = $this->queryCadastro($dados);
 
         if (! $this->validarDados($dados)) {
@@ -66,10 +74,13 @@ class EducacaoCorporativaController
     {
         $this->exigirLogin();
 
-        $dados = $this->obterDadosPost();
+        $access = new AccessControl();
+        $dados = $this->obterDadosPost($access);
         $dados['id'] = (int) ($_POST['id'] ?? 0);
+        $docenteRestritoId = $access->nivel() === 'Professor' ? $access->docenteId() : null;
+        $registro = $dados['id'] > 0 ? $this->educacaoModel->buscarPorId($dados['id'], $docenteRestritoId) : null;
 
-        if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
+        if (! $registro || ! $this->validarDados($dados)) {
             $this->redirecionar('./?page=educacao_corporativa&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
@@ -91,8 +102,10 @@ class EducacaoCorporativaController
         $this->exigirLogin();
 
         $id = (int) ($_POST['id'] ?? 0);
+        $access = new AccessControl();
+        $docenteRestritoId = $access->nivel() === 'Professor' ? $access->docenteId() : null;
 
-        if ($id <= 0) {
+        if ($id <= 0 || ! $this->educacaoModel->buscarPorId($id, $docenteRestritoId)) {
             $this->redirecionar('./?page=educacao_corporativa&tipo=erro&msg=' . urlencode('Registro invalido.'));
         }
 
@@ -103,11 +116,16 @@ class EducacaoCorporativaController
         $this->redirecionar('./?page=educacao_corporativa&tipo=erro&msg=' . urlencode('Nao foi possivel excluir o curso.'));
     }
 
-    private function obterDadosPost(): array
+    private function obterDadosPost(AccessControl $access): array
     {
         return [
-            'docente_id' => (int) ($_POST['docente_id'] ?? 0),
+            'docente_id' => $access->nivel() === 'Professor'
+                ? (int) ($access->docenteId() ?? 0)
+                : (int) ($_POST['docente_id'] ?? 0),
             'data' => trim($_POST['data'] ?? ''),
+            'dia_inteiro' => isset($_POST['dia_inteiro']) ? 1 : 0,
+            'hora_inicio' => isset($_POST['dia_inteiro']) ? null : trim($_POST['hora_inicio'] ?? ''),
+            'hora_fim' => isset($_POST['dia_inteiro']) ? null : trim($_POST['hora_fim'] ?? ''),
             'titulo' => trim($_POST['titulo'] ?? ''),
             'descricao' => trim($_POST['descricao'] ?? ''),
             'status' => trim($_POST['status'] ?? 'Ativo'),
@@ -119,6 +137,14 @@ class EducacaoCorporativaController
         return $dados['docente_id'] > 0
             && $dados['data'] !== ''
             && strtotime($dados['data']) !== false
+            && (
+                (int) $dados['dia_inteiro'] === 1
+                || (
+                    preg_match('/^\d{2}:\d{2}$/', (string) $dados['hora_inicio'])
+                    && preg_match('/^\d{2}:\d{2}$/', (string) $dados['hora_fim'])
+                    && $dados['hora_fim'] > $dados['hora_inicio']
+                )
+            )
             && $dados['titulo'] !== ''
             && in_array($dados['status'], ['Ativo', 'Inativo'], true);
     }
@@ -129,21 +155,29 @@ class EducacaoCorporativaController
             return null;
         }
 
-        $curso = $this->educacaoModel->docenteEmCurso((int) $dados['docente_id'], (string) $dados['data'], $ignorarId);
+        $horaInicio = (int) $dados['dia_inteiro'] === 1 ? '00:00:00' : (string) $dados['hora_inicio'];
+        $horaFim = (int) $dados['dia_inteiro'] === 1 ? '23:59:59' : (string) $dados['hora_fim'];
+        $curso = $this->educacaoModel->docenteEmCurso(
+            (int) $dados['docente_id'],
+            (string) $dados['data'],
+            $ignorarId,
+            $horaInicio,
+            $horaFim
+        );
 
         if ($curso) {
-            return 'Este docente ja possui curso de Educacao Corporativa nesta data.';
+            return 'Este docente já possui Educação Corporativa neste horário.';
         }
 
         $conflito = $this->quadroModel->encontrarConflitoDocente(
             (int) $dados['docente_id'],
             (string) $dados['data'],
-            '00:00:00',
-            '23:59:59'
+            $horaInicio,
+            $horaFim
         );
 
         if ($conflito) {
-            return 'Este docente ja possui aula lancada nesta data.';
+            return 'Este docente já possui aula lançada neste horário.';
         }
 
         return null;
@@ -155,6 +189,9 @@ class EducacaoCorporativaController
             'page' => 'educacao_corporativa',
             'docente_id' => $dados['docente_id'] > 0 ? $dados['docente_id'] : '',
             'data' => $dados['data'],
+            'dia_inteiro' => $dados['dia_inteiro'],
+            'hora_inicio' => $dados['hora_inicio'],
+            'hora_fim' => $dados['hora_fim'],
             'titulo' => $dados['titulo'],
             'descricao' => $dados['descricao'],
             'status_registro' => $dados['status'],

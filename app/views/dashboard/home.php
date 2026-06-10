@@ -14,7 +14,7 @@
     $isApoioHome = $nivelHome === 'Apoio';
     $dashboardGestor = $dashboardGestor ?? false;
     $indicadores = $indicadores ?? [];
-    $aulasPorTurno = $aulasPorTurno ?? ['Manha' => [], 'Tarde' => [], 'Noite' => []];
+    $aulasPorTurno = $aulasPorTurno ?? ['Manhã' => [], 'Tarde' => [], 'Noite' => []];
     $indicadoresGestor = $indicadoresGestor ?? [];
     $resumoDocentesGestor = $resumoDocentesGestor ?? [];
     $aulasSemDocenteGestor = $aulasSemDocenteGestor ?? [];

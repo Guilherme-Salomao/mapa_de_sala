@@ -206,6 +206,12 @@ class RelatorioTurmaSemDocente
                   WHERE ec.docente_id = d.id
                     AND ec.status = 'Ativo'
                     AND ec.data = :data_aula
+                    AND (
+                        ec.dia_inteiro = 1
+                        OR ec.hora_inicio IS NULL
+                        OR ec.hora_fim IS NULL
+                        OR (ec.hora_inicio < :hora_fim AND ec.hora_fim > :hora_inicio)
+                    )
               )
             ORDER BY
                 CASE

@@ -41,7 +41,7 @@ class Home
                 CASE
                     WHEN qh.hora_inicio < '12:00:00' AND qh.hora_fim > '18:00:00' THEN 'Integral'
                     WHEN qh.hora_inicio < '12:00:00' AND qh.hora_fim > '12:00:00' THEN 'Integral'
-                    WHEN qh.hora_inicio < '12:00:00' THEN 'Manha'
+                    WHEN qh.hora_inicio < '12:00:00' THEN 'Manhã'
                     WHEN qh.hora_inicio < '18:00:00' THEN 'Tarde'
                     ELSE 'Noite'
                 END AS periodo,
@@ -127,7 +127,7 @@ class Home
         $aulas = $this->aulasDoDia($data, $escopo);
         $reservas = $this->reservasDoDia($data);
         $turnos = [
-            'Manha' => [],
+            'Manhã' => [],
             'Tarde' => [],
             'Noite' => [],
         ];
@@ -187,7 +187,7 @@ class Home
                 CASE
                     WHEN qh.hora_inicio < '12:00:00' AND qh.hora_fim > '18:00:00' THEN 'Integral'
                     WHEN qh.hora_inicio < '12:00:00' AND qh.hora_fim > '12:00:00' THEN 'Integral'
-                    WHEN qh.hora_inicio < '12:00:00' THEN 'Manha'
+                    WHEN qh.hora_inicio < '12:00:00' THEN 'Manhã'
                     WHEN qh.hora_inicio < '18:00:00' THEN 'Tarde'
                     ELSE 'Noite'
                 END AS periodo,
@@ -202,7 +202,7 @@ class Home
         $stmt->execute([':data' => $data]);
 
         $periodos = [
-            'Manha' => 0,
+            'Manhã' => 0,
             'Tarde' => 0,
             'Noite' => 0,
         ];
@@ -300,20 +300,42 @@ class Home
                 ];
             }
 
-            if (! empty($cursosPorData[$data]) && ! empty($escala[$diaKey])) {
-                $periodosCurso = array_map(fn($item) => $item['periodo'], $escala[$diaKey]);
+            foreach (($cursosPorData[$data] ?? []) as $cursoData) {
+                $diaInteiroCurso = (int) ($cursoData['dia_inteiro'] ?? 1) === 1
+                    || empty($cursoData['hora_inicio'])
+                    || empty($cursoData['hora_fim']);
+                $periodosCurso = [];
+                $horaCurso = '';
+
+                if ($diaInteiroCurso) {
+                    foreach (($escala[$diaKey] ?? []) as $itemEscala) {
+                        $periodo = (string) ($itemEscala['periodo'] ?? '');
+                        $periodosCurso[] = $periodo;
+                        $periodosComAula[$periodo] = true;
+                    }
+                } else {
+                    $periodoCurso = $this->normalizarPeriodoPorHorario((string) $cursoData['hora_inicio']);
+                    $periodosCurso[] = $periodoCurso;
+                    $periodosComAula[$periodoCurso] = true;
+                    $horaCurso = substr((string) $cursoData['hora_inicio'], 0, 5)
+                        . ' - '
+                        . substr((string) $cursoData['hora_fim'], 0, 5);
+                }
+
                 $eventos[] = [
                     'tipo' => 'curso',
                     'periodo' => implode(' / ', array_unique($periodosCurso)),
-                    'hora' => '',
+                    'hora' => $horaCurso,
                     'titulo' => 'Educação Corporativa',
-                    'uc' => $cursosPorData[$data][0]['titulo'] ?? '',
+                    'uc' => $cursoData['titulo'] ?? '',
                     'sala' => '',
                     'visita_tecnica' => 0,
                     'ead_assincrona' => 0,
                     'aprendizagem_quadro_id' => null,
                 ];
-            } elseif (! $diaInteiroBloqueado) {
+            }
+
+            if (! $diaInteiroBloqueado) {
                 foreach (($escala[$diaKey] ?? []) as $itemEscala) {
                     $periodo = (string) ($itemEscala['periodo'] ?? '');
 
@@ -664,6 +686,7 @@ class Home
             WHERE docente_id = :docente_id
               AND data = :data
               AND status = 'Ativo'
+              AND (dia_inteiro = 1 OR hora_inicio IS NULL OR hora_fim IS NULL)
             LIMIT 1
         ");
         $stmt->execute([
@@ -751,13 +774,25 @@ class Home
                 $resumo['aula'] += $this->horasEntre((string) $aula['hora_inicio'], (string) $aula['hora_fim']);
             }
 
-            if (! empty($cursosPorData[$data]) && ! empty($escalaData)) {
-                foreach ($escalaData as $itemEscala) {
-                    $resumo['curso'] += (float) ($itemEscala['horas'] ?? 0);
-                }
+            foreach (($cursosPorData[$data] ?? []) as $cursoData) {
+                $diaInteiroCurso = (int) ($cursoData['dia_inteiro'] ?? 1) === 1
+                    || empty($cursoData['hora_inicio'])
+                    || empty($cursoData['hora_fim']);
 
-                $data = date('Y-m-d', strtotime($data . ' +1 day'));
-                continue;
+                if ($diaInteiroCurso) {
+                    foreach ($escalaData as $itemEscala) {
+                        $periodo = (string) ($itemEscala['periodo'] ?? '');
+                        $periodosComAula[$periodo] = true;
+                        $resumo['curso'] += (float) ($itemEscala['horas'] ?? 0);
+                    }
+                } else {
+                    $periodoCurso = $this->normalizarPeriodoPorHorario((string) $cursoData['hora_inicio']);
+                    $periodosComAula[$periodoCurso] = true;
+                    $resumo['curso'] += $this->horasEntre(
+                        (string) $cursoData['hora_inicio'],
+                        (string) $cursoData['hora_fim']
+                    );
+                }
             }
 
             foreach ($escalaData as $itemEscala) {
@@ -886,7 +921,7 @@ class Home
     private function cursosCorporativosDocentePeriodo(int $docenteId, string $inicio, string $fim): array
     {
         $stmt = $this->conn->prepare("
-            SELECT data, titulo
+            SELECT data, titulo, dia_inteiro, hora_inicio, hora_fim
             FROM educacao_corporativa_docentes
             WHERE docente_id = :docente_id
               AND status = 'Ativo'
@@ -1069,7 +1104,7 @@ class Home
         }
 
         $faixas = [
-            'Manha' => ['00:00:00', '12:00:00'],
+            'Manhã' => ['00:00:00', '12:00:00'],
             'Tarde' => ['12:00:00', '18:00:00'],
             'Noite' => ['18:00:00', '23:59:59'],
         ];
@@ -1088,7 +1123,7 @@ class Home
         $periodo = strtolower(trim($periodo));
 
         if (str_contains($periodo, 'manh')) {
-            return 'Manha';
+            return 'Manhã';
         }
 
         if (str_contains($periodo, 'tarde')) {
@@ -1107,7 +1142,7 @@ class Home
         $hora = substr($horaInicio, 0, 5);
 
         if ($hora < '12:00') {
-            return 'Manha';
+            return 'Manhã';
         }
 
         if ($hora < '18:00') {

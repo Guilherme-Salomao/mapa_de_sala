@@ -187,7 +187,7 @@ class RelatorioSala
     private function situacoesPorTurno(string $status, array $aulas, array $reservas): array
     {
         $turnos = [
-            'Manha' => ['label' => 'Manhã', 'inicio' => '00:00:00', 'fim' => '12:00:00'],
+            'Manhã' => ['label' => 'Manhã', 'inicio' => '00:00:00', 'fim' => '12:00:00'],
             'Tarde' => ['label' => 'Tarde', 'inicio' => '12:00:00', 'fim' => '18:00:00'],
             'Noite' => ['label' => 'Noite', 'inicio' => '18:00:00', 'fim' => '23:59:59'],
         ];

@@ -12,7 +12,7 @@ class EducacaoCorporativa
         $this->conn = $database->connect();
     }
 
-    public function listar(string $busca = '', string $status = 'todos'): array
+    public function listar(string $busca = '', string $status = 'todos', ?int $docenteRestritoId = null): array
     {
         $sql = "
             SELECT
@@ -25,6 +25,11 @@ class EducacaoCorporativa
         ";
 
         $params = [];
+
+        if ($docenteRestritoId !== null) {
+            $sql .= " AND ec.docente_id = :docente_restrito_id";
+            $params[':docente_restrito_id'] = $docenteRestritoId;
+        }
 
         if ($busca !== '') {
             $sql .= " AND (ec.titulo LIKE :busca OR ec.descricao LIKE :busca OR u.nome LIKE :busca)";
@@ -44,34 +49,50 @@ class EducacaoCorporativa
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function buscarPorId(int $id): ?array
+    public function buscarPorId(int $id, ?int $docenteRestritoId = null): ?array
     {
         $sql = "
             SELECT *
             FROM educacao_corporativa_docentes
             WHERE id = :id
-            LIMIT 1
         ";
 
+        $params = [':id' => $id];
+
+        if ($docenteRestritoId !== null) {
+            $sql .= " AND docente_id = :docente_restrito_id";
+            $params[':docente_restrito_id'] = $docenteRestritoId;
+        }
+
+        $sql .= " LIMIT 1";
+
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([':id' => $id]);
+        $stmt->execute($params);
         $registro = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $registro ?: null;
     }
 
-    public function listarDocentes(): array
+    public function listarDocentes(?int $docenteRestritoId = null): array
     {
         $sql = "
             SELECT d.id, u.nome, u.email
             FROM docentes d
             INNER JOIN usuarios u ON u.id = d.usuario_id
             WHERE d.status = 'Ativo'
-            ORDER BY u.nome ASC
         ";
 
+        $params = [];
+
+        if ($docenteRestritoId !== null) {
+            $sql .= " AND d.id = :docente_restrito_id";
+            $params[':docente_restrito_id'] = $docenteRestritoId;
+        }
+
+        $sql .= " ORDER BY u.nome ASC";
+
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -100,7 +121,13 @@ class EducacaoCorporativa
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function docenteEmCurso(int $docenteId, string $data, ?int $ignorarId = null): ?array
+    public function docenteEmCurso(
+        int $docenteId,
+        string $data,
+        ?int $ignorarId = null,
+        ?string $horaInicio = null,
+        ?string $horaFim = null
+    ): ?array
     {
         $sql = "
             SELECT *
@@ -120,6 +147,17 @@ class EducacaoCorporativa
             $params[':ignorar_id'] = $ignorarId;
         }
 
+        if ($horaInicio !== null && $horaFim !== null) {
+            $sql .= " AND (
+                dia_inteiro = 1
+                OR hora_inicio IS NULL
+                OR hora_fim IS NULL
+                OR (hora_inicio < :hora_fim AND hora_fim > :hora_inicio)
+            )";
+            $params[':hora_inicio'] = $horaInicio;
+            $params[':hora_fim'] = $horaFim;
+        }
+
         $sql .= " LIMIT 1";
 
         $stmt = $this->conn->prepare($sql);
@@ -136,12 +174,18 @@ class EducacaoCorporativa
                 INSERT INTO educacao_corporativa_docentes (
                     docente_id,
                     data,
+                    dia_inteiro,
+                    hora_inicio,
+                    hora_fim,
                     titulo,
                     descricao,
                     status
                 ) VALUES (
                     :docente_id,
                     :data,
+                    :dia_inteiro,
+                    :hora_inicio,
+                    :hora_fim,
                     :titulo,
                     :descricao,
                     :status
@@ -153,6 +197,9 @@ class EducacaoCorporativa
             return $stmt->execute([
                 ':docente_id' => $dados['docente_id'],
                 ':data' => $dados['data'],
+                ':dia_inteiro' => $dados['dia_inteiro'],
+                ':hora_inicio' => $dados['hora_inicio'],
+                ':hora_fim' => $dados['hora_fim'],
                 ':titulo' => $dados['titulo'],
                 ':descricao' => $dados['descricao'],
                 ':status' => $dados['status'],
@@ -169,6 +216,9 @@ class EducacaoCorporativa
                 UPDATE educacao_corporativa_docentes SET
                     docente_id = :docente_id,
                     data = :data,
+                    dia_inteiro = :dia_inteiro,
+                    hora_inicio = :hora_inicio,
+                    hora_fim = :hora_fim,
                     titulo = :titulo,
                     descricao = :descricao,
                     status = :status
@@ -181,6 +231,9 @@ class EducacaoCorporativa
                 ':id' => $dados['id'],
                 ':docente_id' => $dados['docente_id'],
                 ':data' => $dados['data'],
+                ':dia_inteiro' => $dados['dia_inteiro'],
+                ':hora_inicio' => $dados['hora_inicio'],
+                ':hora_fim' => $dados['hora_fim'],
                 ':titulo' => $dados['titulo'],
                 ':descricao' => $dados['descricao'],
                 ':status' => $dados['status'],

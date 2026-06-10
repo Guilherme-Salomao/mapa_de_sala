@@ -379,7 +379,7 @@ class AprendizagemQuadro
             return 'docente ocupado';
         }
 
-        if ($this->docenteEmEducacaoCorporativa($docenteId, $data)) {
+        if ($this->docenteEmEducacaoCorporativa($docenteId, $data, $horaInicio, $horaFim)) {
             return 'docente em curso';
         }
 
@@ -530,7 +530,12 @@ class AprendizagemQuadro
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    private function docenteEmEducacaoCorporativa(int $docenteId, string $data): bool
+    private function docenteEmEducacaoCorporativa(
+        int $docenteId,
+        string $data,
+        string $horaInicio,
+        string $horaFim
+    ): bool
     {
         $stmt = $this->conn->prepare("
             SELECT id
@@ -538,11 +543,19 @@ class AprendizagemQuadro
             WHERE docente_id = :docente_id
               AND data = :data
               AND status = 'Ativo'
+              AND (
+                  dia_inteiro = 1
+                  OR hora_inicio IS NULL
+                  OR hora_fim IS NULL
+                  OR (hora_inicio < :hora_fim AND hora_fim > :hora_inicio)
+              )
             LIMIT 1
         ");
         $stmt->execute([
             ':docente_id' => $docenteId,
             ':data' => $data,
+            ':hora_inicio' => $horaInicio,
+            ':hora_fim' => $horaFim,
         ]);
 
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);

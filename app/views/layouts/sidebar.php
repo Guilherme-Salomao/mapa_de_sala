@@ -278,6 +278,14 @@
       <span>Aceleração</span>
     </a>
 
+    <?php if ($isProfessorMenu): ?>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'educacao_corporativa' ? 'active' : '' ?>"
+      href="./?page=educacao_corporativa">
+      <i class="bi bi-mortarboard"></i>
+      <span>Educação Corporativa</span>
+    </a>
+    <?php endif; ?>
+
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'ferias' ? 'active' : '' ?>"
       href="./?page=ferias">
       <i class="bi bi-calendar2-check"></i>
