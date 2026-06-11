@@ -1,15 +1,18 @@
 <?php
 
 require_once __DIR__ . '/../models/Curso.php';
+require_once __DIR__ . '/../models/Cidade.php';
 require_once __DIR__ . '/../core/AccessControl.php';
 
 class CursoController
 {
     private Curso $cursoModel;
+    private Cidade $cidadeModel;
 
     public function __construct()
     {
         $this->cursoModel = new Curso();
+        $this->cidadeModel = new Cidade();
     }
 
     public function index(): void
@@ -17,11 +20,17 @@ class CursoController
         $this->exigirLogin();
 
         $busca  = trim($_GET['busca'] ?? '');
-        $status = trim($_GET['status'] ?? 'todos');
+        $status = trim($_GET['status'] ?? 'Em andamento');
+        $cidadeId = (int) ($_GET['cidade_id'] ?? 0);
+
+        if (! in_array($status, ['Em andamento', 'Finalizada', 'todos'], true)) {
+            $status = 'Em andamento';
+        }
         $escopo = (new AccessControl())->escopoAreaAtuacao();
 
-        $cursos      = $this->cursoModel->listar($busca, $status, $escopo);
-        $totalCursos = $this->cursoModel->contar($busca, $status, $escopo);
+        $cursos      = $this->cursoModel->listar($busca, $status, $escopo, $cidadeId);
+        $totalCursos = $this->cursoModel->contar($busca, $status, $escopo, $cidadeId);
+        $cidades     = $this->cidadeModel->listarAtivas();
         $salas       = $this->cursoModel->listarSalasAtivas();
         $docentesGeracao = $this->cursoModel->listarDocentesAtivos($escopo);
         $ucsPorCursoModelo = $this->cursoModel->listarUcsPorCursoModelos(array_column($cursos, 'curso_modelo_id'));
@@ -34,6 +43,7 @@ class CursoController
         $this->exigirLogin();
 
         $cursoModelos = $this->cursoModel->listarCursoModelos((new AccessControl())->escopoAreaAtuacao());
+        $cidades = $this->cidadeModel->listarAtivas();
 
         require_once __DIR__ . '/../views/dashboard/cadastrar_curso.php';
     }
@@ -56,6 +66,7 @@ class CursoController
         }
 
         $cursoModelos = $this->cursoModel->listarCursoModelos((new AccessControl())->escopoAreaAtuacao());
+        $cidades = $this->cidadeModel->listarAtivas();
 
         require_once __DIR__ . '/../views/dashboard/editar_curso.php';
     }
@@ -74,6 +85,12 @@ class CursoController
 
         if (! $this->validarDados($dados)) {
             $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
+        }
+
+        $dados['cidade_id'] = $this->cidadeModel->obterOuCriarPorNome($dados['cidade']) ?? 0;
+
+        if ($dados['cidade_id'] <= 0) {
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Informe uma cidade valida para a turma.'));
         }
 
         if (! $this->cursoModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
@@ -107,6 +124,12 @@ class CursoController
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
             $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
+        }
+
+        $dados['cidade_id'] = $this->cidadeModel->obterOuCriarPorNome($dados['cidade']) ?? 0;
+
+        if ($dados['cidade_id'] <= 0) {
+            $this->redirecionar('./?page=turmas&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Informe uma cidade valida para a turma.'));
         }
 
         if (! $this->cursoModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
@@ -223,6 +246,7 @@ class CursoController
             'curso_modelo_id'     => (int) ($_POST['curso_modelo_id'] ?? 0),
             'nome'                => trim($_POST['nome'] ?? ''),
             'codigo_oferta'       => trim($_POST['codigo_oferta'] ?? ''),
+            'cidade'              => trim($_POST['cidade'] ?? ''),
             'integral'            => isset($_POST['integral']) ? 1 : 0,
             'hora_inicio'         => trim($_POST['hora_inicio'] ?? ''),
             'hora_fim'            => trim($_POST['hora_fim'] ?? ''),
@@ -246,6 +270,7 @@ class CursoController
         return $dados['nome'] !== ''
             && $dados['curso_modelo_id'] > 0
             && $dados['codigo_oferta'] !== ''
+            && $dados['cidade'] !== ''
             && $this->validarHorario($dados)
             && $this->temDiaAula($dados)
             && in_array($dados['status'], ['Em andamento', 'Finalizada'], true);
@@ -259,6 +284,7 @@ class CursoController
             'curso_modelo_id'     => $dados['curso_modelo_id'] > 0 ? $dados['curso_modelo_id'] : '',
             'nome'                => $dados['nome'],
             'codigo_oferta'       => $dados['codigo_oferta'],
+            'cidade'              => $dados['cidade'],
             'integral'            => $dados['integral'],
             'hora_inicio'         => $dados['hora_inicio'],
             'hora_fim'            => $dados['hora_fim'],

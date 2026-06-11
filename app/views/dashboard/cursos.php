@@ -180,6 +180,7 @@
                   <tr>
                     <th>Turma</th>
                     <th>Código da oferta</th>
+                    <th>Cidade</th>
                     <th>Período</th>
                     <th>Horário</th>
                     <th>Hora aula</th>
@@ -199,6 +200,7 @@
                       <?php endif; ?>
                     </td>
                     <td><?php echo htmlspecialchars($curso['codigo_oferta'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($curso['cidade_nome'] ?? 'Não informada'); ?></td>
                     <td><?php echo htmlspecialchars(periodoTurmaPorHorario($curso)); ?></td>
                     <td>
                       <?php if (! empty($curso['hora_inicio']) && ! empty($curso['hora_fim'])): ?>
@@ -224,7 +226,7 @@
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
+                    <td colspan="8" class="text-center text-muted py-4">
                       Nenhuma turma encontrada.
                     </td>
                   </tr>

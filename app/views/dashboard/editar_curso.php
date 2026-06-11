@@ -21,6 +21,7 @@
         'curso_modelo_id'     => '',
         'nome'                => '',
         'codigo_oferta'       => '',
+        'cidade_nome'         => '',
         'integral'            => 0,
         'hora_inicio'         => '',
         'hora_fim'            => '',

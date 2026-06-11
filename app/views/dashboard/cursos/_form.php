@@ -35,20 +35,33 @@
     </div>
 
     <div class="col-12 col-md-3">
+      <label for="cidade" class="form-label">Cidade</label>
+      <input type="text" class="form-control" id="cidade" name="cidade" list="cidadesDisponiveis"
+        placeholder="Ex.: São Paulo" maxlength="100"
+        value="<?php echo htmlspecialchars($cursoForm['cidade_nome'] ?? ''); ?>" required>
+      <datalist id="cidadesDisponiveis">
+        <?php foreach (($cidades ?? []) as $cidade): ?>
+        <option value="<?php echo htmlspecialchars($cidade['nome']); ?>"></option>
+        <?php endforeach; ?>
+      </datalist>
+      <div class="invalid-feedback">Informe a cidade da turma.</div>
+    </div>
+
+    <div class="col-12 col-md-2">
       <label for="hora_inicio" class="form-label">Hora inicial</label>
       <input type="time" class="form-control" id="hora_inicio" name="hora_inicio"
         value="<?php echo htmlspecialchars(substr($cursoForm['hora_inicio'] ?? '', 0, 5)); ?>">
       <div class="form-text">Opcional.</div>
     </div>
 
-    <div class="col-12 col-md-3">
+    <div class="col-12 col-md-2">
       <label for="hora_fim" class="form-label">Hora final</label>
       <input type="time" class="form-control" id="hora_fim" name="hora_fim"
         value="<?php echo htmlspecialchars(substr($cursoForm['hora_fim'] ?? '', 0, 5)); ?>">
       <div class="form-text">Opcional.</div>
     </div>
 
-    <div class="col-12 col-md-3">
+    <div class="col-12 col-md-2">
       <label for="status" class="form-label">Status</label>
       <select class="form-select" id="status" name="status" required>
         <option value="Em andamento"

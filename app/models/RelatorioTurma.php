@@ -18,7 +18,7 @@ class RelatorioTurma
             SELECT co.id, co.nome, co.codigo_oferta, co.hora_inicio, co.hora_fim, co.status
             FROM cursos_ofertas co
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
-            WHERE 1 = 1
+            WHERE co.status = 'Em andamento'
         ";
 
         $params = [];
@@ -128,7 +128,7 @@ class RelatorioTurma
                 ON qh.curso_oferta_id = co.id
                 AND qh.status = 'Ativa'
             LEFT JOIN unidades_curriculares qh_uc ON qh_uc.id = qh.unidade_curricular_id
-            WHERE 1 = 1
+            WHERE co.status = 'Em andamento'
         ";
 
         $params = [];
@@ -166,6 +166,7 @@ class RelatorioTurma
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             LEFT JOIN areas a ON a.id = cm.area_id
             WHERE co.id = :id
+              AND co.status = 'Em andamento'
         ";
 
         $params = [':id' => $id];

@@ -13,12 +13,18 @@ class Curso
         $this->conn = $database->connect();
     }
 
-    public function listar(string $busca = '', string $status = 'todos', array $escopo = ['tipo' => 'todos', 'ids' => []]): array
+    public function listar(
+        string $busca = '',
+        string $status = 'todos',
+        array $escopo = ['tipo' => 'todos', 'ids' => []],
+        int $cidadeId = 0
+    ): array
     {
         $sql = "
             SELECT
                 co.id,
                 co.curso_modelo_id,
+                co.cidade_id,
                 co.nome,
                 co.codigo_oferta,
                 co.integral,
@@ -39,22 +45,29 @@ class Curso
                 co.criado_em,
                 co.atualizado_em,
                 cm.area_id AS curso_area_id,
-                cm.nome AS curso_modelo_nome
+                cm.nome AS curso_modelo_nome,
+                ci.nome AS cidade_nome
             FROM {$this->table} co
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
+            LEFT JOIN cidades ci ON ci.id = co.cidade_id
             WHERE 1 = 1
         ";
 
         $params = [];
 
         if ($busca !== '') {
-            $sql .= " AND (co.nome LIKE :busca OR co.codigo_oferta LIKE :busca OR co.descricao LIKE :busca OR cm.nome LIKE :busca)";
+            $sql .= " AND (co.nome LIKE :busca OR co.codigo_oferta LIKE :busca OR co.descricao LIKE :busca OR cm.nome LIKE :busca OR ci.nome LIKE :busca)";
             $params[':busca'] = '%' . $busca . '%';
         }
 
         if ($status !== 'todos') {
             $sql .= " AND co.status = :status";
             $params[':status'] = $status;
+        }
+
+        if ($cidadeId > 0) {
+            $sql .= " AND co.cidade_id = :cidade_id";
+            $params[':cidade_id'] = $cidadeId;
         }
 
         $this->aplicarEscopo($sql, $params, $escopo);
@@ -67,24 +80,35 @@ class Curso
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function contar(string $busca = '', string $status = 'todos', array $escopo = ['tipo' => 'todos', 'ids' => []]): int
+    public function contar(
+        string $busca = '',
+        string $status = 'todos',
+        array $escopo = ['tipo' => 'todos', 'ids' => []],
+        int $cidadeId = 0
+    ): int
     {
         $sql = "
             SELECT COUNT(*) AS total
             FROM {$this->table} co
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
+            LEFT JOIN cidades ci ON ci.id = co.cidade_id
             WHERE 1 = 1
         ";
         $params = [];
 
         if ($busca !== '') {
-            $sql .= " AND (co.nome LIKE :busca OR co.codigo_oferta LIKE :busca OR co.descricao LIKE :busca OR cm.nome LIKE :busca)";
+            $sql .= " AND (co.nome LIKE :busca OR co.codigo_oferta LIKE :busca OR co.descricao LIKE :busca OR cm.nome LIKE :busca OR ci.nome LIKE :busca)";
             $params[':busca'] = '%' . $busca . '%';
         }
 
         if ($status !== 'todos') {
             $sql .= " AND co.status = :status";
             $params[':status'] = $status;
+        }
+
+        if ($cidadeId > 0) {
+            $sql .= " AND co.cidade_id = :cidade_id";
+            $params[':cidade_id'] = $cidadeId;
         }
 
         $this->aplicarEscopo($sql, $params, $escopo);
@@ -100,27 +124,30 @@ class Curso
     {
         $sql = "
             SELECT
-                id,
-                curso_modelo_id,
-                nome,
-                codigo_oferta,
-                integral,
-                hora_inicio,
-                hora_fim,
-                hora_inicio_tarde,
-                hora_fim_tarde,
-                participa_parada_pedagogica,
-                participa_recesso_escolar,
-                aula_segunda,
-                aula_terca,
-                aula_quarta,
-                aula_quinta,
-                aula_sexta,
-                aula_sabado,
-                status,
-                descricao
-            FROM {$this->table}
-            WHERE id = :id
+                co.id,
+                co.curso_modelo_id,
+                co.cidade_id,
+                co.nome,
+                co.codigo_oferta,
+                co.integral,
+                co.hora_inicio,
+                co.hora_fim,
+                co.hora_inicio_tarde,
+                co.hora_fim_tarde,
+                co.participa_parada_pedagogica,
+                co.participa_recesso_escolar,
+                co.aula_segunda,
+                co.aula_terca,
+                co.aula_quarta,
+                co.aula_quinta,
+                co.aula_sexta,
+                co.aula_sabado,
+                co.status,
+                co.descricao,
+                ci.nome AS cidade_nome
+            FROM {$this->table} co
+            LEFT JOIN cidades ci ON ci.id = co.cidade_id
+            WHERE co.id = :id
             LIMIT 1
         ";
 
@@ -667,6 +694,7 @@ class Curso
             $sql = "
                 INSERT INTO {$this->table} (
                     curso_modelo_id,
+                    cidade_id,
                     nome,
                     codigo_oferta,
                     integral,
@@ -686,6 +714,7 @@ class Curso
                     descricao
                 ) VALUES (
                     :curso_modelo_id,
+                    :cidade_id,
                     :nome,
                     :codigo_oferta,
                     :integral,
@@ -710,6 +739,7 @@ class Curso
 
             $stmt->execute([
                 ':curso_modelo_id'     => $dados['curso_modelo_id'] ?: null,
+                ':cidade_id'           => $dados['cidade_id'] ?: null,
                 ':nome'                => $dados['nome'],
                 ':codigo_oferta'       => $dados['codigo_oferta'],
                 ':integral'            => (int) $dados['integral'],
@@ -965,6 +995,7 @@ class Curso
             && $this->docenteTemEscala($docenteId, $data, $horaInicio, $horaFim)
             && ! $this->docenteEmFerias($docenteId, $data)
             && ! $this->docenteEmCompensacao($docenteId, $data)
+            && ! $this->docenteEmEducacaoCorporativa($docenteId, $data, $horaInicio, $horaFim)
             && ! $this->docenteTemConflito($docenteId, $data, $horaInicio, $horaFim);
     }
 
@@ -1066,6 +1097,36 @@ class Curso
         $stmt->execute([
             ':docente_id' => $docenteId,
             ':data' => $data,
+        ]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function docenteEmEducacaoCorporativa(
+        int $docenteId,
+        string $data,
+        string $horaInicio,
+        string $horaFim
+    ): bool {
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM educacao_corporativa_docentes
+            WHERE docente_id = :docente_id
+              AND data = :data
+              AND status = 'Ativo'
+              AND (
+                  dia_inteiro = 1
+                  OR hora_inicio IS NULL
+                  OR hora_fim IS NULL
+                  OR (hora_inicio < :hora_fim AND hora_fim > :hora_inicio)
+              )
+            LIMIT 1
+        ");
+        $stmt->execute([
+            ':docente_id' => $docenteId,
+            ':data' => $data,
+            ':hora_inicio' => $horaInicio,
+            ':hora_fim' => $horaFim,
         ]);
 
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1271,7 +1332,7 @@ class Curso
         $fimDisponivel = $horaFim;
 
         $stmt = $this->conn->prepare("
-            SELECT tipo, hora_inicio, hora_fim
+            SELECT tipo, hora_inicio, hora_fim, cidade_id
             FROM calendario_bloqueios
             WHERE status = 'Ativo'
               AND data <= :data
@@ -1280,6 +1341,13 @@ class Curso
         $stmt->execute([':data' => $data]);
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $bloqueio) {
+            if (
+                (int) ($bloqueio['cidade_id'] ?? 0) > 0
+                && (int) ($bloqueio['cidade_id'] ?? 0) !== (int) ($turma['cidade_id'] ?? 0)
+            ) {
+                continue;
+            }
+
             if (! $this->bloqueioConflitaHorario($bloqueio, $inicioDisponivel, $fimDisponivel)) {
                 continue;
             }
@@ -1399,6 +1467,7 @@ class Curso
             $sql = "
                 UPDATE {$this->table} SET
                     curso_modelo_id = :curso_modelo_id,
+                    cidade_id = :cidade_id,
                     nome = :nome,
                     codigo_oferta = :codigo_oferta,
                     integral = :integral,
@@ -1424,6 +1493,7 @@ class Curso
             return $stmt->execute([
                 ':id'                  => $dados['id'],
                 ':curso_modelo_id'     => $dados['curso_modelo_id'] ?: null,
+                ':cidade_id'           => $dados['cidade_id'] ?: null,
                 ':nome'                => $dados['nome'],
                 ':codigo_oferta'       => $dados['codigo_oferta'],
                 ':integral'            => (int) $dados['integral'],

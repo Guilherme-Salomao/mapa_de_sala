@@ -509,7 +509,7 @@
                           <div class="mb-2">
                             <select class="form-select form-select-sm" name="sala_id">
                               <option value="">
-                                <?php echo empty($salasDisponiveisDia) ? 'Nenhuma sala disponivel' : 'Sala...'; ?>
+                                Sem sala
                               </option>
                               <?php foreach ($salasDisponiveisDia as $sala): ?>
                               <option value="<?php echo (int) $sala['id']; ?>"
@@ -729,7 +729,7 @@
 
                             <div class="mb-2">
                               <select class="form-select form-select-sm" name="sala_id">
-                                <option value="" <?php echo empty($aula['sala_id']) ? 'selected' : ''; ?>>Sala...</option>
+                                <option value="" <?php echo empty($aula['sala_id']) ? 'selected' : ''; ?>>Sem sala</option>
                                 <?php foreach ($salasEdicao as $sala): ?>
                                 <option value="<?php echo (int) $sala['id']; ?>"
                                   <?php echo (int) $aula['sala_id'] === (int) $sala['id'] ? 'selected' : ''; ?>>
@@ -975,12 +975,9 @@
     if (!form) return;
 
     const sala = form.querySelector('select[name="sala_id"]');
-    const ead = form.querySelector('.quick-ead');
-
-    const visita = form.querySelector('input[name="visita_tecnica"]');
 
     if (sala) {
-      sala.required = !((ead && ead.checked) || (visita && visita.checked));
+      sala.required = false;
     }
   }
 

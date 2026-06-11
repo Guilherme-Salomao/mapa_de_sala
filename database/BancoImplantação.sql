@@ -58,6 +58,14 @@ CREATE TABLE IF NOT EXISTS sala_recursos (
   CONSTRAINT fk_sala_recursos_recurso FOREIGN KEY (recurso_id) REFERENCES recursos(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS cidades (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(100) NOT NULL UNIQUE,
+  status ENUM('Ativa','Inativa') NOT NULL DEFAULT 'Ativa',
+  criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS curso_modelos (
   id INT AUTO_INCREMENT PRIMARY KEY,
   area_id INT DEFAULT NULL,
@@ -74,6 +82,7 @@ CREATE TABLE IF NOT EXISTS curso_modelos (
 CREATE TABLE IF NOT EXISTS cursos_ofertas (
   id INT AUTO_INCREMENT PRIMARY KEY,
   curso_modelo_id INT DEFAULT NULL,
+  cidade_id INT DEFAULT NULL,
   nome VARCHAR(150) NOT NULL,
   codigo_oferta VARCHAR(50) NOT NULL UNIQUE,
   integral TINYINT(1) NOT NULL DEFAULT 0,
@@ -94,7 +103,9 @@ CREATE TABLE IF NOT EXISTS cursos_ofertas (
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY fk_cursos_ofertas_modelo (curso_modelo_id),
-  CONSTRAINT fk_cursos_ofertas_modelo FOREIGN KEY (curso_modelo_id) REFERENCES curso_modelos(id) ON UPDATE CASCADE
+  KEY fk_cursos_ofertas_cidade (cidade_id),
+  CONSTRAINT fk_cursos_ofertas_modelo FOREIGN KEY (curso_modelo_id) REFERENCES curso_modelos(id) ON UPDATE CASCADE,
+  CONSTRAINT fk_cursos_ofertas_cidade FOREIGN KEY (cidade_id) REFERENCES cidades(id) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS unidades_curriculares (
@@ -163,8 +174,8 @@ CREATE TABLE IF NOT EXISTS aprendizagem_quadros (
   id INT AUTO_INCREMENT PRIMARY KEY,
   curso_oferta_id INT NOT NULL,
   unidade_curricular_id INT NOT NULL,
-  sala_id INT NOT NULL,
-  docente_id INT NOT NULL,
+  sala_id INT DEFAULT NULL,
+  docente_id INT DEFAULT NULL,
   data_inicio DATE NOT NULL,
   data_fim DATE NOT NULL,
   status ENUM('Ativo','Inativo') NOT NULL DEFAULT 'Ativo',
@@ -220,6 +231,7 @@ CREATE TABLE IF NOT EXISTS quadro_horario_docentes (
 
 CREATE TABLE IF NOT EXISTS calendario_bloqueios (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  cidade_id INT DEFAULT NULL,
   data DATE NOT NULL,
   data_fim DATE DEFAULT NULL,
   hora_inicio TIME DEFAULT NULL,
@@ -231,7 +243,9 @@ CREATE TABLE IF NOT EXISTS calendario_bloqueios (
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_calendario_bloqueios_status (status),
-  KEY idx_calendario_bloqueios_data (data)
+  KEY idx_calendario_bloqueios_data (data),
+  KEY fk_calendario_bloqueios_cidade (cidade_id),
+  CONSTRAINT fk_calendario_bloqueios_cidade FOREIGN KEY (cidade_id) REFERENCES cidades(id) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS educacao_corporativa_docentes (

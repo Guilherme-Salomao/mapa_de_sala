@@ -249,10 +249,6 @@ class QuadroHorarioController
             return false;
         }
 
-        if ($dados['sala_id'] <= 0 && $dados['ead_assincrona'] !== 1 && $dados['visita_tecnica'] !== 1) {
-            return false;
-        }
-
         if ($dados['divisao_por_hora'] !== 1 && $dados['unidade_curricular_id'] <= 0) {
             return false;
         }

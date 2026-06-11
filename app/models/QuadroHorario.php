@@ -17,6 +17,7 @@ class QuadroHorario
         $sql = "
             SELECT
                 co.id,
+                co.cidade_id,
                 co.nome,
                 co.codigo_oferta,
                 co.integral,
@@ -34,11 +35,13 @@ class QuadroHorario
                 co.aula_sabado,
                 co.curso_modelo_id,
                 cm.nome AS curso_nome,
-                a.nome AS area_nome
+                a.nome AS area_nome,
+                ci.nome AS cidade_nome
             FROM cursos_ofertas co
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             LEFT JOIN areas a ON a.id = cm.area_id
-            WHERE 1 = 1
+            LEFT JOIN cidades ci ON ci.id = co.cidade_id
+            WHERE co.status = 'Em andamento'
         ";
 
         $params = [];
@@ -59,6 +62,7 @@ class QuadroHorario
         $sql = "
             SELECT
                 co.id,
+                co.cidade_id,
                 co.nome,
                 co.codigo_oferta,
                 co.integral,
@@ -76,10 +80,12 @@ class QuadroHorario
                 co.aula_sabado,
                 co.curso_modelo_id,
                 cm.nome AS curso_nome,
-                a.nome AS area_nome
+                a.nome AS area_nome,
+                ci.nome AS cidade_nome
             FROM cursos_ofertas co
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             LEFT JOIN areas a ON a.id = cm.area_id
+            LEFT JOIN cidades ci ON ci.id = co.cidade_id
             WHERE co.id = :id
             LIMIT 1
         ";

@@ -93,28 +93,30 @@ class UnidadeCurricularController
         $dados = $this->obterDadosPost();
         $dados['id'] = (int) ($_POST['id'] ?? 0);
         $escopo = (new AccessControl())->escopoAreaAtuacao();
+        $urlRetorno = $this->urlListaComFiltros($_POST);
+        $queryEdicao = $this->queryFiltrosEdicao($_POST);
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
-            $this->redirecionar('./?page=ucs&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
+            $this->redirecionar('./?page=ucs&action=editar&id=' . $dados['id'] . '&' . $queryEdicao . '&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
         if (! $this->ucModel->buscarPorId($dados['id']) || ! $this->ucModel->ucPertenceEscopo($dados['id'], $escopo)) {
-            $this->redirecionar('./?page=ucs&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
+            $this->redirecionar($urlRetorno . '&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
         }
 
         if (! $this->ucModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
-            $this->redirecionar('./?page=ucs&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Modelo de curso nao encontrado.'));
+            $this->redirecionar('./?page=ucs&action=editar&id=' . $dados['id'] . '&' . $queryEdicao . '&tipo=erro&msg=' . urlencode('Modelo de curso nao encontrado.'));
         }
 
         if ($this->ucModel->codigoExiste($dados['curso_modelo_id'], $dados['codigo'], $dados['id'])) {
-            $this->redirecionar('./?page=ucs&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Ja existe outra UC com este codigo para o modelo selecionado.'));
+            $this->redirecionar('./?page=ucs&action=editar&id=' . $dados['id'] . '&' . $queryEdicao . '&tipo=erro&msg=' . urlencode('Ja existe outra UC com este codigo para o modelo selecionado.'));
         }
 
         if ($this->ucModel->atualizar($dados)) {
-            $this->redirecionar('./?page=ucs&tipo=sucesso&msg=' . urlencode('UC atualizada com sucesso.'));
+            $this->redirecionar($urlRetorno . '&tipo=sucesso&msg=' . urlencode('UC atualizada com sucesso.'));
         }
 
-        $this->redirecionar('./?page=ucs&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar a UC.'));
+        $this->redirecionar('./?page=ucs&action=editar&id=' . $dados['id'] . '&' . $queryEdicao . '&tipo=erro&msg=' . urlencode('Nao foi possivel atualizar a UC.'));
     }
 
     public function excluir(): void
@@ -123,20 +125,21 @@ class UnidadeCurricularController
 
         $id = (int) ($_POST['id'] ?? 0);
         $escopo = (new AccessControl())->escopoAreaAtuacao();
+        $urlRetorno = $this->urlListaComFiltros($_POST);
 
         if ($id <= 0) {
-            $this->redirecionar('./?page=ucs&tipo=erro&msg=' . urlencode('UC invalida.'));
+            $this->redirecionar($urlRetorno . '&tipo=erro&msg=' . urlencode('UC invalida.'));
         }
 
         if (! $this->ucModel->ucPertenceEscopo($id, $escopo)) {
-            $this->redirecionar('./?page=ucs&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
+            $this->redirecionar($urlRetorno . '&tipo=erro&msg=' . urlencode('UC nao encontrada.'));
         }
 
         if ($this->ucModel->excluir($id)) {
-            $this->redirecionar('./?page=ucs&tipo=sucesso&msg=' . urlencode('UC excluida com sucesso.'));
+            $this->redirecionar($urlRetorno . '&tipo=sucesso&msg=' . urlencode('UC excluida com sucesso.'));
         }
 
-        $this->redirecionar('./?page=ucs&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a UC.'));
+        $this->redirecionar($urlRetorno . '&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a UC.'));
     }
 
     private function exigirLogin(): void
@@ -181,6 +184,30 @@ class UnidadeCurricularController
             'carga_horaria'   => $dados['carga_horaria'] > 0 ? $dados['carga_horaria'] : '',
             'status'          => $dados['status'],
         ]);
+    }
+
+    private function urlListaComFiltros(array $origem): string
+    {
+        return './?' . http_build_query([
+            'page' => 'ucs',
+            'busca' => trim((string) ($origem['retorno_busca'] ?? '')),
+            'status' => $this->statusRetorno((string) ($origem['retorno_status'] ?? 'todos')),
+            'curso_modelo_id' => max(0, (int) ($origem['retorno_curso_modelo_id'] ?? 0)),
+        ]);
+    }
+
+    private function queryFiltrosEdicao(array $origem): string
+    {
+        return http_build_query([
+            'retorno_busca' => trim((string) ($origem['retorno_busca'] ?? '')),
+            'retorno_status' => $this->statusRetorno((string) ($origem['retorno_status'] ?? 'todos')),
+            'retorno_curso_modelo_id' => max(0, (int) ($origem['retorno_curso_modelo_id'] ?? 0)),
+        ]);
+    }
+
+    private function statusRetorno(string $status): string
+    {
+        return in_array($status, ['todos', 'Ativa', 'Inativa'], true) ? $status : 'todos';
     }
 
     private function redirecionar(string $url): void

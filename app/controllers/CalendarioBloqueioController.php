@@ -1,14 +1,17 @@
 <?php
 
 require_once __DIR__ . '/../models/CalendarioBloqueio.php';
+require_once __DIR__ . '/../models/Cidade.php';
 
 class CalendarioBloqueioController
 {
     private CalendarioBloqueio $bloqueioModel;
+    private Cidade $cidadeModel;
 
     public function __construct()
     {
         $this->bloqueioModel = new CalendarioBloqueio();
+        $this->cidadeModel = new Cidade();
     }
 
     public function index(): void
@@ -29,6 +32,7 @@ class CalendarioBloqueioController
         }
 
         $bloqueios = $this->bloqueioModel->listar($busca, $status);
+        $cidades = $this->cidadeModel->listarAtivas();
         $totalBloqueios = count($bloqueios);
 
         require_once __DIR__ . '/../views/dashboard/calendario_bloqueios.php';
@@ -43,6 +47,14 @@ class CalendarioBloqueioController
 
         if (! $this->validarDados($dados)) {
             $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha os campos obrigatorios.'));
+        }
+
+        $dados['cidade_id'] = $dados['cidade'] !== ''
+            ? ($this->cidadeModel->obterOuCriarPorNome($dados['cidade']) ?? 0)
+            : null;
+
+        if ($dados['cidade'] !== '' && empty($dados['cidade_id'])) {
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Informe uma cidade valida.'));
         }
 
         if ($this->bloqueioModel->salvar($dados)) {
@@ -61,6 +73,14 @@ class CalendarioBloqueioController
 
         if ($dados['id'] <= 0 || ! $this->validarDados($dados)) {
             $this->redirecionar('./?page=calendario&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
+        }
+
+        $dados['cidade_id'] = $dados['cidade'] !== ''
+            ? ($this->cidadeModel->obterOuCriarPorNome($dados['cidade']) ?? 0)
+            : null;
+
+        if ($dados['cidade'] !== '' && empty($dados['cidade_id'])) {
+            $this->redirecionar('./?page=calendario&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Informe uma cidade valida.'));
         }
 
         if ($this->bloqueioModel->atualizar($dados)) {
@@ -98,6 +118,7 @@ class CalendarioBloqueioController
             'hora_inicio' => $diaInteiro === 1 ? '' : trim($_POST['hora_inicio'] ?? ''),
             'hora_fim' => $diaInteiro === 1 ? '' : trim($_POST['hora_fim'] ?? ''),
             'titulo' => trim($_POST['titulo'] ?? ''),
+            'cidade' => trim($_POST['cidade'] ?? ''),
             'tipo' => $tipo,
             'descricao' => trim($_POST['descricao'] ?? ''),
             'status' => trim($_POST['status'] ?? 'Ativo'),
@@ -147,6 +168,7 @@ class CalendarioBloqueioController
             'hora_inicio' => $dados['hora_inicio'],
             'hora_fim' => $dados['hora_fim'],
             'titulo' => $dados['titulo'],
+            'cidade' => $dados['cidade'],
             'tipo_bloqueio' => $dados['tipo'],
             'descricao' => $dados['descricao'],
             'status_bloqueio' => $dados['status'],

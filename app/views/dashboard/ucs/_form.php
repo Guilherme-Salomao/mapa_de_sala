@@ -1,6 +1,9 @@
 <form id="formUc" method="POST" action="<?php echo $formAction; ?>" novalidate>
   <?php if ($modoEdicao): ?>
   <input type="hidden" name="id" value="<?php echo (int) ($ucForm['id'] ?? 0); ?>">
+  <input type="hidden" name="retorno_busca" value="<?php echo htmlspecialchars($retornoBusca ?? ''); ?>">
+  <input type="hidden" name="retorno_status" value="<?php echo htmlspecialchars($retornoStatus ?? 'todos'); ?>">
+  <input type="hidden" name="retorno_curso_modelo_id" value="<?php echo (int) ($retornoCursoModeloId ?? 0); ?>">
   <?php endif; ?>
 
   <div class="row g-3">
@@ -61,7 +64,7 @@
   <hr class="my-4" />
 
   <div class="d-flex flex-wrap gap-2 justify-content-end">
-    <a href="./?page=ucs" class="btn btn-outline-secondary">
+    <a href="<?php echo htmlspecialchars($urlRetorno ?? './?page=ucs'); ?>" class="btn btn-outline-secondary">
       <i class="bi bi-x-circle"></i> Cancelar
     </a>
     <button type="submit" class="btn app-btn-primary">

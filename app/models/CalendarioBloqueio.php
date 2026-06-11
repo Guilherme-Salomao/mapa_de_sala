@@ -15,24 +15,25 @@ class CalendarioBloqueio
     public function listar(string $busca = '', string $status = 'todos'): array
     {
         $sql = "
-            SELECT *
-            FROM calendario_bloqueios
+            SELECT cb.*, c.nome AS cidade_nome
+            FROM calendario_bloqueios cb
+            LEFT JOIN cidades c ON c.id = cb.cidade_id
             WHERE 1 = 1
         ";
 
         $params = [];
 
         if ($busca !== '') {
-            $sql .= " AND (titulo LIKE :busca OR descricao LIKE :busca)";
+            $sql .= " AND (cb.titulo LIKE :busca OR cb.descricao LIKE :busca OR c.nome LIKE :busca)";
             $params[':busca'] = '%' . $busca . '%';
         }
 
         if (in_array($status, ['Ativo', 'Inativo'], true)) {
-            $sql .= " AND status = :status";
+            $sql .= " AND cb.status = :status";
             $params[':status'] = $status;
         }
 
-        $sql .= " ORDER BY data DESC, COALESCE(data_fim, data) DESC, titulo ASC";
+        $sql .= " ORDER BY cb.data DESC, COALESCE(cb.data_fim, cb.data) DESC, cb.titulo ASC";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
@@ -43,9 +44,10 @@ class CalendarioBloqueio
     public function buscarPorId(int $id): ?array
     {
         $sql = "
-            SELECT *
-            FROM calendario_bloqueios
-            WHERE id = :id
+            SELECT cb.*, c.nome AS cidade_nome
+            FROM calendario_bloqueios cb
+            LEFT JOIN cidades c ON c.id = cb.cidade_id
+            WHERE cb.id = :id
             LIMIT 1
         ";
 
@@ -104,6 +106,13 @@ class CalendarioBloqueio
 
     public function bloqueioAplicaTurma(array $bloqueio, ?array $turma = null): bool
     {
+        $cidadeBloqueioId = (int) ($bloqueio['cidade_id'] ?? 0);
+        $cidadeTurmaId = (int) ($turma['cidade_id'] ?? 0);
+
+        if ($cidadeBloqueioId > 0 && $cidadeBloqueioId !== $cidadeTurmaId) {
+            return false;
+        }
+
         $tipo = $bloqueio['tipo'] ?? '';
 
         if ($tipo === 'Parada Pedagogica') {
@@ -151,6 +160,7 @@ class CalendarioBloqueio
                     data_fim,
                     hora_inicio,
                     hora_fim,
+                    cidade_id,
                     titulo,
                     tipo,
                     descricao,
@@ -160,6 +170,7 @@ class CalendarioBloqueio
                     :data_fim,
                     :hora_inicio,
                     :hora_fim,
+                    :cidade_id,
                     :titulo,
                     :tipo,
                     :descricao,
@@ -174,6 +185,7 @@ class CalendarioBloqueio
                 ':data_fim' => $dados['data_fim'] ?: null,
                 ':hora_inicio' => $dados['hora_inicio'] ?: null,
                 ':hora_fim' => $dados['hora_fim'] ?: null,
+                ':cidade_id' => $dados['cidade_id'] ?: null,
                 ':titulo' => $dados['titulo'],
                 ':tipo' => $dados['tipo'],
                 ':descricao' => $dados['descricao'],
@@ -193,6 +205,7 @@ class CalendarioBloqueio
                     data_fim = :data_fim,
                     hora_inicio = :hora_inicio,
                     hora_fim = :hora_fim,
+                    cidade_id = :cidade_id,
                     titulo = :titulo,
                     tipo = :tipo,
                     descricao = :descricao,
@@ -208,6 +221,7 @@ class CalendarioBloqueio
                 ':data_fim' => $dados['data_fim'] ?: null,
                 ':hora_inicio' => $dados['hora_inicio'] ?: null,
                 ':hora_fim' => $dados['hora_fim'] ?: null,
+                ':cidade_id' => $dados['cidade_id'] ?: null,
                 ':titulo' => $dados['titulo'],
                 ':tipo' => $dados['tipo'],
                 ':descricao' => $dados['descricao'],

@@ -20,6 +20,7 @@
         'curso_modelo_id'     => $_GET['curso_modelo_id'] ?? '',
         'nome'                => $_GET['nome'] ?? '',
         'codigo_oferta'       => $_GET['codigo_oferta'] ?? '',
+        'cidade_nome'         => $_GET['cidade'] ?? '',
         'integral'            => $_GET['integral'] ?? '0',
         'hora_inicio'         => $_GET['hora_inicio'] ?? '',
         'hora_fim'            => $_GET['hora_fim'] ?? '',

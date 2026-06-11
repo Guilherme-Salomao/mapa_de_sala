@@ -41,7 +41,13 @@
       <?php foreach (($ofertas ?? []) as $oferta): ?>
       <option value="<?php echo (int) $oferta['id']; ?>"
         <?php echo((int) ($cursoOfertaId ?? 0) === (int) $oferta['id']) ? 'selected' : ''; ?>>
-        <?php echo htmlspecialchars(($oferta['nome'] ?? '') . ' - ' . ($oferta['codigo_oferta'] ?? '')); ?>
+        <?php
+            $rotuloOferta = ($oferta['nome'] ?? '') . ' - ' . ($oferta['codigo_oferta'] ?? '');
+            if (! empty($oferta['cidade_nome'])) {
+                $rotuloOferta .= ' - ' . $oferta['cidade_nome'];
+            }
+            echo htmlspecialchars($rotuloOferta);
+        ?>
       </option>
       <?php endforeach; ?>
     </select>

@@ -11,6 +11,15 @@
     $usuarioLogado = $_SESSION['usuario']['nome'] ?? 'Usuario';
     $mensagem = $_GET['msg'] ?? '';
     $tipo = $_GET['tipo'] ?? '';
+    $retornoBusca = trim($_GET['retorno_busca'] ?? '');
+    $retornoStatus = trim($_GET['retorno_status'] ?? 'todos');
+    $retornoCursoModeloId = (int) ($_GET['retorno_curso_modelo_id'] ?? 0);
+    $urlRetorno = './?' . http_build_query([
+        'page' => 'ucs',
+        'busca' => $retornoBusca,
+        'status' => $retornoStatus,
+        'curso_modelo_id' => $retornoCursoModeloId,
+    ]);
 
     $formAction = './?page=ucs&action=atualizar';
     $botaoTexto = 'Atualizar UC';
@@ -28,7 +37,7 @@
     $tituloPagina = 'Editar UC';
     $subtituloPagina = 'Atualize os dados da unidade curricular';
     $botaoTopoTexto = 'Voltar';
-    $botaoTopoLink = './?page=ucs';
+    $botaoTopoLink = $urlRetorno;
     $botaoTopoClasse = 'btn-outline-secondary';
     $botaoTopoIcone = 'bi-arrow-left';
 ?>

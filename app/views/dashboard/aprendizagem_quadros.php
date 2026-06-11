@@ -106,8 +106,8 @@
 
               <div class="col-12 col-lg-4">
                 <label class="form-label">Sala</label>
-                <select name="sala_id" class="form-select" required>
-                  <option value="">Selecione...</option>
+                <select name="sala_id" class="form-select">
+                  <option value="">Sem sala preferencial</option>
                   <?php foreach ($salas as $sala): ?>
                   <option value="<?php echo (int) $sala['id']; ?>"
                     <?php echo $formSalaId === (int) $sala['id'] ? 'selected' : ''; ?>>
@@ -118,9 +118,9 @@
               </div>
 
               <div class="col-12 col-lg-4">
-                <label class="form-label">Docente</label>
-                <select name="docente_id" id="aprendizagemDocente" class="form-select" required>
-                  <option value="">Selecione...</option>
+                <label class="form-label">Docente preferencial</label>
+                <select name="docente_id" id="aprendizagemDocente" class="form-select">
+                  <option value="">Sem docente preferencial</option>
                   <?php foreach ($docentes as $docente): ?>
                   <option value="<?php echo (int) $docente['id']; ?>"
                     data-ucs="<?php echo htmlspecialchars(',' . ($docente['ucs_vinculadas'] ?? '') . ','); ?>"
@@ -219,7 +219,7 @@
                     </td>
                     <td><?php echo htmlspecialchars(($registro['uc_codigo'] ?? '') . ' - ' . ($registro['uc_nome'] ?? '')); ?></td>
                     <td><?php echo htmlspecialchars($registro['sala_nome'] ?? ''); ?></td>
-                    <td><?php echo htmlspecialchars($registro['docente_nome'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($registro['docente_nome'] ?? 'Sem docente'); ?></td>
                     <td>
                       <?php echo htmlspecialchars(date('d/m/Y', strtotime($registro['data_inicio']))); ?>
                       até
@@ -287,8 +287,6 @@
 
     function filtrarDocentes() {
       const ucId = ucSelect.value;
-      let primeiroDocente = "";
-
       Array.from(docenteSelect.options).forEach((option) => {
         if (!option.value) {
           option.hidden = false;
@@ -299,15 +297,12 @@
         const visivel = ucId !== "" && ucs.includes("," + ucId + ",");
         option.hidden = !visivel;
 
-        if (visivel && !primeiroDocente) {
-          primeiroDocente = option.value;
-        }
       });
 
       const selecionado = docenteSelect.options[docenteSelect.selectedIndex];
 
       if (!selecionado || selecionado.hidden) {
-        docenteSelect.value = primeiroDocente;
+        docenteSelect.value = "";
       }
     }
 

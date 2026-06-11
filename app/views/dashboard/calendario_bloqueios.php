@@ -25,6 +25,7 @@
     $formHoraInicio = $bloqueioForm['hora_inicio'] ?? ($_GET['hora_inicio'] ?? '');
     $formHoraFim = $bloqueioForm['hora_fim'] ?? ($_GET['hora_fim'] ?? '');
     $formTitulo = $bloqueioForm['titulo'] ?? ($_GET['titulo'] ?? '');
+    $formCidade = $bloqueioForm['cidade_nome'] ?? ($_GET['cidade'] ?? '');
     $formTipo = $bloqueioForm['tipo'] ?? ($_GET['tipo_bloqueio'] ?? 'Feriado');
     $formDescricao = $bloqueioForm['descricao'] ?? ($_GET['descricao'] ?? '');
     $formStatus = $bloqueioForm['status'] ?? ($_GET['status_bloqueio'] ?? 'Ativo');
@@ -105,6 +106,21 @@
                 <label class="form-label">Título</label>
                 <input type="text" name="titulo" class="form-control" maxlength="150"
                   value="<?php echo htmlspecialchars($formTitulo); ?>" required>
+              </div>
+
+              <div class="w-100"></div>
+
+              <div class="col-12 col-md-3">
+                <label class="form-label">Cidade</label>
+                <input type="text" name="cidade" class="form-control" list="cidadesCalendario"
+                  maxlength="100" placeholder="Todas as cidades"
+                  value="<?php echo htmlspecialchars($formCidade); ?>">
+                <datalist id="cidadesCalendario">
+                  <?php foreach (($cidades ?? []) as $cidade): ?>
+                  <option value="<?php echo htmlspecialchars($cidade['nome']); ?>"></option>
+                  <?php endforeach; ?>
+                </datalist>
+                <div class="form-text">Deixe em branco para aplicar a todas.</div>
               </div>
 
               <div class="col-6 col-md-2">
@@ -212,6 +228,7 @@
                     <th>Título</th>
                     <th>Data</th>
                     <th>Horário</th>
+                    <th>Cidade</th>
                     <th>Tipo</th>
                     <th>Status</th>
                     <th class="text-end">Ações</th>
@@ -242,6 +259,7 @@
                       Dia inteiro
                       <?php endif; ?>
                     </td>
+                    <td><?php echo htmlspecialchars($bloqueio['cidade_nome'] ?? 'Todas as cidades'); ?></td>
                     <td><?php echo htmlspecialchars(labelTipoBloqueio($bloqueio['tipo'] ?? '')); ?></td>
                     <td>
                       <span class="badge <?php echo ($bloqueio['status'] ?? '') === 'Ativo' ? 'text-bg-success' : 'text-bg-secondary'; ?>">
@@ -266,7 +284,7 @@
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
+                    <td colspan="7" class="text-center text-muted py-4">
                       Nenhuma data encontrada.
                     </td>
                   </tr>

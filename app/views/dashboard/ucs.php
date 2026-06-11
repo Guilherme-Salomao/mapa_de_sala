@@ -16,6 +16,11 @@
     $cursoModeloId = $cursoModeloId ?? (int) ($_GET['curso_modelo_id'] ?? 0);
     $ucs = $ucs ?? [];
     $totalUcs = $totalUcs ?? count($ucs);
+    $filtrosRetorno = [
+        'retorno_busca' => $busca,
+        'retorno_status' => $status,
+        'retorno_curso_modelo_id' => $cursoModeloId,
+    ];
 
     $tituloPagina = 'Manutenção de UCs';
     $subtituloPagina = 'Gerencie unidades curriculares por modelo de curso';

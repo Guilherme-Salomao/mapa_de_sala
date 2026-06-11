@@ -80,8 +80,6 @@ class AprendizagemQuadroController
         if (
             $dados['curso_oferta_id'] <= 0 ||
             $dados['unidade_curricular_id'] <= 0 ||
-            $dados['sala_id'] <= 0 ||
-            $dados['docente_id'] <= 0 ||
             $dados['data_inicio'] === '' ||
             $dados['data_fim'] === ''
         ) {

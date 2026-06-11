@@ -27,9 +27,9 @@ class AprendizagemQuadro
             FROM aprendizagem_quadros aq
             INNER JOIN cursos_ofertas co ON co.id = aq.curso_oferta_id
             INNER JOIN unidades_curriculares uc ON uc.id = aq.unidade_curricular_id
-            INNER JOIN salas s ON s.id = aq.sala_id
-            INNER JOIN docentes d ON d.id = aq.docente_id
-            INNER JOIN usuarios u ON u.id = d.usuario_id
+            LEFT JOIN salas s ON s.id = aq.sala_id
+            LEFT JOIN docentes d ON d.id = aq.docente_id
+            LEFT JOIN usuarios u ON u.id = d.usuario_id
             LEFT JOIN quadro_horario qh ON qh.aprendizagem_quadro_id = aq.id
             WHERE 1 = 1
         ";
@@ -148,11 +148,16 @@ class AprendizagemQuadro
             return ['sucesso' => false, 'mensagem' => 'Turma ou UC invalida para Aceleração.'];
         }
 
-        if (! $this->docenteVinculadoUc((int) $dados['docente_id'], (int) $dados['unidade_curricular_id'])) {
+        $docentePreferencialId = (int) ($dados['docente_id'] ?? 0);
+
+        if (
+            $docentePreferencialId > 0
+            && ! $this->docenteVinculadoUc($docentePreferencialId, (int) $dados['unidade_curricular_id'])
+        ) {
             return ['sucesso' => false, 'mensagem' => 'Docente sem vinculo com a UC selecionada.'];
         }
 
-        if (! $this->docenteAreaAprendizagem((int) $dados['docente_id'])) {
+        if ($docentePreferencialId > 0 && ! $this->docenteAreaAprendizagem($docentePreferencialId)) {
             return ['sucesso' => false, 'mensagem' => 'Docente precisa ser da area Aprendizagem para Aceleracao.'];
         }
 
@@ -175,12 +180,12 @@ class AprendizagemQuadro
             $aprendizagemId = $this->inserirProgramacao($dados);
             $geradas = 0;
             $puladas = [];
+            $aulasSemSala = 0;
+            $aulasSemDocente = 0;
 
             foreach ($datas as $data) {
-                $motivo = $this->motivoBloqueio(
+                $motivo = $this->motivoBloqueioGeracao(
                     (int) $dados['curso_oferta_id'],
-                    (int) $dados['sala_id'],
-                    (int) $dados['docente_id'],
                     $data,
                     $horaInicio,
                     $horaFim
@@ -191,8 +196,44 @@ class AprendizagemQuadro
                     continue;
                 }
 
-                $aulaId = $this->inserirNoQuadro($aprendizagemId, $dados, $data, $horaInicio, $horaFim);
-                $this->vincularDocente($aulaId, (int) $dados['docente_id']);
+                $salaId = (int) ($dados['sala_id'] ?? 0);
+                $salaAulaId = $salaId > 0
+                    && ! $this->salaOcupada($salaId, $data, $horaInicio, $horaFim)
+                    && ! $this->salaReservada($salaId, $data, $horaInicio, $horaFim)
+                        ? $salaId
+                        : null;
+
+                if ($salaAulaId === null) {
+                    $aulasSemSala++;
+                }
+
+                $docenteId = (int) ($dados['docente_id'] ?? 0);
+                $docenteAulaId = $docenteId > 0
+                    && $this->docenteTemEscala($docenteId, $data, $horaInicio, $horaFim)
+                    && ! $this->docenteOcupado($docenteId, $data, $horaInicio, $horaFim)
+                    && ! $this->docenteEmEducacaoCorporativa($docenteId, $data, $horaInicio, $horaFim)
+                    && ! $this->docenteEmFerias($docenteId, $data)
+                    && ! $this->docenteEmCompensacao($docenteId, $data)
+                        ? $docenteId
+                        : null;
+
+                if ($docenteAulaId === null) {
+                    $aulasSemDocente++;
+                }
+
+                $aulaId = $this->inserirNoQuadro(
+                    $aprendizagemId,
+                    $dados,
+                    $data,
+                    $horaInicio,
+                    $horaFim,
+                    $salaAulaId
+                );
+
+                if ($docenteAulaId !== null) {
+                    $this->vincularDocente($aulaId, $docenteAulaId);
+                }
+
                 $geradas++;
             }
 
@@ -208,6 +249,7 @@ class AprendizagemQuadro
             $this->conn->commit();
 
             $mensagem = $geradas . ' aula(s) de Aceleração geradas no quadro horario.';
+            $mensagem .= ' Sem sala: ' . $aulasSemSala . '. Sem docente: ' . $aulasSemDocente . '.';
 
             if (! empty($puladas)) {
                 $mensagem .= ' Datas nao geradas: ' . implode(', ', array_slice($puladas, 0, 5));
@@ -278,8 +320,8 @@ class AprendizagemQuadro
         $stmt->execute([
             ':curso_oferta_id' => $dados['curso_oferta_id'],
             ':unidade_curricular_id' => $dados['unidade_curricular_id'],
-            ':sala_id' => $dados['sala_id'],
-            ':docente_id' => $dados['docente_id'],
+            ':sala_id' => (int) ($dados['sala_id'] ?? 0) > 0 ? (int) $dados['sala_id'] : null,
+            ':docente_id' => (int) ($dados['docente_id'] ?? 0) > 0 ? (int) $dados['docente_id'] : null,
             ':data_inicio' => $dados['data_inicio'],
             ':data_fim' => $dados['data_fim'],
             ':observacoes' => $dados['observacoes'],
@@ -288,7 +330,14 @@ class AprendizagemQuadro
         return (int) $this->conn->lastInsertId();
     }
 
-    private function inserirNoQuadro(int $aprendizagemId, array $dados, string $data, string $horaInicio, string $horaFim): int
+    private function inserirNoQuadro(
+        int $aprendizagemId,
+        array $dados,
+        string $data,
+        string $horaInicio,
+        string $horaFim,
+        ?int $salaId
+    ): int
     {
         $observacoes = 'Aceleração';
 
@@ -333,7 +382,7 @@ class AprendizagemQuadro
             ':aprendizagem_quadro_id' => $aprendizagemId,
             ':curso_oferta_id' => $dados['curso_oferta_id'],
             ':unidade_curricular_id' => $dados['unidade_curricular_id'],
-            ':sala_id' => $dados['sala_id'],
+            ':sala_id' => $salaId,
             ':data_aula' => $data,
             ':hora_inicio' => $horaInicio,
             ':hora_fim' => $horaFim,
@@ -357,7 +406,12 @@ class AprendizagemQuadro
         ]);
     }
 
-    private function motivoBloqueio(int $turmaId, int $salaId, int $docenteId, string $data, string $horaInicio, string $horaFim): ?string
+    private function motivoBloqueioGeracao(
+        int $turmaId,
+        string $data,
+        string $horaInicio,
+        string $horaFim
+    ): ?string
     {
         if ($this->dataBloqueada($data, $turmaId, $horaInicio, $horaFim)) {
             return 'calendario bloqueado';
@@ -367,31 +421,63 @@ class AprendizagemQuadro
             return 'turma ja possui aula';
         }
 
-        if ($this->salaOcupada($salaId, $data, $horaInicio, $horaFim)) {
-            return 'sala ocupada';
-        }
-
-        if ($this->salaReservada($salaId, $data, $horaInicio, $horaFim)) {
-            return 'sala reservada/manutenção';
-        }
-
-        if ($this->docenteOcupado($docenteId, $data, $horaInicio, $horaFim)) {
-            return 'docente ocupado';
-        }
-
-        if ($this->docenteEmEducacaoCorporativa($docenteId, $data, $horaInicio, $horaFim)) {
-            return 'docente em curso';
-        }
-
-        if ($this->docenteEmFerias($docenteId, $data)) {
-            return 'docente em ferias';
-        }
-
-        if ($this->docenteEmCompensacao($docenteId, $data)) {
-            return 'docente em compensacao';
-        }
-
         return null;
+    }
+
+    private function docenteTemEscala(
+        int $docenteId,
+        string $data,
+        string $horaInicio,
+        string $horaFim
+    ): bool {
+        $diaSemana = [
+            1 => 'Segunda',
+            2 => 'Terça',
+            3 => 'Quarta',
+            4 => 'Quinta',
+            5 => 'Sexta',
+            6 => 'Sábado',
+        ][(int) date('N', strtotime($data))] ?? '';
+        $periodos = [];
+        $faixas = [
+            'Manhã' => ['00:00', '12:00'],
+            'Tarde' => ['12:00', '18:00'],
+            'Noite' => ['18:00', '23:59'],
+        ];
+
+        foreach ($faixas as $periodo => [$inicioFaixa, $fimFaixa]) {
+            if ($horaInicio < $fimFaixa && $horaFim > $inicioFaixa) {
+                $periodos[] = $periodo;
+            }
+        }
+
+        if ($diaSemana === '' || empty($periodos)) {
+            return false;
+        }
+
+        $placeholders = [];
+        $params = [
+            ':docente_id' => $docenteId,
+            ':dia_semana' => $diaSemana,
+        ];
+
+        foreach ($periodos as $index => $periodo) {
+            $placeholder = ':periodo_' . $index;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $periodo;
+        }
+
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM docente_escala
+            WHERE docente_id = :docente_id
+              AND dia_semana = :dia_semana
+              AND periodo IN (" . implode(',', $placeholders) . ")
+            LIMIT 1
+        ");
+        $stmt->execute($params);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     private function dataBloqueada(string $data, int $turmaId, string $horaInicio, string $horaFim): bool
@@ -399,7 +485,7 @@ class AprendizagemQuadro
         $turma = $this->buscarTurma($turmaId);
 
         $stmt = $this->conn->prepare("
-            SELECT tipo, hora_inicio, hora_fim
+            SELECT tipo, hora_inicio, hora_fim, cidade_id
             FROM calendario_bloqueios
             WHERE status = 'Ativo'
               AND data <= :data
@@ -408,6 +494,13 @@ class AprendizagemQuadro
         $stmt->execute([':data' => $data]);
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $bloqueio) {
+            if (
+                (int) ($bloqueio['cidade_id'] ?? 0) > 0
+                && (int) ($bloqueio['cidade_id'] ?? 0) !== (int) ($turma['cidade_id'] ?? 0)
+            ) {
+                continue;
+            }
+
             if (! $this->bloqueioConflitaHorario($bloqueio, $horaInicio, $horaFim)) {
                 continue;
             }
@@ -639,6 +732,7 @@ class AprendizagemQuadro
             SELECT
                 id,
                 curso_modelo_id,
+                cidade_id,
                 hora_inicio,
                 hora_fim,
                 participa_parada_pedagogica,
