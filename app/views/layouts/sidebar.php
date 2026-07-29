@@ -126,6 +126,12 @@
       <span>Educação Corporativa</span>
     </a>
 
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'substituicoes' ? 'active' : '' ?>"
+      href="./?page=substituicoes">
+      <i class="bi bi-person-plus"></i>
+      <span>Substituições</span>
+    </a>
+
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'ferias' ? 'active' : '' ?>"
       href="./?page=ferias">
       <i class="bi bi-calendar2-check"></i>
@@ -193,6 +199,11 @@
       <i class="bi bi-mortarboard"></i>
       <span>Educação Corporativa</span>
     </a>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'substituicoes' ? 'active' : '' ?>"
+      href="./?page=substituicoes">
+      <i class="bi bi-person-plus"></i>
+      <span>Substituições</span>
+    </a>
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'ferias' ? 'active' : '' ?>"
       href="./?page=ferias">
       <i class="bi bi-calendar2-check"></i>
@@ -228,6 +239,12 @@
       href="./?page=educacao_corporativa">
       <i class="bi bi-mortarboard"></i>
       <span>Educação Corporativa</span>
+    </a>
+
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'substituicoes' ? 'active' : '' ?>"
+      href="./?page=substituicoes">
+      <i class="bi bi-person-plus"></i>
+      <span>Substituições</span>
     </a>
 
     <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'relatorio_salas' ? 'active' : '' ?>"
@@ -283,6 +300,11 @@
       href="./?page=educacao_corporativa">
       <i class="bi bi-mortarboard"></i>
       <span>Educação Corporativa</span>
+    </a>
+    <a class="app-side-link <?php echo($paginaAtiva ?? '') === 'substituicoes' ? 'active' : '' ?>"
+      href="./?page=substituicoes">
+      <i class="bi bi-person-plus"></i>
+      <span>Substituições</span>
     </a>
     <?php endif; ?>
 

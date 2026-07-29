@@ -87,10 +87,8 @@ class CursoController
             $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha todos os campos obrigatorios.'));
         }
 
-        $dados['cidade_id'] = $this->cidadeModel->obterOuCriarPorNome($dados['cidade']) ?? 0;
-
-        if ($dados['cidade_id'] <= 0) {
-            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Informe uma cidade valida para a turma.'));
+        if (! $this->cidadeModel->existeAtiva($dados['cidade_id'])) {
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Selecione uma cidade valida para a turma.'));
         }
 
         if (! $this->cursoModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
@@ -126,10 +124,8 @@ class CursoController
             $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
-        $dados['cidade_id'] = $this->cidadeModel->obterOuCriarPorNome($dados['cidade']) ?? 0;
-
-        if ($dados['cidade_id'] <= 0) {
-            $this->redirecionar('./?page=turmas&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Informe uma cidade valida para a turma.'));
+        if (! $this->cidadeModel->existeAtiva($dados['cidade_id'])) {
+            $this->redirecionar('./?page=turmas&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Selecione uma cidade valida para a turma.'));
         }
 
         if (! $this->cursoModel->cursoModeloExiste($dados['curso_modelo_id'], $escopo)) {
@@ -246,7 +242,7 @@ class CursoController
             'curso_modelo_id'     => (int) ($_POST['curso_modelo_id'] ?? 0),
             'nome'                => trim($_POST['nome'] ?? ''),
             'codigo_oferta'       => trim($_POST['codigo_oferta'] ?? ''),
-            'cidade'              => trim($_POST['cidade'] ?? ''),
+            'cidade_id'           => (int) ($_POST['cidade_id'] ?? 0),
             'integral'            => isset($_POST['integral']) ? 1 : 0,
             'hora_inicio'         => trim($_POST['hora_inicio'] ?? ''),
             'hora_fim'            => trim($_POST['hora_fim'] ?? ''),
@@ -270,7 +266,7 @@ class CursoController
         return $dados['nome'] !== ''
             && $dados['curso_modelo_id'] > 0
             && $dados['codigo_oferta'] !== ''
-            && $dados['cidade'] !== ''
+            && $dados['cidade_id'] > 0
             && $this->validarHorario($dados)
             && $this->temDiaAula($dados)
             && in_array($dados['status'], ['Em andamento', 'Finalizada'], true);
@@ -284,7 +280,7 @@ class CursoController
             'curso_modelo_id'     => $dados['curso_modelo_id'] > 0 ? $dados['curso_modelo_id'] : '',
             'nome'                => $dados['nome'],
             'codigo_oferta'       => $dados['codigo_oferta'],
-            'cidade'              => $dados['cidade'],
+            'cidade_id'           => $dados['cidade_id'],
             'integral'            => $dados['integral'],
             'hora_inicio'         => $dados['hora_inicio'],
             'hora_fim'            => $dados['hora_fim'],

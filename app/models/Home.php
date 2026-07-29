@@ -230,15 +230,21 @@ class Home
         $fimSemana = date('Y-m-d', strtotime($inicioSemana . ' +5 days'));
         $escala = $this->escalaDocente($docenteId);
         $aulas = $this->aulasDocentePeriodo($docenteId, $inicioSemana, $fimSemana);
+        $substituicoes = $this->substituicoesDocentePeriodo($docenteId, $inicioSemana, $fimSemana);
         $cursos = $this->cursosCorporativosDocentePeriodo($docenteId, $inicioSemana, $fimSemana);
         $bloqueiosCalendario = $this->bloqueiosCalendarioPeriodo($inicioSemana, $fimSemana);
         $aulasPorData = [];
+        $substituicoesPorData = [];
         $cursosPorData = [];
         $bloqueiosPorData = [];
         $semana = [];
 
         foreach ($aulas as $aula) {
             $aulasPorData[(string) $aula['data_aula']][] = $aula;
+        }
+
+        foreach ($substituicoes as $substituicao) {
+            $substituicoesPorData[(string) $substituicao['data_aula']][] = $substituicao;
         }
 
         foreach ($cursos as $curso) {
@@ -297,6 +303,22 @@ class Home
                     'visita_tecnica' => (int) ($aula['visita_tecnica'] ?? 0),
                     'ead_assincrona' => (int) ($aula['ead_assincrona'] ?? 0),
                     'aprendizagem_quadro_id' => $aula['aprendizagem_quadro_id'] ?? null,
+                ];
+            }
+
+            foreach (($substituicoesPorData[$data] ?? []) as $substituicao) {
+                $periodo = $this->normalizarPeriodoPorHorario((string) $substituicao['hora_inicio']);
+                $periodosComAula[$periodo] = true;
+                $eventos[] = [
+                    'tipo' => 'aula',
+                    'periodo' => $periodo,
+                    'hora' => substr((string) $substituicao['hora_inicio'], 0, 5) . ' - ' . substr((string) $substituicao['hora_fim'], 0, 5),
+                    'titulo' => 'Substituição: ' . ($substituicao['turma'] ?? ''),
+                    'uc' => $substituicao['unidade_curricular'] ?? '',
+                    'sala' => $substituicao['sala_nome'] ?? '',
+                    'visita_tecnica' => 0,
+                    'ead_assincrona' => 0,
+                    'aprendizagem_quadro_id' => null,
                 ];
             }
 
@@ -728,9 +750,11 @@ class Home
     {
         $escala = $this->escalaDocente($docenteId);
         $aulas = $this->aulasDocentePeriodo($docenteId, $inicio, $fim);
+        $substituicoes = $this->substituicoesDocentePeriodo($docenteId, $inicio, $fim);
         $cursos = $this->cursosCorporativosDocentePeriodo($docenteId, $inicio, $fim);
         $feriadosIntegrais = $this->datasFeriadoIntegralPeriodo($inicio, $fim);
         $aulasPorData = [];
+        $substituicoesPorData = [];
         $cursosPorData = [];
         $resumo = [
             'aula' => 0.0,
@@ -741,6 +765,10 @@ class Home
 
         foreach ($aulas as $aula) {
             $aulasPorData[(string) $aula['data_aula']][] = $aula;
+        }
+
+        foreach ($substituicoes as $substituicao) {
+            $substituicoesPorData[(string) $substituicao['data_aula']][] = $substituicao;
         }
 
         foreach ($cursos as $curso) {
@@ -772,6 +800,12 @@ class Home
                 $periodo = $this->normalizarPeriodoPorHorario((string) $aula['hora_inicio']);
                 $periodosComAula[$periodo] = true;
                 $resumo['aula'] += $this->horasEntre((string) $aula['hora_inicio'], (string) $aula['hora_fim']);
+            }
+
+            foreach (($substituicoesPorData[$data] ?? []) as $substituicao) {
+                $periodo = $this->normalizarPeriodoPorHorario((string) $substituicao['hora_inicio']);
+                $periodosComAula[$periodo] = true;
+                $resumo['aula'] += $this->horasEntre((string) $substituicao['hora_inicio'], (string) $substituicao['hora_fim']);
             }
 
             foreach (($cursosPorData[$data] ?? []) as $cursoData) {
@@ -927,6 +961,32 @@ class Home
               AND status = 'Ativo'
               AND data BETWEEN :inicio AND :fim
             ORDER BY data ASC
+        ");
+        $stmt->execute([
+            ':docente_id' => $docenteId,
+            ':inicio' => $inicio,
+            ':fim' => $fim,
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function substituicoesDocentePeriodo(int $docenteId, string $inicio, string $fim): array
+    {
+        $stmt = $this->conn->prepare("
+            SELECT
+                ds.data_aula,
+                ds.hora_inicio,
+                ds.hora_fim,
+                ds.turma,
+                ds.unidade_curricular,
+                s.nome AS sala_nome
+            FROM docente_substituicoes ds
+            LEFT JOIN salas s ON s.id = ds.sala_id
+            WHERE ds.docente_id = :docente_id
+              AND ds.status = 'Ativo'
+              AND ds.data_aula BETWEEN :inicio AND :fim
+            ORDER BY ds.data_aula ASC, ds.hora_inicio ASC
         ");
         $stmt->execute([
             ':docente_id' => $docenteId,

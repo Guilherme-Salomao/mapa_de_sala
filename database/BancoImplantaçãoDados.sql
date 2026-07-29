@@ -279,4 +279,25 @@ INSERT IGNORE INTO `sistema_logs` (`id`, `usuario_id`, `usuario_nome`, `usuario_
 INSERT IGNORE INTO `sistema_logs` (`id`, `usuario_id`, `usuario_nome`, `usuario_email`, `nivel_acesso`, `metodo`, `pagina`, `acao`, `descricao`, `dados`, `ip`, `navegador`, `criado_em`) VALUES
 (111, 1, 'Salomão', 'vitrineata@vitrineata.com.br', 'Admin', 'POST', 'calendario', 'salvar', 'Cadastro em calendario', '{\"data\":\"2026-06-06\",\"titulo\":\"Ponte de Feriado\",\"tipo\":\"Evento\",\"status\":\"Ativo\",\"descricao\":\"\"}', '186.214.199.151', 'Mozilla/5.0 (Windows NT 10.0;
 
+-- Congela a matriz curricular das turmas importadas.
+INSERT IGNORE INTO turma_unidades_curriculares (
+  curso_oferta_id,
+  unidade_curricular_id,
+  codigo,
+  nome,
+  carga_horaria,
+  status
+)
+SELECT
+  co.id,
+  uc.id,
+  uc.codigo,
+  uc.nome,
+  uc.carga_horaria,
+  uc.status
+FROM cursos_ofertas co
+INNER JOIN unidades_curriculares uc
+  ON uc.curso_modelo_id = co.curso_modelo_id
+WHERE uc.status = 'Ativa';
+
 SET FOREIGN_KEY_CHECKS = 1;

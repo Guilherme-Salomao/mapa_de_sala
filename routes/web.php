@@ -17,6 +17,7 @@ require_once __DIR__ . '/../app/controllers/RelatorioSalaController.php';
 require_once __DIR__ . '/../app/controllers/RelatorioTurmaSemDocenteController.php';
 require_once __DIR__ . '/../app/controllers/CalendarioBloqueioController.php';
 require_once __DIR__ . '/../app/controllers/EducacaoCorporativaController.php';
+require_once __DIR__ . '/../app/controllers/DocenteSubstituicaoController.php';
 require_once __DIR__ . '/../app/controllers/DocenteFeriasController.php';
 require_once __DIR__ . '/../app/controllers/DocenteCompensacaoController.php';
 require_once __DIR__ . '/../app/controllers/AprendizagemQuadroController.php';
@@ -27,7 +28,7 @@ require_once __DIR__ . '/../app/core/AccessControl.php';
 $page   = $_GET['page'] ?? 'login';
 $action = $_GET['action'] ?? '';
 
-$rotasPermitidas = ['login', 'cadastro', 'esqueci_senha', 'perfil', 'home', 'usuarios', 'salas', 'gestao_salas', 'docentes', 'cursos', 'turmas', 'ucs', 'quadro_horario', 'calendario', 'educacao_corporativa', 'ferias', 'compensacao', 'aprendizagem', 'aceleracao', 'relatorio_docente', 'relatorio_gestor', 'relatorio_turma', 'relatorio_salas', 'relatorio_turmas_sem_docente', 'logs', 'logout'];
+$rotasPermitidas = ['login', 'cadastro', 'esqueci_senha', 'perfil', 'home', 'usuarios', 'salas', 'gestao_salas', 'docentes', 'cursos', 'turmas', 'ucs', 'quadro_horario', 'calendario', 'educacao_corporativa', 'substituicoes', 'ferias', 'compensacao', 'aprendizagem', 'aceleracao', 'relatorio_docente', 'relatorio_gestor', 'relatorio_turma', 'relatorio_salas', 'relatorio_turmas_sem_docente', 'logs', 'logout'];
 
 if (! in_array($page, $rotasPermitidas, true)) {
     $page = 'login';
@@ -241,6 +242,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($page === 'substituicoes' && $action === 'salvar') {
+        $controller = new DocenteSubstituicaoController();
+        $controller->salvar();
+        exit;
+    }
+
+    if ($page === 'substituicoes' && $action === 'atualizar') {
+        $controller = new DocenteSubstituicaoController();
+        $controller->atualizar();
+        exit;
+    }
+
+    if ($page === 'substituicoes' && $action === 'excluir') {
+        $controller = new DocenteSubstituicaoController();
+        $controller->excluir();
+        exit;
+    }
+
     if ($page === 'ferias' && $action === 'salvar') {
         $controller = new DocenteFeriasController();
         $controller->salvar();
@@ -438,6 +457,11 @@ switch ($page) {
 
     case 'educacao_corporativa':
         $controller = new EducacaoCorporativaController();
+        $controller->index();
+        break;
+
+    case 'substituicoes':
+        $controller = new DocenteSubstituicaoController();
         $controller->index();
         break;
 

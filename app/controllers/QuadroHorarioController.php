@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/QuadroHorario.php';
 require_once __DIR__ . '/../models/CalendarioBloqueio.php';
 require_once __DIR__ . '/../models/EducacaoCorporativa.php';
+require_once __DIR__ . '/../models/DocenteSubstituicao.php';
 require_once __DIR__ . '/../core/AccessControl.php';
 
 class QuadroHorarioController
@@ -10,12 +11,14 @@ class QuadroHorarioController
     private QuadroHorario $quadroModel;
     private CalendarioBloqueio $bloqueioModel;
     private EducacaoCorporativa $educacaoModel;
+    private DocenteSubstituicao $substituicaoModel;
 
     public function __construct()
     {
         $this->quadroModel = new QuadroHorario();
         $this->bloqueioModel = new CalendarioBloqueio();
         $this->educacaoModel = new EducacaoCorporativa();
+        $this->substituicaoModel = new DocenteSubstituicao();
     }
 
     public function index(): void
@@ -847,6 +850,10 @@ class QuadroHorarioController
                 return 'A sala ja esta ocupada neste dia e horario.';
             }
 
+            if ($this->substituicaoModel->encontrarConflitoSubstituicaoSala((int) $dados['sala_id'], $dados['data_aula'], $bloco['inicio'], $bloco['fim'])) {
+                return 'A sala ja possui substituicao neste dia e horario.';
+            }
+
             foreach (($bloco['docentes'] ?? $dados['docentes']) as $docenteId) {
                 $exigirEscala = (int) ($dados['troca_escala'] ?? 0) !== 1;
 
@@ -873,6 +880,7 @@ class QuadroHorarioController
             && ! $this->educacaoModel->docenteEmCurso($docenteId, $data, null, $horaInicio, $horaFim)
             && ! $this->quadroModel->docenteEmFerias($docenteId, $data)
             && ! $this->quadroModel->docenteEmCompensacao($docenteId, $data)
+            && ! $this->substituicaoModel->encontrarConflitoSubstituicaoDocente($docenteId, $data, $horaInicio, $horaFim)
             && ! $this->quadroModel->encontrarConflitoDocente($docenteId, $data, $horaInicio, $horaFim, $ignorarId);
     }
 

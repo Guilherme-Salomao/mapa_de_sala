@@ -25,7 +25,7 @@
     $formHoraInicio = $bloqueioForm['hora_inicio'] ?? ($_GET['hora_inicio'] ?? '');
     $formHoraFim = $bloqueioForm['hora_fim'] ?? ($_GET['hora_fim'] ?? '');
     $formTitulo = $bloqueioForm['titulo'] ?? ($_GET['titulo'] ?? '');
-    $formCidade = $bloqueioForm['cidade_nome'] ?? ($_GET['cidade'] ?? '');
+    $formCidadeId = (int) ($bloqueioForm['cidade_id'] ?? ($_GET['cidade_id'] ?? 0));
     $formTipo = $bloqueioForm['tipo'] ?? ($_GET['tipo_bloqueio'] ?? 'Feriado');
     $formDescricao = $bloqueioForm['descricao'] ?? ($_GET['descricao'] ?? '');
     $formStatus = $bloqueioForm['status'] ?? ($_GET['status_bloqueio'] ?? 'Ativo');
@@ -112,15 +112,18 @@
 
               <div class="col-12 col-md-3">
                 <label class="form-label">Cidade</label>
-                <input type="text" name="cidade" class="form-control" list="cidadesCalendario"
-                  maxlength="100" placeholder="Todas as cidades"
-                  value="<?php echo htmlspecialchars($formCidade); ?>">
-                <datalist id="cidadesCalendario">
+                <select name="cidade_id" class="form-select">
+                  <option value="0" <?php echo $formCidadeId === 0 ? 'selected' : ''; ?>>
+                    Todas as cidades
+                  </option>
                   <?php foreach (($cidades ?? []) as $cidade): ?>
-                  <option value="<?php echo htmlspecialchars($cidade['nome']); ?>"></option>
+                  <option value="<?php echo (int) $cidade['id']; ?>"
+                    <?php echo $formCidadeId === (int) $cidade['id'] ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars($cidade['nome']); ?>
+                  </option>
                   <?php endforeach; ?>
-                </datalist>
-                <div class="form-text">Deixe em branco para aplicar a todas.</div>
+                </select>
+                <div class="form-text">Selecione uma cidade ou aplique a todas.</div>
               </div>
 
               <div class="col-6 col-md-2">

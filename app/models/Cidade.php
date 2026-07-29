@@ -25,6 +25,24 @@ class Cidade
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function existeAtiva(int $id): bool
+    {
+        if ($id <= 0) {
+            return false;
+        }
+
+        $stmt = $this->conn->prepare("
+            SELECT id
+            FROM cidades
+            WHERE id = :id
+              AND status = 'Ativa'
+            LIMIT 1
+        ");
+        $stmt->execute([':id' => $id]);
+
+        return (bool) $stmt->fetchColumn();
+    }
+
     public function obterOuCriarPorNome(string $nome): ?int
     {
         $nome = trim(preg_replace('/\s+/', ' ', $nome) ?? '');

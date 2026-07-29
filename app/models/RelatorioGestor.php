@@ -165,6 +165,28 @@ class RelatorioGestor
             }
         }
 
+        $stmtSubstituicoes = $this->conn->prepare("
+            SELECT data_aula, COALESCE(SUM(TIME_TO_SEC(TIMEDIFF(hora_fim, hora_inicio)) / 3600), 0) AS horas
+            FROM docente_substituicoes
+            WHERE docente_id = :docente_id
+              AND status = 'Ativo'
+              AND data_aula BETWEEN :inicio AND :fim
+            GROUP BY data_aula
+        ");
+        $stmtSubstituicoes->execute([
+            ':docente_id' => $docenteId,
+            ':inicio' => $inicio,
+            ':fim' => $fim,
+        ]);
+
+        foreach ($stmtSubstituicoes->fetchAll(PDO::FETCH_ASSOC) as $resultado) {
+            $dataAula = (string) ($resultado['data_aula'] ?? '');
+
+            if (! isset($feriadosIntegrais[$dataAula]) && ! isset($datasCompensacao[$dataAula])) {
+                $horas += (float) ($resultado['horas'] ?? 0);
+            }
+        }
+
         return round($horas, 2);
     }
 

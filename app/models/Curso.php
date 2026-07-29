@@ -691,6 +691,8 @@ class Curso
     public function salvar(array $dados)
     {
         try {
+            $this->conn->beginTransaction();
+
             $sql = "
                 INSERT INTO {$this->table} (
                     curso_modelo_id,
@@ -759,10 +761,54 @@ class Curso
                 ':descricao'           => $dados['descricao'],
             ]);
 
-            return (int) $this->conn->lastInsertId();
+            $turmaId = (int) $this->conn->lastInsertId();
+            $this->copiarMatrizParaTurma($turmaId, (int) $dados['curso_modelo_id']);
+            $this->conn->commit();
+
+            return $turmaId;
         } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+
             return false;
         }
+    }
+
+    private function copiarMatrizParaTurma(int $turmaId, int $cursoModeloId): void
+    {
+        if ($turmaId <= 0 || $cursoModeloId <= 0) {
+            throw new RuntimeException('Turma ou curso invalido para copiar a matriz.');
+        }
+
+        if ($this->cursoModeloSemUc($cursoModeloId)) {
+            $this->garantirUcPadraoCursoSemUc($cursoModeloId);
+        }
+
+        $stmt = $this->conn->prepare("
+            INSERT INTO turma_unidades_curriculares (
+                curso_oferta_id,
+                unidade_curricular_id,
+                codigo,
+                nome,
+                carga_horaria,
+                status
+            )
+            SELECT
+                :curso_oferta_id,
+                uc.id,
+                uc.codigo,
+                uc.nome,
+                uc.carga_horaria,
+                uc.status
+            FROM unidades_curriculares uc
+            WHERE uc.curso_modelo_id = :curso_modelo_id
+              AND uc.status = 'Ativa'
+        ");
+        $stmt->execute([
+            ':curso_oferta_id' => $turmaId,
+            ':curso_modelo_id' => $cursoModeloId,
+        ]);
     }
 
     private function listarUcsDaTurma(int $cursoModeloId): array

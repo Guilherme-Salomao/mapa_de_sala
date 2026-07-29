@@ -2,17 +2,20 @@
 
 require_once __DIR__ . '/../models/RelatorioDocente.php';
 require_once __DIR__ . '/../models/EducacaoCorporativa.php';
+require_once __DIR__ . '/../models/DocenteSubstituicao.php';
 require_once __DIR__ . '/../core/AccessControl.php';
 
 class RelatorioDocenteController
 {
     private RelatorioDocente $relatorioModel;
     private EducacaoCorporativa $educacaoModel;
+    private DocenteSubstituicao $substituicaoModel;
 
     public function __construct()
     {
         $this->relatorioModel = new RelatorioDocente();
         $this->educacaoModel = new EducacaoCorporativa();
+        $this->substituicaoModel = new DocenteSubstituicao();
     }
 
     public function index(): void
@@ -54,12 +57,14 @@ class RelatorioDocenteController
 
         $escala = $docenteSelecionado ? $this->relatorioModel->listarEscala($docenteId) : [];
         $aulas = $docenteSelecionado ? $this->relatorioModel->listarAulasMensais($docenteId, $mes, $ano) : [];
+        $substituicoes = $docenteSelecionado ? $this->substituicaoModel->listarPorDocenteMes($docenteId, $mes, $ano) : [];
         $cursosCorporativos = $docenteSelecionado ? $this->educacaoModel->listarPorDocenteMes($docenteId, $mes, $ano) : [];
         $bloqueiosCalendario = $docenteSelecionado ? $this->relatorioModel->listarBloqueiosMensais($mes, $ano) : [];
         $ausencias = $docenteSelecionado ? $this->relatorioModel->listarAusenciasMensais($docenteId, $mes, $ano) : [];
         $eventosPorData = $this->montarEventos(
             $escala,
             $aulas,
+            $substituicoes,
             $cursosCorporativos,
             $bloqueiosCalendario,
             $ausencias,
@@ -75,6 +80,7 @@ class RelatorioDocenteController
     private function montarEventos(
         array $escala,
         array $aulas,
+        array $substituicoes,
         array $cursosCorporativos,
         array $bloqueiosCalendario,
         array $ausencias,
@@ -84,6 +90,7 @@ class RelatorioDocenteController
     {
         $escalaPorDia = [];
         $aulasPorData = [];
+        $substituicoesPorData = [];
         $cursosPorData = [];
         $bloqueiosPorData = [];
         $ausenciasPorData = [];
@@ -112,6 +119,16 @@ class RelatorioDocenteController
             );
             $aula['periodo_key'] = $periodoKey;
             $aulasPorData[$data][] = $aula;
+        }
+
+        foreach ($substituicoes as $substituicao) {
+            $data = (string) $substituicao['data_aula'];
+            $periodoKey = $this->periodoPorHorario(
+                (string) ($substituicao['hora_inicio'] ?? ''),
+                (string) ($substituicao['hora_fim'] ?? '')
+            );
+            $substituicao['periodo_key'] = $periodoKey;
+            $substituicoesPorData[$data][] = $substituicao;
         }
 
         foreach ($cursosCorporativos as $curso) {
@@ -150,6 +167,7 @@ class RelatorioDocenteController
             $data = sprintf('%04d-%02d-%02d', $ano, $mes, $dia);
             $diaKey = $this->diaSemanaPorData($data);
             $aulasData = $aulasPorData[$data] ?? [];
+            $substituicoesData = $substituicoesPorData[$data] ?? [];
             $cursosData = $cursosPorData[$data] ?? [];
             $escalaData = $escalaPorDia[$diaKey] ?? [];
             $periodosComAula = [];
@@ -232,6 +250,26 @@ class RelatorioDocenteController
                     'turma' => $aula['turma_nome'] ?? '',
                     'uc' => trim(($aula['uc_codigo'] ?? '') . ' - ' . ($aula['uc_nome'] ?? '')),
                     'sala' => $aula['sala_nome'] ?? '',
+                ];
+            }
+
+            foreach ($substituicoesData as $substituicao) {
+                $periodoKey = (string) ($substituicao['periodo_key'] ?? '');
+
+                if ($periodoKey !== '') {
+                    $periodosComAula[$periodoKey] = true;
+                }
+
+                $eventosPorData[$data][] = [
+                    'tipo' => 'aula',
+                    'periodo' => $this->periodoLabel($periodoKey),
+                    'periodo_key' => $periodoKey,
+                    'hora' => substr((string) $substituicao['hora_inicio'], 0, 5) . ' - ' . substr((string) $substituicao['hora_fim'], 0, 5),
+                    'horas_numero' => $this->horasEntre((string) $substituicao['hora_inicio'], (string) $substituicao['hora_fim']),
+                    'turma' => 'Substituição: ' . ($substituicao['turma'] ?? ''),
+                    'uc' => $substituicao['unidade_curricular'] ?? '',
+                    'sala' => $substituicao['sala_nome'] ?? '',
+                    'observacoes' => $substituicao['motivo'] ?? '',
                 ];
             }
 

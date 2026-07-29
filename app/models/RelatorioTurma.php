@@ -46,60 +46,51 @@ class RelatorioTurma
                 a.nome AS area_nome,
                 CASE
                     WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem' THEN (
-                        SELECT COALESCE(SUM(uc_total.carga_horaria), 0)
-                        FROM unidades_curriculares uc_total
-                        WHERE uc_total.curso_modelo_id = cm.id
-                          AND uc_total.status = 'Ativa'
-                          AND UPPER(REPLACE(REPLACE(TRIM(uc_total.codigo), '-', ''), ' ', '')) <> 'UC12'
+                        SELECT COALESCE(SUM(tuc_total.carga_horaria), 0)
+                        FROM turma_unidades_curriculares tuc_total
+                        WHERE tuc_total.curso_oferta_id = co.id
+                          AND tuc_total.status = 'Ativa'
+                          AND UPPER(REPLACE(REPLACE(TRIM(tuc_total.codigo), '-', ''), ' ', '')) <> 'UC12'
                     )
-                    ELSE COALESCE(
-                        NULLIF(cm.carga_horaria_total, 0),
-                        (
-                            SELECT COALESCE(SUM(uc_total.carga_horaria), 0)
-                            FROM unidades_curriculares uc_total
-                            WHERE uc_total.curso_modelo_id = cm.id
-                              AND uc_total.status = 'Ativa'
-                        )
+                    ELSE (
+                        SELECT COALESCE(SUM(tuc_total.carga_horaria), 0)
+                        FROM turma_unidades_curriculares tuc_total
+                        WHERE tuc_total.curso_oferta_id = co.id
+                          AND tuc_total.status = 'Ativa'
                     )
                 END AS carga_horaria_total,
                 CASE
                     WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem' THEN COALESCE((
-                        SELECT SUM(uc12_total.carga_horaria * 60)
-                        FROM unidades_curriculares uc12_total
-                        WHERE uc12_total.curso_modelo_id = cm.id
-                          AND uc12_total.status = 'Ativa'
-                          AND UPPER(REPLACE(REPLACE(TRIM(uc12_total.codigo), '-', ''), ' ', '')) = 'UC12'
+                        SELECT SUM(tuc12_total.carga_horaria * 60)
+                        FROM turma_unidades_curriculares tuc12_total
+                        WHERE tuc12_total.curso_oferta_id = co.id
+                          AND tuc12_total.status = 'Ativa'
+                          AND UPPER(REPLACE(REPLACE(TRIM(tuc12_total.codigo), '-', ''), ' ', '')) = 'UC12'
                     ), 0)
                     ELSE 0
                 END AS uc12_carga_minutos,
                 (
                     SELECT COUNT(*)
-                    FROM unidades_curriculares uc_pendente
-                    WHERE uc_pendente.curso_modelo_id = cm.id
-                      AND uc_pendente.status = 'Ativa'
+                    FROM turma_unidades_curriculares tuc_pendente
+                    WHERE tuc_pendente.curso_oferta_id = co.id
+                      AND tuc_pendente.status = 'Ativa'
                       AND NOT (
                           LOWER(COALESCE(a.nome, '')) = 'aprendizagem'
-                          AND UPPER(REPLACE(REPLACE(TRIM(uc_pendente.codigo), '-', ''), ' ', '')) = 'UC12'
+                          AND UPPER(REPLACE(REPLACE(TRIM(tuc_pendente.codigo), '-', ''), ' ', '')) = 'UC12'
                       )
                       AND COALESCE((
                           SELECT SUM(TIMESTAMPDIFF(MINUTE, qh_pendente.hora_inicio, qh_pendente.hora_fim))
                           FROM quadro_horario qh_pendente
                           WHERE qh_pendente.curso_oferta_id = co.id
-                            AND qh_pendente.unidade_curricular_id = uc_pendente.id
+                            AND qh_pendente.unidade_curricular_id = tuc_pendente.unidade_curricular_id
                             AND qh_pendente.status = 'Ativa'
-                      ), 0) < ROUND(
-                          CASE
-                              WHEN COALESCE(cm.sem_uc, 0) = 1
-                              THEN cm.carga_horaria_total
-                              ELSE uc_pendente.carga_horaria
-                          END * 60
-                      )
+                      ), 0) < ROUND(tuc_pendente.carga_horaria * 60)
                 ) AS ucs_pendentes_conclusao,
                 COALESCE(SUM(
                     CASE
                         WHEN qh.id IS NULL THEN 0
                         WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem'
-                          AND UPPER(REPLACE(REPLACE(TRIM(qh_uc.codigo), '-', ''), ' ', '')) = 'UC12'
+                          AND UPPER(REPLACE(REPLACE(TRIM(COALESCE(tuc_qh.codigo, qh_uc.codigo)), '-', ''), ' ', '')) = 'UC12'
                         THEN 0
                         ELSE TIMESTAMPDIFF(MINUTE, qh.hora_inicio, qh.hora_fim)
                     END
@@ -107,7 +98,7 @@ class RelatorioTurma
                 COALESCE(SUM(
                     CASE
                         WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem'
-                          AND UPPER(REPLACE(REPLACE(TRIM(qh_uc.codigo), '-', ''), ' ', '')) = 'UC12'
+                          AND UPPER(REPLACE(REPLACE(TRIM(COALESCE(tuc_qh.codigo, qh_uc.codigo)), '-', ''), ' ', '')) = 'UC12'
                         THEN TIMESTAMPDIFF(MINUTE, qh.hora_inicio, qh.hora_fim)
                         ELSE 0
                     END
@@ -116,7 +107,7 @@ class RelatorioTurma
                 MAX(
                     CASE
                         WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem'
-                          AND UPPER(REPLACE(REPLACE(TRIM(qh_uc.codigo), '-', ''), ' ', '')) = 'UC12'
+                          AND UPPER(REPLACE(REPLACE(TRIM(COALESCE(tuc_qh.codigo, qh_uc.codigo)), '-', ''), ' ', '')) = 'UC12'
                         THEN NULL
                         ELSE qh.data_aula
                     END
@@ -128,6 +119,9 @@ class RelatorioTurma
                 ON qh.curso_oferta_id = co.id
                 AND qh.status = 'Ativa'
             LEFT JOIN unidades_curriculares qh_uc ON qh_uc.id = qh.unidade_curricular_id
+            LEFT JOIN turma_unidades_curriculares tuc_qh
+                ON tuc_qh.curso_oferta_id = co.id
+                AND tuc_qh.unidade_curricular_id = qh.unidade_curricular_id
             WHERE co.status = 'Em andamento'
         ";
 
@@ -135,7 +129,7 @@ class RelatorioTurma
         $this->aplicarEscopo($sql, $params, $escopo);
 
         $sql .= "
-            GROUP BY co.id, co.nome, co.codigo_oferta, co.status, cm.nome, a.nome, cm.carga_horaria_total, cm.id
+            GROUP BY co.id, co.nome, co.codigo_oferta, co.status, cm.nome, a.nome, cm.id
             ORDER BY
                 CASE co.status WHEN 'Em andamento' THEN 0 ELSE 1 END,
                 co.nome ASC,
@@ -190,13 +184,13 @@ class RelatorioTurma
 
         $sql = "
             SELECT
-                uc.id,
-                uc.codigo,
-                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN co.nome ELSE uc.nome END AS nome,
-                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN cm.carga_horaria_total ELSE uc.carga_horaria END AS carga_horaria,
+                tuc.unidade_curricular_id AS id,
+                tuc.codigo,
+                CASE WHEN COALESCE(cm.sem_uc, 0) = 1 THEN co.nome ELSE tuc.nome END AS nome,
+                tuc.carga_horaria,
                 CASE
                     WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem'
-                      AND UPPER(REPLACE(REPLACE(TRIM(uc.codigo), '-', ''), ' ', '')) = 'UC12'
+                      AND UPPER(REPLACE(REPLACE(TRIM(tuc.codigo), '-', ''), ' ', '')) = 'UC12'
                     THEN 0
                     ELSE 1
                 END AS conta_conclusao,
@@ -208,24 +202,24 @@ class RelatorioTurma
                 ), 0) AS minutos_lancados,
                 MIN(qh.data_aula) AS data_inicial,
                 MAX(qh.data_aula) AS data_final
-            FROM unidades_curriculares uc
-            INNER JOIN curso_modelos cm ON cm.id = uc.curso_modelo_id
+            FROM turma_unidades_curriculares tuc
+            INNER JOIN cursos_ofertas co ON co.id = tuc.curso_oferta_id
+            INNER JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             LEFT JOIN areas a ON a.id = cm.area_id
-            INNER JOIN cursos_ofertas co ON co.id = :turma_id
             LEFT JOIN quadro_horario qh
-                ON qh.unidade_curricular_id = uc.id
-                AND qh.curso_oferta_id = :turma_id
+                ON qh.unidade_curricular_id = tuc.unidade_curricular_id
+                AND qh.curso_oferta_id = :turma_id_aulas
                 AND qh.status = 'Ativa'
-            WHERE uc.curso_modelo_id = :curso_modelo_id
-              AND uc.status = 'Ativa'
-            GROUP BY uc.id, uc.codigo, uc.nome, uc.carga_horaria, cm.sem_uc, cm.carga_horaria_total, co.nome, a.nome
-            ORDER BY CHAR_LENGTH(uc.codigo) ASC, uc.codigo ASC, uc.nome ASC
+            WHERE tuc.curso_oferta_id = :turma_id_matriz
+              AND tuc.status = 'Ativa'
+            GROUP BY tuc.unidade_curricular_id, tuc.codigo, tuc.nome, tuc.carga_horaria, cm.sem_uc, co.nome, a.nome
+            ORDER BY CHAR_LENGTH(tuc.codigo) ASC, tuc.codigo ASC, tuc.nome ASC
         ";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([
-            ':turma_id' => $turmaId,
-            ':curso_modelo_id' => (int) $turma['curso_modelo_id'],
+            ':turma_id_aulas' => $turmaId,
+            ':turma_id_matriz' => $turmaId,
         ]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -239,7 +233,7 @@ class RelatorioTurma
                 MAX(
                     CASE
                         WHEN LOWER(COALESCE(a.nome, '')) = 'aprendizagem'
-                          AND UPPER(REPLACE(REPLACE(TRIM(uc.codigo), '-', ''), ' ', '')) = 'UC12'
+                          AND UPPER(REPLACE(REPLACE(TRIM(COALESCE(tuc.codigo, uc.codigo)), '-', ''), ' ', '')) = 'UC12'
                         THEN NULL
                         ELSE qh.data_aula
                     END
@@ -249,6 +243,9 @@ class RelatorioTurma
             LEFT JOIN curso_modelos cm ON cm.id = co.curso_modelo_id
             LEFT JOIN areas a ON a.id = cm.area_id
             LEFT JOIN unidades_curriculares uc ON uc.id = qh.unidade_curricular_id
+            LEFT JOIN turma_unidades_curriculares tuc
+                ON tuc.curso_oferta_id = qh.curso_oferta_id
+                AND tuc.unidade_curricular_id = qh.unidade_curricular_id
             WHERE qh.curso_oferta_id = :turma_id
               AND qh.status = 'Ativa'
         ";

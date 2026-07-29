@@ -49,12 +49,8 @@ class CalendarioBloqueioController
             $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Preencha os campos obrigatorios.'));
         }
 
-        $dados['cidade_id'] = $dados['cidade'] !== ''
-            ? ($this->cidadeModel->obterOuCriarPorNome($dados['cidade']) ?? 0)
-            : null;
-
-        if ($dados['cidade'] !== '' && empty($dados['cidade_id'])) {
-            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Informe uma cidade valida.'));
+        if ($dados['cidade_id'] > 0 && ! $this->cidadeModel->existeAtiva($dados['cidade_id'])) {
+            $this->redirecionar('./?' . $queryBase . '&tipo=erro&msg=' . urlencode('Selecione uma cidade valida.'));
         }
 
         if ($this->bloqueioModel->salvar($dados)) {
@@ -75,12 +71,8 @@ class CalendarioBloqueioController
             $this->redirecionar('./?page=calendario&tipo=erro&msg=' . urlencode('Dados invalidos para atualizacao.'));
         }
 
-        $dados['cidade_id'] = $dados['cidade'] !== ''
-            ? ($this->cidadeModel->obterOuCriarPorNome($dados['cidade']) ?? 0)
-            : null;
-
-        if ($dados['cidade'] !== '' && empty($dados['cidade_id'])) {
-            $this->redirecionar('./?page=calendario&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Informe uma cidade valida.'));
+        if ($dados['cidade_id'] > 0 && ! $this->cidadeModel->existeAtiva($dados['cidade_id'])) {
+            $this->redirecionar('./?page=calendario&action=editar&id=' . $dados['id'] . '&tipo=erro&msg=' . urlencode('Selecione uma cidade valida.'));
         }
 
         if ($this->bloqueioModel->atualizar($dados)) {
@@ -118,7 +110,7 @@ class CalendarioBloqueioController
             'hora_inicio' => $diaInteiro === 1 ? '' : trim($_POST['hora_inicio'] ?? ''),
             'hora_fim' => $diaInteiro === 1 ? '' : trim($_POST['hora_fim'] ?? ''),
             'titulo' => trim($_POST['titulo'] ?? ''),
-            'cidade' => trim($_POST['cidade'] ?? ''),
+            'cidade_id' => (int) ($_POST['cidade_id'] ?? 0),
             'tipo' => $tipo,
             'descricao' => trim($_POST['descricao'] ?? ''),
             'status' => trim($_POST['status'] ?? 'Ativo'),
@@ -168,7 +160,7 @@ class CalendarioBloqueioController
             'hora_inicio' => $dados['hora_inicio'],
             'hora_fim' => $dados['hora_fim'],
             'titulo' => $dados['titulo'],
-            'cidade' => $dados['cidade'],
+            'cidade_id' => $dados['cidade_id'],
             'tipo_bloqueio' => $dados['tipo'],
             'descricao' => $dados['descricao'],
             'status_bloqueio' => $dados['status'],

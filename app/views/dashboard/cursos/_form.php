@@ -35,16 +35,19 @@
     </div>
 
     <div class="col-12 col-md-3">
-      <label for="cidade" class="form-label">Cidade</label>
-      <input type="text" class="form-control" id="cidade" name="cidade" list="cidadesDisponiveis"
-        placeholder="Ex.: São Paulo" maxlength="100"
-        value="<?php echo htmlspecialchars($cursoForm['cidade_nome'] ?? ''); ?>" required>
-      <datalist id="cidadesDisponiveis">
+      <label for="cidade_id" class="form-label">Cidade</label>
+      <select class="form-select" id="cidade_id" name="cidade_id" required>
+        <option value="" <?php echo empty($cursoForm['cidade_id']) ? 'selected' : ''; ?> disabled>
+          Selecione...
+        </option>
         <?php foreach (($cidades ?? []) as $cidade): ?>
-        <option value="<?php echo htmlspecialchars($cidade['nome']); ?>"></option>
+        <option value="<?php echo (int) $cidade['id']; ?>"
+          <?php echo((int) ($cursoForm['cidade_id'] ?? 0) === (int) $cidade['id']) ? 'selected' : ''; ?>>
+          <?php echo htmlspecialchars($cidade['nome']); ?>
+        </option>
         <?php endforeach; ?>
-      </datalist>
-      <div class="invalid-feedback">Informe a cidade da turma.</div>
+      </select>
+      <div class="invalid-feedback">Selecione a cidade da turma.</div>
     </div>
 
     <div class="col-12 col-md-2">

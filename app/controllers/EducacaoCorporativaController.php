@@ -2,17 +2,20 @@
 
 require_once __DIR__ . '/../models/EducacaoCorporativa.php';
 require_once __DIR__ . '/../models/QuadroHorario.php';
+require_once __DIR__ . '/../models/DocenteSubstituicao.php';
 require_once __DIR__ . '/../core/AccessControl.php';
 
 class EducacaoCorporativaController
 {
     private EducacaoCorporativa $educacaoModel;
     private QuadroHorario $quadroModel;
+    private DocenteSubstituicao $substituicaoModel;
 
     public function __construct()
     {
         $this->educacaoModel = new EducacaoCorporativa();
         $this->quadroModel = new QuadroHorario();
+        $this->substituicaoModel = new DocenteSubstituicao();
     }
 
     public function index(): void
@@ -178,6 +181,10 @@ class EducacaoCorporativaController
 
         if ($conflito) {
             return 'Este docente já possui aula lançada neste horário.';
+        }
+
+        if ($this->substituicaoModel->encontrarConflitoSubstituicaoDocente((int) $dados['docente_id'], (string) $dados['data'], $horaInicio, $horaFim)) {
+            return 'Este docente ja possui substituicao neste horario.';
         }
 
         return null;
