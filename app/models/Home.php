@@ -428,6 +428,7 @@ class Home
                 'percentual_planejamento' => 0,
                 'percentual_curso' => 0,
                 'percentual_parada_pedagogica' => 0,
+                'percentual_compensacao' => 0,
             ];
         }
 
@@ -437,16 +438,33 @@ class Home
         $fimMes = date('Y-m-t', $timestamp);
         $resumoSemana = $this->resumoDocentePeriodo($docenteId, $inicioSemana, $fimSemana);
         $resumoMes = $this->resumoDocentePeriodo($docenteId, $inicioMes, $fimMes);
-        $totalMes = $resumoMes['aula'] + $resumoMes['planejamento'] + $resumoMes['curso'] + $resumoMes['parada_pedagogica'];
+        $totalMes = $resumoMes['aula']
+            + $resumoMes['planejamento']
+            + $resumoMes['curso']
+            + $resumoMes['parada_pedagogica']
+            + $resumoMes['compensacao'];
         $cargaHorariaMes = $this->cargaHorariaEscalaPeriodo($docenteId, $inicioMes, $fimMes);
+        $percentualAula = $totalMes > 0 ? round(($resumoMes['aula'] / $totalMes) * 100, 1) : 0;
+        $percentualPlanejamento = $totalMes > 0 ? round(($resumoMes['planejamento'] / $totalMes) * 100, 1) : 0;
+        $percentualCurso = $totalMes > 0 ? round(($resumoMes['curso'] / $totalMes) * 100, 1) : 0;
+        $percentualParada = $totalMes > 0 ? round(($resumoMes['parada_pedagogica'] / $totalMes) * 100, 1) : 0;
+        $percentualCompensacao = $totalMes > 0 ? round(($resumoMes['compensacao'] / $totalMes) * 100, 1) : 0;
+
+        if ($resumoMes['compensacao'] > 0) {
+            $percentualCompensacao = max(
+                0,
+                round(100 - $percentualAula - $percentualPlanejamento - $percentualCurso - $percentualParada, 1)
+            );
+        }
 
         return [
             'horas_semana' => $resumoSemana['aula'] + $resumoSemana['planejamento'] + $resumoSemana['curso'],
             'horas_mes' => $cargaHorariaMes,
-            'percentual_aula' => $totalMes > 0 ? round(($resumoMes['aula'] / $totalMes) * 100, 1) : 0,
-            'percentual_planejamento' => $totalMes > 0 ? round(($resumoMes['planejamento'] / $totalMes) * 100, 1) : 0,
-            'percentual_curso' => $totalMes > 0 ? round(($resumoMes['curso'] / $totalMes) * 100, 1) : 0,
-            'percentual_parada_pedagogica' => $totalMes > 0 ? round(($resumoMes['parada_pedagogica'] / $totalMes) * 100, 1) : 0,
+            'percentual_aula' => $percentualAula,
+            'percentual_planejamento' => $percentualPlanejamento,
+            'percentual_curso' => $percentualCurso,
+            'percentual_parada_pedagogica' => $percentualParada,
+            'percentual_compensacao' => $percentualCompensacao,
         ];
     }
 
@@ -752,15 +770,18 @@ class Home
         $aulas = $this->aulasDocentePeriodo($docenteId, $inicio, $fim);
         $substituicoes = $this->substituicoesDocentePeriodo($docenteId, $inicio, $fim);
         $cursos = $this->cursosCorporativosDocentePeriodo($docenteId, $inicio, $fim);
+        $ausencias = $this->ausenciasDocentePeriodo($docenteId, $inicio, $fim);
         $feriadosIntegrais = $this->datasFeriadoIntegralPeriodo($inicio, $fim);
         $aulasPorData = [];
         $substituicoesPorData = [];
         $cursosPorData = [];
+        $ausenciasPorData = [];
         $resumo = [
             'aula' => 0.0,
             'planejamento' => 0.0,
             'curso' => 0.0,
             'parada_pedagogica' => 0.0,
+            'compensacao' => 0.0,
         ];
 
         foreach ($aulas as $aula) {
@@ -775,6 +796,19 @@ class Home
             $cursosPorData[(string) $curso['data']][] = $curso;
         }
 
+        foreach ($ausencias as $ausencia) {
+            $dataInicioAusencia = max((string) ($ausencia['data_inicio'] ?? ''), $inicio);
+            $dataFimAusencia = min((string) ($ausencia['data_fim'] ?? ''), $fim);
+
+            for (
+                $dataAusencia = $dataInicioAusencia;
+                $dataAusencia !== '' && $dataAusencia <= $dataFimAusencia;
+                $dataAusencia = date('Y-m-d', strtotime($dataAusencia . ' +1 day'))
+            ) {
+                $ausenciasPorData[$dataAusencia][] = $ausencia;
+            }
+        }
+
         $data = $inicio;
 
         while (strtotime($data) !== false && strtotime($data) <= strtotime($fim)) {
@@ -786,23 +820,39 @@ class Home
             $diaKey = $this->diaSemanaKey($data);
             $escalaData = $escala[$diaKey] ?? [];
             $periodosComAula = [];
+            $aulasData = $aulasPorData[$data] ?? [];
+            $substituicoesData = $substituicoesPorData[$data] ?? [];
+            $horasEscalaData = array_sum(array_map(
+                static fn(array $itemEscala): float => (float) ($itemEscala['horas'] ?? 0),
+                $escalaData
+            ));
 
-            if ($this->dataTemParadaPedagogica($data)) {
-                foreach ($escalaData as $itemEscala) {
-                    $resumo['parada_pedagogica'] += (float) ($itemEscala['horas'] ?? 0);
+            if (! empty($ausenciasPorData[$data])) {
+                foreach ($ausenciasPorData[$data] as $ausencia) {
+                    if ((string) ($ausencia['tipo'] ?? '') === 'compensacao') {
+                        $resumo['compensacao'] += $horasEscalaData;
+                    }
                 }
 
                 $data = date('Y-m-d', strtotime($data . ' +1 day'));
                 continue;
             }
 
-            foreach (($aulasPorData[$data] ?? []) as $aula) {
+            foreach ($this->paradasPedagogicasData($data) as $paradaPedagogica) {
+                if (! $this->bloqueioConflitaComAula($paradaPedagogica, $aulasData)) {
+                    $resumo['parada_pedagogica'] += $horasEscalaData;
+                    $data = date('Y-m-d', strtotime($data . ' +1 day'));
+                    continue 2;
+                }
+            }
+
+            foreach ($aulasData as $aula) {
                 $periodo = $this->normalizarPeriodoPorHorario((string) $aula['hora_inicio']);
                 $periodosComAula[$periodo] = true;
                 $resumo['aula'] += $this->horasEntre((string) $aula['hora_inicio'], (string) $aula['hora_fim']);
             }
 
-            foreach (($substituicoesPorData[$data] ?? []) as $substituicao) {
+            foreach ($substituicoesData as $substituicao) {
                 $periodo = $this->normalizarPeriodoPorHorario((string) $substituicao['hora_inicio']);
                 $periodosComAula[$periodo] = true;
                 $resumo['aula'] += $this->horasEntre((string) $substituicao['hora_inicio'], (string) $substituicao['hora_fim']);
@@ -845,34 +895,70 @@ class Home
         return $resumo;
     }
 
-    private function dataTemParadaPedagogica(string $data): bool
+    private function paradasPedagogicasData(string $data): array
     {
         $stmt = $this->conn->prepare("
-            SELECT id
+            SELECT data, data_fim, hora_inicio, hora_fim, titulo, tipo
             FROM calendario_bloqueios
             WHERE status = 'Ativo'
               AND tipo = 'Parada Pedagogica'
               AND data <= :data
               AND COALESCE(data_fim, data) >= :data
-            LIMIT 1
+            ORDER BY data ASC, COALESCE(data_fim, data) ASC, titulo ASC
         ");
         $stmt->execute([':data' => $data]);
 
-        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function bloqueioConflitaComAula(array $bloqueio, array $aulas): bool
+    {
+        if (empty($aulas)) {
+            return false;
+        }
+
+        $horaInicioBloqueio = substr((string) ($bloqueio['hora_inicio'] ?? ''), 0, 5);
+        $horaFimBloqueio = substr((string) ($bloqueio['hora_fim'] ?? ''), 0, 5);
+
+        if ($horaInicioBloqueio === '' || $horaFimBloqueio === '') {
+            return true;
+        }
+
+        foreach ($aulas as $aula) {
+            $horaInicioAula = substr((string) ($aula['hora_inicio'] ?? ''), 0, 5);
+            $horaFimAula = substr((string) ($aula['hora_fim'] ?? ''), 0, 5);
+
+            if (
+                $horaInicioAula !== ''
+                && $horaFimAula !== ''
+                && $horaInicioAula < $horaFimBloqueio
+                && $horaFimAula > $horaInicioBloqueio
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function cargaHorariaEscalaPeriodo(int $docenteId, string $inicio, string $fim): float
     {
         $escala = $this->escalaDocente($docenteId);
         $feriadosIntegrais = $this->datasFeriadoIntegralPeriodo($inicio, $fim);
+        $ferias = $this->datasFeriasPeriodo($docenteId, $inicio, $fim);
         $total = 0.0;
         $data = $inicio;
 
         while (strtotime($data) !== false && strtotime($data) <= strtotime($fim)) {
-            if (! isset($feriadosIntegrais[$data])) {
-                foreach (($escala[$this->diaSemanaKey($data)] ?? []) as $itemEscala) {
-                    $total += (float) ($itemEscala['horas'] ?? 0);
-                }
+            $escalaData = $escala[$this->diaSemanaKey($data)] ?? [];
+
+            if (isset($feriadosIntegrais[$data]) || isset($ferias[$data]) || empty($escalaData)) {
+                $data = date('Y-m-d', strtotime($data . ' +1 day'));
+                continue;
+            }
+
+            foreach ($escalaData as $itemEscala) {
+                $total += (float) ($itemEscala['horas'] ?? 0);
             }
 
             $data = date('Y-m-d', strtotime($data . ' +1 day'));
@@ -904,6 +990,38 @@ class Home
         }
 
         return $feriados;
+    }
+
+    private function datasFeriasPeriodo(int $docenteId, string $inicio, string $fim): array
+    {
+        $stmt = $this->conn->prepare("
+            SELECT data_inicio, data_fim
+            FROM docente_ferias
+            WHERE docente_id = :docente_id
+              AND status = 'Ativo'
+              AND data_inicio <= :fim
+              AND data_fim >= :inicio
+            ORDER BY data_inicio ASC, data_fim ASC
+        ");
+        $stmt->execute([
+            ':docente_id' => $docenteId,
+            ':fim' => $fim,
+            ':inicio' => $inicio,
+        ]);
+
+        $ferias = [];
+
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $periodo) {
+            $dataAtual = max($inicio, (string) ($periodo['data_inicio'] ?? ''));
+            $dataFim = min($fim, (string) ($periodo['data_fim'] ?? $dataAtual));
+
+            while ($dataAtual !== '' && $dataAtual <= $dataFim) {
+                $ferias[$dataAtual] = true;
+                $dataAtual = date('Y-m-d', strtotime($dataAtual . ' +1 day'));
+            }
+        }
+
+        return $ferias;
     }
 
     private function horasEntre(string $horaInicio, string $horaFim): float
@@ -966,6 +1084,39 @@ class Home
             ':docente_id' => $docenteId,
             ':inicio' => $inicio,
             ':fim' => $fim,
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function ausenciasDocentePeriodo(int $docenteId, string $inicio, string $fim): array
+    {
+        $stmt = $this->conn->prepare("
+            SELECT data_inicio, data_fim, observacoes, 'ferias' AS tipo
+            FROM docente_ferias
+            WHERE docente_id = :docente_ferias
+              AND status = 'Ativo'
+              AND data_inicio <= :fim_ferias
+              AND data_fim >= :inicio_ferias
+
+            UNION ALL
+
+            SELECT data_inicio, data_fim, observacoes, 'compensacao' AS tipo
+            FROM docente_compensacoes
+            WHERE docente_id = :docente_compensacao
+              AND status = 'Ativo'
+              AND data_inicio <= :fim_compensacao
+              AND data_fim >= :inicio_compensacao
+
+            ORDER BY data_inicio ASC, data_fim ASC
+        ");
+        $stmt->execute([
+            ':docente_ferias' => $docenteId,
+            ':fim_ferias' => $fim,
+            ':inicio_ferias' => $inicio,
+            ':docente_compensacao' => $docenteId,
+            ':fim_compensacao' => $fim,
+            ':inicio_compensacao' => $inicio,
         ]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

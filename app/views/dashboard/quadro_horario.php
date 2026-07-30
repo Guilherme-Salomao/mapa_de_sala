@@ -139,6 +139,48 @@
         return $hora === '' ? '' : substr($hora, 0, 5);
     }
 
+    function primeiroNomeDocenteQuadro(string $nome): string
+    {
+        $partes = preg_split('/\s+/', trim($nome));
+
+        return $partes[0] ?? '';
+    }
+
+    function docentesImpressaoQuadro(array $docentes): string
+    {
+        $primeirosNomes = array_map(
+            static fn(array $docente): string => primeiroNomeDocenteQuadro((string) ($docente['nome'] ?? '')),
+            $docentes
+        );
+
+        return implode(', ', array_filter($primeirosNomes));
+    }
+
+    function codigoUcImpressaoQuadro(array $aula): string
+    {
+        $codigo = trim((string) ($aula['uc_codigo'] ?? ''));
+
+        return $codigo !== '' ? strtoupper(str_replace(' ', '', $codigo)) : trim((string) ($aula['uc_nome'] ?? ''));
+    }
+
+    function salaImpressaoQuadro(?string $sala): string
+    {
+        $sala = trim((string) $sala);
+
+        if ($sala === '') {
+            return 'SALA EM ABERTO';
+        }
+
+        $sala = preg_replace('/^sala\s*/i', '', $sala);
+        $numero = preg_replace('/\D+/', '', $sala);
+
+        if ($numero !== '') {
+            return 'SALA ' . str_pad($numero, 2, '0', STR_PAD_LEFT);
+        }
+
+        return 'SALA ' . strtoupper($sala);
+    }
+
     function textoHorarioBloqueioQuadro(array $bloqueio): string
     {
         if (empty($bloqueio['hora_inicio']) || empty($bloqueio['hora_fim'])) {
@@ -676,7 +718,10 @@
                         <div class="fw-semibold">
                           <?php echo htmlspecialchars(substr($aula['hora_inicio'], 0, 5) . ' - ' . substr($aula['hora_fim'], 0, 5)); ?>
                         </div>
-                        <div><?php echo htmlspecialchars(($aula['uc_codigo'] ?? '') . ' - ' . ($aula['uc_nome'] ?? '')); ?></div>
+                        <div class="quadro-print-text"
+                          data-print-text="<?php echo htmlspecialchars(codigoUcImpressaoQuadro($aula)); ?>">
+                          <?php echo htmlspecialchars(($aula['uc_codigo'] ?? '') . ' - ' . ($aula['uc_nome'] ?? '')); ?>
+                        </div>
                         <?php if ((int) ($aula['visita_tecnica'] ?? 0) === 1): ?>
                         <div class="my-1">
                           <span class="badge text-bg-info">Visita Técnica</span>
@@ -692,11 +737,13 @@
                           <span class="badge text-bg-warning">Aceleração</span>
                         </div>
                         <?php endif; ?>
-                        <div class="text-muted">
+                        <div class="text-muted quadro-print-text"
+                          data-print-text="<?php echo htmlspecialchars(salaImpressaoQuadro($aula['sala_nome'] ?? null)); ?>">
                           <?php echo ! empty($aula['sala_nome']) ? 'Sala ' . htmlspecialchars($aula['sala_nome']) : 'Sala em aberto'; ?>
                         </div>
                         <?php if (! empty($aula['docentes'])): ?>
-                        <div class="text-muted">
+                        <div class="text-muted quadro-print-text"
+                          data-print-text="<?php echo htmlspecialchars(docentesImpressaoQuadro($aula['docentes'])); ?>">
                           <?php echo htmlspecialchars(implode(', ', array_map(fn($docente) => $docente['nome'], $aula['docentes']))); ?>
                         </div>
                         <?php endif; ?>
@@ -1194,6 +1241,10 @@
                   row.children[0].remove();
                 }
               });
+            });
+
+            document.querySelectorAll(".quadro-print-text[data-print-text]").forEach(function(elemento) {
+              elemento.textContent = elemento.dataset.printText || "";
             });
 
             window.addEventListener("load", function() {

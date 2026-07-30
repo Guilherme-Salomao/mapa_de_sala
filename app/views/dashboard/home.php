@@ -27,6 +27,7 @@
         'percentual_planejamento' => 0,
         'percentual_curso' => 0,
         'percentual_parada_pedagogica' => 0,
+        'percentual_compensacao' => 0,
     ];
     $dataHoje = $dataHoje ?? date('Y-m-d');
 
@@ -494,6 +495,20 @@
                   </div>
                   <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--default">
                     <i class="bi bi-calendar-check"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl">
+              <div class="app-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="small text-muted">% compensação (<?php echo htmlspecialchars($mesAnoReferencia); ?>)</div>
+                    <div class="fs-3 fw-bold"><?php echo number_format((float) ($indicadoresDocente['percentual_compensacao'] ?? 0), 1, ',', '.'); ?>%</div>
+                  </div>
+                  <div class="app-icon-badge app-icon-badge--sm kpi-icon kpi-icon--manut">
+                    <i class="bi bi-arrow-repeat"></i>
                   </div>
                 </div>
               </div>
