@@ -19,4 +19,19 @@
 #1 D:\xampp\htdocs\mapa_de_sala\app\controllers\DocenteSubstituicaoController.php(46): DocenteSubstituicao->listar('', 'todos', Array, NULL)
 #2 D:\xampp\htdocs\mapa_de_sala\routes\web.php(465): DocenteSubstituicaoController->index()
 #3 D:\xampp\htdocs\mapa_de_sala\public\index.php(64): require_once('D:\\xampp\\htdocs...')
+#4 {main}[2026-08-05 14:09:37] Uncaught TypeError: usort(): Argument #1 ($array) must be of type array, null given in D:\xampp\htdocs\mapa_de_sala\app\controllers\RelatorioDocenteController.php:366
+#0 D:\xampp\htdocs\mapa_de_sala\app\controllers\RelatorioDocenteController.php(366): usort(NULL, Array)
+#1 D:\xampp\htdocs\mapa_de_sala\app\controllers\RelatorioDocenteController.php(65): RelatorioDocenteController->montarEventos(Array, Array, Array, Array, Array, Array, 8, 2026)
+#2 D:\xampp\htdocs\mapa_de_sala\routes\web.php(486): RelatorioDocenteController->index()
+#3 D:\xampp\htdocs\mapa_de_sala\public\index.php(64): require_once('D:\\xampp\\htdocs...')
+#4 {main}[2026-08-05 14:09:48] Uncaught TypeError: usort(): Argument #1 ($array) must be of type array, null given in D:\xampp\htdocs\mapa_de_sala\app\controllers\RelatorioDocenteController.php:366
+#0 D:\xampp\htdocs\mapa_de_sala\app\controllers\RelatorioDocenteController.php(366): usort(NULL, Array)
+#1 D:\xampp\htdocs\mapa_de_sala\app\controllers\RelatorioDocenteController.php(65): RelatorioDocenteController->montarEventos(Array, Array, Array, Array, Array, Array, 8, 2026)
+#2 D:\xampp\htdocs\mapa_de_sala\routes\web.php(486): RelatorioDocenteController->index()
+#3 D:\xampp\htdocs\mapa_de_sala\public\index.php(64): require_once('D:\\xampp\\htdocs...')
+#4 {main}[2026-08-05 14:09:57] Uncaught TypeError: usort(): Argument #1 ($array) must be of type array, null given in D:\xampp\htdocs\mapa_de_sala\app\controllers\RelatorioDocenteController.php:366
+#0 D:\xampp\htdocs\mapa_de_sala\app\controllers\RelatorioDocenteController.php(366): usort(NULL, Array)
+#1 D:\xampp\htdocs\mapa_de_sala\app\controllers\RelatorioDocenteController.php(65): RelatorioDocenteController->montarEventos(Array, Array, Array, Array, Array, Array, 8, 2026)
+#2 D:\xampp\htdocs\mapa_de_sala\routes\web.php(486): RelatorioDocenteController->index()
+#3 D:\xampp\htdocs\mapa_de_sala\public\index.php(64): require_once('D:\\xampp\\htdocs...')
 #4 {main}
