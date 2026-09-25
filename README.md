@@ -30,27 +30,6 @@ A proposta do sistema é centralizar, em uma única plataforma, as informações
 
 ---
 
-## 🌐 Demonstração Online
-
-Acesse a versão de demonstração:
-
-### 🔗 https://guilhermeshorane.com.br/testesigha
-
----
-
-## 👥 Usuários de Teste
-
-| Perfil           | E-mail                                                          | Senha  |
-| ---------------- | --------------------------------------------------------------- | ------ |
-| 👑 **Admin**     | [demo.admin@exemplo.com](mailto:demo.admin@exemplo.com)         | 123456 |
-| 📊 **Gestor**    | [demo.gestor@exemplo.com](mailto:demo.gestor@exemplo.com)       | 123456 |
-| 🧩 **Apoio**     | [demo.apoio@exemplo.com](mailto:demo.apoio@exemplo.com)         | 123456 |
-| 👨‍🏫 **Professor** | [demo.professor@exemplo.com](mailto:demo.professor@exemplo.com) | 123456 |
-
-> Os acessos acima são demonstrativos e podem ser ajustados conforme o ambiente publicado.
-
----
-
 # 🧭 Visão Geral
 
 O SIGHA nasceu para resolver uma dor comum em ambientes educacionais: informações importantes ficam espalhadas entre planilhas, calendários, mensagens, documentos e controles manuais.
@@ -182,15 +161,6 @@ O SIGHA foi pensado para atender a uma rotina real de gestão educacional, com f
 | ⚙️ **JavaScript** | Interatividade           |
 | 🌐 **HTML5**      | Estrutura das páginas    |
 | 💅 **CSS3**       | Estilização visual       |
-
----
-
-# 🧪 Ambiente de Demonstração
-
-A versão de demonstração permite visualizar o funcionamento geral do sistema, seus perfis de acesso e os principais recursos disponíveis.
-
-🔗 **Acesse:**
-https://guilhermeshorane.com.br/testesigha
 
 ---
 
