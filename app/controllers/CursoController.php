@@ -166,7 +166,38 @@ class CursoController
             $this->redirecionar('./?page=turmas&tipo=sucesso&msg=' . urlencode('Turma excluida com sucesso.'));
         }
 
-        $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a turma. Verifique se existe algum vinculo.'));
+        $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Nao foi possivel excluir a turma. Exclua todas as aulas/quadro horario antes; sem aulas, o sistema limpa os vinculos administrativos automaticamente.'));
+    }
+
+    public function excluirAulasPeriodo(): void
+    {
+        $this->exigirLogin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Metodo invalido.'));
+        }
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $unidadeCurricularId = (int) ($_POST['unidade_curricular_id'] ?? 0);
+        $docenteId = (int) ($_POST['docente_id'] ?? 0);
+        $dataInicio = trim($_POST['data_inicio'] ?? '');
+        $dataFim = trim($_POST['data_fim'] ?? '');
+        $escopo = (new AccessControl())->escopoAreaAtuacao();
+
+        if ($id <= 0 || $dataInicio === '' || $dataFim === '' || ! $this->cursoModel->turmaPertenceEscopo($id, $escopo)) {
+            $this->redirecionar('./?page=turmas&tipo=erro&msg=' . urlencode('Dados invalidos para excluir aulas.'));
+        }
+
+        $resultado = $this->cursoModel->excluirAulasPorPeriodo(
+            $id,
+            $unidadeCurricularId > 0 ? $unidadeCurricularId : null,
+            $docenteId > 0 ? $docenteId : null,
+            $dataInicio,
+            $dataFim
+        );
+        $tipo = ! empty($resultado['sucesso']) ? 'sucesso' : 'erro';
+
+        $this->redirecionar('./?page=turmas&tipo=' . $tipo . '&msg=' . urlencode($resultado['mensagem'] ?? 'Processo concluido.'));
     }
 
     public function gerarQuadro(): void
@@ -343,4 +374,5 @@ class CursoController
     }
 
 }
+
 

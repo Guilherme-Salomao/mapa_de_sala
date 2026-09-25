@@ -861,7 +861,7 @@ class QuadroHorarioController
                     return 'O docente selecionado esta de ferias nesta data.';
                 }
 
-                if ($this->quadroModel->docenteEmCompensacao((int) $docenteId, $dados['data_aula'])) {
+                if ($this->quadroModel->docenteEmCompensacao((int) $docenteId, $dados['data_aula'], $dados['hora_inicio'], $dados['hora_fim'])) {
                     return 'O docente selecionado esta em compensacao nesta data.';
                 }
 
@@ -879,7 +879,7 @@ class QuadroHorarioController
         return (! $exigirEscala || $this->quadroModel->docenteTemEscala($docenteId, $data, $horaInicio, $horaFim))
             && ! $this->educacaoModel->docenteEmCurso($docenteId, $data, null, $horaInicio, $horaFim)
             && ! $this->quadroModel->docenteEmFerias($docenteId, $data)
-            && ! $this->quadroModel->docenteEmCompensacao($docenteId, $data)
+            && ! $this->quadroModel->docenteEmCompensacao($docenteId, $data, $horaInicio, $horaFim)
             && ! $this->substituicaoModel->encontrarConflitoSubstituicaoDocente($docenteId, $data, $horaInicio, $horaFim)
             && ! $this->quadroModel->encontrarConflitoDocente($docenteId, $data, $horaInicio, $horaFim, $ignorarId);
     }

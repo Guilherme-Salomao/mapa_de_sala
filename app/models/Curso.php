@@ -688,6 +688,145 @@ class Curso
         }
     }
 
+    public function excluirAulasPorPeriodo(
+        int $turmaId,
+        ?int $unidadeCurricularId,
+        ?int $docenteId,
+        string $dataInicio,
+        string $dataFim
+    ): array {
+        $turma = $this->buscarPorId($turmaId);
+
+        if (! $turma || empty($turma['curso_modelo_id'])) {
+            return ['sucesso' => false, 'mensagem' => 'Turma nao encontrada.'];
+        }
+
+        $uc = null;
+
+        if ($unidadeCurricularId !== null && $unidadeCurricularId > 0) {
+            $uc = $this->buscarUcDaTurma((int) $turma['curso_modelo_id'], $unidadeCurricularId);
+
+            if (! $uc) {
+                return ['sucesso' => false, 'mensagem' => 'A UC selecionada nao pertence ao curso desta turma.'];
+            }
+        }
+
+        $docenteNome = null;
+
+        if ($docenteId !== null && $docenteId > 0) {
+            $docenteNome = $this->buscarNomeDocente($docenteId);
+
+            if ($docenteNome === null) {
+                return ['sucesso' => false, 'mensagem' => 'Docente nao encontrado.'];
+            }
+        }
+
+        $inicio = strtotime($dataInicio);
+        $fim = strtotime($dataFim);
+
+        if ($inicio === false || $fim === false || $fim < $inicio) {
+            return ['sucesso' => false, 'mensagem' => 'Informe um periodo valido para excluir as aulas.'];
+        }
+
+        try {
+            $this->conn->beginTransaction();
+
+            $params = [
+                ':turma_id' => $turmaId,
+                ':data_inicio' => date('Y-m-d', $inicio),
+                ':data_fim' => date('Y-m-d', $fim),
+            ];
+            $filtros = "
+                qh.curso_oferta_id = :turma_id
+                AND qh.data_aula BETWEEN :data_inicio AND :data_fim
+                AND qh.status = 'Ativa'
+            ";
+
+            if ($uc !== null) {
+                $filtros .= " AND qh.unidade_curricular_id = :unidade_curricular_id";
+                $params[':unidade_curricular_id'] = $unidadeCurricularId;
+            }
+
+            if ($docenteNome !== null) {
+                $filtros .= "
+                    AND EXISTS (
+                        SELECT 1
+                        FROM quadro_horario_docentes qhd_filtro
+                        WHERE qhd_filtro.quadro_horario_id = qh.id
+                          AND qhd_filtro.docente_id = :docente_id
+                    )
+                ";
+                $params[':docente_id'] = $docenteId;
+            }
+
+            $stmtIds = $this->conn->prepare("SELECT qh.id FROM quadro_horario qh WHERE {$filtros}");
+            $stmtIds->execute($params);
+            $aulaIds = array_values(array_filter(array_map('intval', array_column($stmtIds->fetchAll(PDO::FETCH_ASSOC), 'id'))));
+            $aulasExcluidas = count($aulaIds);
+
+            if ($aulasExcluidas > 0) {
+                $placeholders = [];
+                $paramsIds = [];
+
+                foreach ($aulaIds as $index => $aulaId) {
+                    $placeholder = ':aula_id_' . $index;
+                    $placeholders[] = $placeholder;
+                    $paramsIds[$placeholder] = $aulaId;
+                }
+
+                $listaIds = implode(',', $placeholders);
+                $stmtDocentes = $this->conn->prepare("DELETE FROM quadro_horario_docentes WHERE quadro_horario_id IN ({$listaIds})");
+                $stmtDocentes->execute($paramsIds);
+
+                $stmtAulas = $this->conn->prepare("DELETE FROM quadro_horario WHERE id IN ({$listaIds})");
+                $stmtAulas->execute($paramsIds);
+            }
+
+            $this->conn->commit();
+
+            $periodo = date('d/m/Y', $inicio) . ' a ' . date('d/m/Y', $fim);
+            $escopo = [];
+
+            if ($uc !== null) {
+                $escopo[] = trim(($uc['codigo'] ?? 'UC') . ' - ' . ($uc['nome'] ?? ''));
+            } else {
+                $escopo[] = 'todas as UCs';
+            }
+
+            if ($docenteNome !== null) {
+                $escopo[] = 'docente ' . $docenteNome;
+            }
+
+            return [
+                'sucesso' => true,
+                'mensagem' => $aulasExcluidas . ' aula(s) de ' . implode(' / ', $escopo) . ' foram excluidas no periodo de ' . $periodo . '.',
+            ];
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+
+            return ['sucesso' => false, 'mensagem' => 'Nao foi possivel excluir as aulas: ' . $e->getMessage()];
+        }
+    }
+
+    private function buscarNomeDocente(int $docenteId): ?string
+    {
+        $sql = "
+            SELECT u.nome
+            FROM docentes d
+            INNER JOIN usuarios u ON u.id = d.usuario_id
+            WHERE d.id = :id
+            LIMIT 1
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':id' => $docenteId]);
+        $docente = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $docente ? (string) ($docente['nome'] ?? '') : null;
+    }
+
     public function salvar(array $dados)
     {
         try {
@@ -1040,7 +1179,7 @@ class Curso
         return $this->docenteVinculadoUc($docenteId, $unidadeCurricularId)
             && $this->docenteTemEscala($docenteId, $data, $horaInicio, $horaFim)
             && ! $this->docenteEmFerias($docenteId, $data)
-            && ! $this->docenteEmCompensacao($docenteId, $data)
+            && ! $this->docenteEmCompensacao($docenteId, $data, $horaInicio, $horaFim)
             && ! $this->docenteEmEducacaoCorporativa($docenteId, $data, $horaInicio, $horaFim)
             && ! $this->docenteTemConflito($docenteId, $data, $horaInicio, $horaFim);
     }
@@ -1129,23 +1268,36 @@ class Curso
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    private function docenteEmCompensacao(int $docenteId, string $data): bool
+    private function docenteEmCompensacao(int $docenteId, string $data, string $horaInicio, string $horaFim): bool
     {
         $stmt = $this->conn->prepare("
-            SELECT id
+            SELECT hora_inicio, hora_fim
             FROM docente_compensacoes
             WHERE docente_id = :docente_id
               AND status = 'Ativo'
               AND data_inicio <= :data
               AND data_fim >= :data
-            LIMIT 1
+            ORDER BY hora_inicio ASC
         ");
         $stmt->execute([
             ':docente_id' => $docenteId,
             ':data' => $data,
         ]);
 
-        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $compensacao) {
+            $inicioCompensacao = substr((string) ($compensacao['hora_inicio'] ?? ''), 0, 5);
+            $fimCompensacao = substr((string) ($compensacao['hora_fim'] ?? ''), 0, 5);
+
+            if ($inicioCompensacao === '' || $fimCompensacao === '') {
+                return true;
+            }
+
+            if ($horaInicio < $fimCompensacao && $horaFim > $inicioCompensacao) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function docenteEmEducacaoCorporativa(
@@ -1566,11 +1718,48 @@ class Curso
     public function excluir(int $id): bool
     {
         try {
-            $sql = "DELETE FROM {$this->table} WHERE id = :id";
-            $stmt = $this->conn->prepare($sql);
+            $this->conn->beginTransaction();
 
-            return $stmt->execute([':id' => $id]);
+            $stmtAulasExistentes = $this->conn->prepare("
+                SELECT COUNT(*)
+                FROM quadro_horario qh
+                LEFT JOIN aprendizagem_quadros aq ON aq.id = qh.aprendizagem_quadro_id
+                WHERE qh.curso_oferta_id = :id
+                   OR aq.curso_oferta_id = :id
+            ");
+            $stmtAulasExistentes->execute([':id' => $id]);
+
+            if ((int) $stmtAulasExistentes->fetchColumn() > 0) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            $stmtAprendizagem = $this->conn->prepare("DELETE FROM aprendizagem_quadros WHERE curso_oferta_id = :id");
+            $stmtAprendizagem->execute([':id' => $id]);
+
+            $stmtDocentesTurma = $this->conn->prepare("DELETE FROM docente_cursos WHERE curso_id = :id");
+            $stmtDocentesTurma->execute([':id' => $id]);
+
+            $stmtUcsTurma = $this->conn->prepare("DELETE FROM turma_unidades_curriculares WHERE curso_oferta_id = :id");
+            $stmtUcsTurma->execute([':id' => $id]);
+
+            $stmtTurma = $this->conn->prepare("DELETE FROM {$this->table} WHERE id = :id");
+            $stmtTurma->execute([':id' => $id]);
+            $excluiuTurma = $stmtTurma->rowCount() > 0;
+
+            if (! $excluiuTurma) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            $this->conn->commit();
+
+            return true;
         } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+
             return false;
         }
     }

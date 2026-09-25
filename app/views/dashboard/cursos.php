@@ -1,4 +1,4 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -273,6 +273,34 @@
       input.disabled = !gerarUc;
       input.required = gerarUc && input.type !== "checkbox" && input.dataset.requiredUc !== "0";
     });
+  });
+
+  document.addEventListener("submit", function(event) {
+    const form = event.target.closest(".js-excluir-aulas-periodo-form");
+    if (!form) return;
+
+    const uc = form.querySelector(".js-excluir-aulas-uc");
+    const docente = form.querySelector(".js-excluir-aulas-docente");
+    const dataInicio = form.querySelector(".js-excluir-aulas-inicio");
+    const dataFim = form.querySelector(".js-excluir-aulas-fim");
+
+    if (dataInicio?.value && dataFim?.value && dataFim.value < dataInicio.value) {
+      event.preventDefault();
+      alert("A data final deve ser maior ou igual a data inicial.");
+      return;
+    }
+
+    const ucTexto = uc?.value ? uc.selectedOptions[0].textContent.trim() : "todas as UCs";
+    const docenteTexto = docente?.value ? " do docente " + docente.selectedOptions[0].textContent.trim() : "";
+    const confirmado = confirm(
+      "Excluir definitivamente as aulas de " + ucTexto + docenteTexto +
+      " no período de " + (dataInicio?.value || "-") +
+      " até " + (dataFim?.value || "-") + "?"
+    );
+
+    if (!confirmado) {
+      event.preventDefault();
+    }
   });
   </script>
 </body>

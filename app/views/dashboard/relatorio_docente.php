@@ -1,4 +1,4 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -22,6 +22,7 @@
         'horas_curso' => 0,
         'horas_parada_pedagogica' => 0,
         'horas_compensacao' => 0,
+        'horas_banco_horas' => 0,
         'total_horas' => 0,
         'percentual_aula' => 0,
         'percentual_planejamento' => 0,
@@ -39,6 +40,21 @@
     $diasNoMes = (int) date('t', strtotime($primeiroDia));
     $inicioSemana = (int) date('w', strtotime($primeiroDia));
     $nomesSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+
+    function formatarHorasRelatorioDocente(float $horas): string
+    {
+        $horasInteiras = (int) floor($horas);
+        $minutos = (int) round(($horas - $horasInteiras) * 60);
+
+        if ($minutos === 60) {
+            $horasInteiras++;
+            $minutos = 0;
+        }
+
+        return $minutos === 0
+            ? $horasInteiras . 'h'
+            : $horasInteiras . 'h' . str_pad((string) $minutos, 2, '0', STR_PAD_LEFT);
+    }
 
     function abreviarUcRelatorioDocente(string $texto, int $limite = 6): string
     {
@@ -148,6 +164,12 @@
     color: #fff;
   }
 
+
+  .badge-banco-horas {
+    background: #f97316;
+    color: #fff;
+  }
+
   .relatorio-calendario thead th {
     background: #0d6efd;
     color: #fff;
@@ -253,7 +275,7 @@
 
           <?php if (! empty($docenteSelecionado)): ?>
           <div class="app-card p-3 mb-3">
-            <div class="d-flex flex-nowrap align-items-center justify-content-between gap-3 overflow-auto">
+            <div class="d-flex flex-wrap align-items-center gap-3">
               <div class="flex-shrink-0">
                 <div class="fw-bold"><?php echo htmlspecialchars($docenteSelecionado['nome'] ?? ''); ?></div>
                 <div class="small text-muted">
@@ -261,7 +283,7 @@
                 </div>
               </div>
 
-              <div class="d-flex flex-nowrap gap-2 flex-shrink-0">
+              <div class="d-flex flex-wrap gap-2">
                 <?php foreach ($periodosEscala as $periodoKey => $periodoLabel): ?>
                 <span class="periodo-badge periodo-<?php echo htmlspecialchars($periodoKey); ?> border">
                   <?php echo htmlspecialchars($periodoLabel); ?>
@@ -269,7 +291,11 @@
                 <?php endforeach; ?>
               </div>
 
-              <div class="d-flex flex-nowrap gap-2 flex-shrink-0 ms-auto">
+              <div class="d-flex flex-wrap gap-2 w-100 justify-content-start">
+                <span class="badge text-bg-dark d-inline-flex align-items-center justify-content-center fs-6 py-2"
+                  style="min-width: 170px;">
+                  Total do mês: <?php echo formatarHorasRelatorioDocente((float) ($resumoCarga['total_horas'] ?? 0)); ?>
+                </span>
                 <span class="badge text-bg-primary d-inline-flex align-items-center justify-content-center fs-6 py-2"
                   style="min-width: 190px;">
                   Aula: <?php echo number_format((float) $resumoCarga['percentual_aula'], 1, ',', '.'); ?>%
@@ -289,6 +315,10 @@
                 <span class="badge badge-compensacao d-inline-flex align-items-center justify-content-center fs-6 py-2"
                   style="min-width: 190px;">
                   Compensação: <?php echo number_format((float) ($resumoCarga['percentual_compensacao'] ?? 0), 1, ',', '.'); ?>%
+                </span>
+                <span class="badge badge-banco-horas d-inline-flex align-items-center justify-content-center fs-6 py-2"
+                  style="min-width: 190px;">
+                  Banco de Horas: <?php echo formatarHorasRelatorioDocente((float) ($resumoCarga['horas_banco_horas'] ?? 0)); ?>
                 </span>
               </div>
             </div>
@@ -325,10 +355,11 @@
                       <?php if (! empty($eventosPorData[$dataIso])): ?>
                       <?php foreach ($eventosPorData[$dataIso] as $evento): ?>
                       <?php $isAula = ($evento['tipo'] ?? '') === 'aula'; ?>
+                      <?php $temBancoHoras = (float) ($evento['banco_horas_numero'] ?? 0) > 0; ?>
                       <?php $periodoClasse = 'periodo-' . strtolower((string) ($evento['periodo_key'] ?? '')); ?>
                       <div class="border rounded p-2 mb-2 small <?php echo htmlspecialchars($periodoClasse); ?>">
                         <div class="fw-bold text-center mb-1">
-                          <?php echo htmlspecialchars($evento['periodo'] ?? ''); ?>
+                          <?php echo htmlspecialchars($evento['periodo'] ?? ''); ?><?php echo $temBancoHoras ? ' *' : ''; ?>
                         </div>
                         <?php if (! empty($evento['hora'])): ?>
                         <div class="fw-semibold text-center mb-1">
@@ -395,4 +426,6 @@
 </body>
 
 </html>
+
+
 

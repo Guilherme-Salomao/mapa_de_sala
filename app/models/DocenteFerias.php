@@ -133,51 +133,63 @@ class DocenteFerias
 
     public function salvar(array $dados): bool
     {
-        $stmt = $this->conn->prepare("
-            INSERT INTO {$this->table} (
-                docente_id,
-                data_inicio,
-                data_fim,
-                observacoes,
-                status
-            ) VALUES (
-                :docente_id,
-                :data_inicio,
-                :data_fim,
-                :observacoes,
-                :status
-            )
-        ");
-
-        return $stmt->execute([
+        $campos = ['docente_id', 'data_inicio', 'data_fim', 'observacoes', 'status'];
+        $params = [
             ':docente_id' => $dados['docente_id'],
             ':data_inicio' => $dados['data_inicio'],
             ':data_fim' => $dados['data_fim'],
             ':observacoes' => $dados['observacoes'],
             ':status' => $dados['status'],
-        ]);
+        ];
+
+        if ($this->table === 'docente_compensacoes') {
+            $campos[] = 'hora_inicio';
+            $campos[] = 'hora_fim';
+            $params[':hora_inicio'] = $dados['hora_inicio'] ?? null;
+            $params[':hora_fim'] = $dados['hora_fim'] ?? null;
+        }
+
+        $placeholders = array_map(static fn(string $campo): string => ':' . $campo, $campos);
+        $stmt = $this->conn->prepare("
+            INSERT INTO {$this->table} (" . implode(', ', $campos) . ")
+            VALUES (" . implode(', ', $placeholders) . ")
+        ");
+
+        return $stmt->execute($params);
     }
 
     public function atualizar(array $dados): bool
     {
-        $stmt = $this->conn->prepare("
-            UPDATE {$this->table} SET
-                docente_id = :docente_id,
-                data_inicio = :data_inicio,
-                data_fim = :data_fim,
-                observacoes = :observacoes,
-                status = :status
-            WHERE id = :id
-        ");
-
-        return $stmt->execute([
+        $campos = [
+            'docente_id = :docente_id',
+            'data_inicio = :data_inicio',
+            'data_fim = :data_fim',
+            'observacoes = :observacoes',
+            'status = :status',
+        ];
+        $params = [
             ':id' => $dados['id'],
             ':docente_id' => $dados['docente_id'],
             ':data_inicio' => $dados['data_inicio'],
             ':data_fim' => $dados['data_fim'],
             ':observacoes' => $dados['observacoes'],
             ':status' => $dados['status'],
-        ]);
+        ];
+
+        if ($this->table === 'docente_compensacoes') {
+            $campos[] = 'hora_inicio = :hora_inicio';
+            $campos[] = 'hora_fim = :hora_fim';
+            $params[':hora_inicio'] = $dados['hora_inicio'] ?? null;
+            $params[':hora_fim'] = $dados['hora_fim'] ?? null;
+        }
+
+        $stmt = $this->conn->prepare("
+            UPDATE {$this->table} SET
+                " . implode(",\n                ", $campos) . "
+            WHERE id = :id
+        ");
+
+        return $stmt->execute($params);
     }
 
     public function excluir(int $id): bool

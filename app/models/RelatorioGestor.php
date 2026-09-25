@@ -36,6 +36,7 @@ class RelatorioGestor
             );
             $horasAula = $this->calcularHorasAulaMes(
                 $docenteId,
+                $escala,
                 $mes,
                 $ano,
                 $feriadosIntegrais,
@@ -129,6 +130,7 @@ class RelatorioGestor
 
     private function calcularHorasAulaMes(
         int $docenteId,
+        array $escala,
         int $mes,
         int $ano,
         array $feriadosIntegrais,
@@ -156,12 +158,16 @@ class RelatorioGestor
         ]);
 
         $horas = 0.0;
+        $horasUsadasPorData = [];
 
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $resultado) {
             $dataAula = (string) ($resultado['data_aula'] ?? '');
 
-            if (! isset($feriadosIntegrais[$dataAula]) && ! isset($datasCompensacao[$dataAula])) {
-                $horas += (float) ($resultado['horas'] ?? 0);
+            if (! isset($feriadosIntegrais[$dataAula])) {
+                $disponivel = max(0, $this->horasDisponiveisData($escala, $dataAula, $datasCompensacao) - (float) ($horasUsadasPorData[$dataAula] ?? 0));
+                $horasLancadas = min((float) ($resultado['horas'] ?? 0), $disponivel);
+                $horas += $horasLancadas;
+                $horasUsadasPorData[$dataAula] = (float) ($horasUsadasPorData[$dataAula] ?? 0) + $horasLancadas;
             }
         }
 
@@ -182,8 +188,11 @@ class RelatorioGestor
         foreach ($stmtSubstituicoes->fetchAll(PDO::FETCH_ASSOC) as $resultado) {
             $dataAula = (string) ($resultado['data_aula'] ?? '');
 
-            if (! isset($feriadosIntegrais[$dataAula]) && ! isset($datasCompensacao[$dataAula])) {
-                $horas += (float) ($resultado['horas'] ?? 0);
+            if (! isset($feriadosIntegrais[$dataAula])) {
+                $disponivel = max(0, $this->horasDisponiveisData($escala, $dataAula, $datasCompensacao) - (float) ($horasUsadasPorData[$dataAula] ?? 0));
+                $horasLancadas = min((float) ($resultado['horas'] ?? 0), $disponivel);
+                $horas += $horasLancadas;
+                $horasUsadasPorData[$dataAula] = (float) ($horasUsadasPorData[$dataAula] ?? 0) + $horasLancadas;
             }
         }
 
@@ -224,24 +233,28 @@ class RelatorioGestor
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $curso) {
             $data = (string) $curso['data'];
 
-            if (
-                ! isset($feriadosIntegrais[$data])
-                && ! isset($paradasPedagogicas[$data])
-                && ! isset($datasCompensacao[$data])
-            ) {
-                if (
-                    (int) ($curso['dia_inteiro'] ?? 1) === 1
-                    || empty($curso['hora_inicio'])
-                    || empty($curso['hora_fim'])
-                ) {
-                    $horas += $this->horasEscalaData($escala, $data);
-                } else {
-                    $inicioCurso = strtotime((string) $curso['hora_inicio']);
-                    $fimCurso = strtotime((string) $curso['hora_fim']);
+            if (isset($feriadosIntegrais[$data]) || isset($paradasPedagogicas[$data])) {
+                continue;
+            }
 
-                    if ($inicioCurso !== false && $fimCurso !== false && $fimCurso > $inicioCurso) {
-                        $horas += ($fimCurso - $inicioCurso) / 3600;
-                    }
+            $horasDisponiveis = $this->horasDisponiveisData($escala, $data, $datasCompensacao);
+
+            if ($horasDisponiveis <= 0) {
+                continue;
+            }
+
+            if (
+                (int) ($curso['dia_inteiro'] ?? 1) === 1
+                || empty($curso['hora_inicio'])
+                || empty($curso['hora_fim'])
+            ) {
+                $horas += min($this->horasEscalaData($escala, $data), $horasDisponiveis);
+            } else {
+                $inicioCurso = strtotime((string) $curso['hora_inicio']);
+                $fimCurso = strtotime((string) $curso['hora_fim']);
+
+                if ($inicioCurso !== false && $fimCurso !== false && $fimCurso > $inicioCurso) {
+                    $horas += min(($fimCurso - $inicioCurso) / 3600, $horasDisponiveis);
                 }
             }
         }
@@ -276,8 +289,8 @@ class RelatorioGestor
         $horas = 0.0;
 
         foreach (array_keys($paradasPedagogicas) as $data) {
-            if (! isset($feriadosIntegrais[$data]) && ! isset($datasCompensacao[$data])) {
-                $horas += $this->horasEscalaData($escala, $data);
+            if (! isset($feriadosIntegrais[$data])) {
+                $horas += min($this->horasEscalaData($escala, $data), $this->horasDisponiveisData($escala, $data, $datasCompensacao));
             }
         }
 
@@ -289,7 +302,7 @@ class RelatorioGestor
         $inicio = sprintf('%04d-%02d-01', $ano, $mes);
         $fim = date('Y-m-t', strtotime($inicio));
         $stmt = $this->conn->prepare("
-            SELECT data_inicio, data_fim
+            SELECT data_inicio, data_fim, hora_inicio, hora_fim
             FROM docente_compensacoes
             WHERE docente_id = :docente_id
               AND status = 'Ativo'
@@ -309,7 +322,10 @@ class RelatorioGestor
             $dataFim = min($fim, (string) ($periodo['data_fim'] ?? $dataAtual));
 
             while ($dataAtual !== '' && $dataAtual <= $dataFim) {
-                $datas[$dataAtual] = true;
+                $datas[$dataAtual] = [
+                    'hora_inicio' => $periodo['hora_inicio'] ?? null,
+                    'hora_fim' => $periodo['hora_fim'] ?? null,
+                ];
                 $dataAtual = date('Y-m-d', strtotime($dataAtual . ' +1 day'));
             }
         }
@@ -324,13 +340,38 @@ class RelatorioGestor
     ): float {
         $horas = 0.0;
 
-        foreach (array_keys($datasCompensacao) as $data) {
+        foreach ($datasCompensacao as $data => $horasCompensacao) {
             if (! isset($feriadosIntegrais[$data])) {
-                $horas += $this->horasEscalaData($escala, $data);
+                $horasEscala = $this->horasEscalaData($escala, $data);
+                $horas += min($horasEscala, $this->horasCompensacaoData($escala, $data, $datasCompensacao));
             }
         }
 
         return round($horas, 2);
+    }
+
+    private function horasCompensacaoData(array $escala, string $data, array $datasCompensacao): float
+    {
+        if (! array_key_exists($data, $datasCompensacao)) {
+            return 0.0;
+        }
+
+        $compensacao = $datasCompensacao[$data];
+        $inicio = is_array($compensacao) ? strtotime((string) ($compensacao['hora_inicio'] ?? '')) : false;
+        $fim = is_array($compensacao) ? strtotime((string) ($compensacao['hora_fim'] ?? '')) : false;
+
+        if ($inicio !== false && $fim !== false && $fim > $inicio) {
+            return round(($fim - $inicio) / 3600, 2);
+        }
+
+        return $this->horasEscalaData($escala, $data);
+    }
+
+    private function horasDisponiveisData(array $escala, string $data, array $datasCompensacao): float
+    {
+        $horasEscala = $this->horasEscalaData($escala, $data);
+
+        return max(0.0, $horasEscala - min($horasEscala, $this->horasCompensacaoData($escala, $data, $datasCompensacao)));
     }
 
     private function listarDatasBloqueioIntegralMes(int $mes, int $ano, string $tipo): array

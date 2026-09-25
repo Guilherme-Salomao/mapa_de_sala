@@ -891,14 +891,47 @@ class Home
             ));
 
             if (! empty($ausenciasPorData[$data])) {
+                $temFerias = false;
+
                 foreach ($ausenciasPorData[$data] as $ausencia) {
-                    if ((string) ($ausencia['tipo'] ?? '') === 'compensacao') {
-                        $resumo['compensacao'] += $horasEscalaData;
+                    $tipoAusencia = (string) ($ausencia['tipo'] ?? '');
+
+                    if ($tipoAusencia === 'ferias') {
+                        $temFerias = true;
+                        continue;
+                    }
+
+                    if ($tipoAusencia !== 'compensacao') {
+                        continue;
+                    }
+
+                    $horasCompensacao = min($horasEscalaData, $this->horasCompensacaoAusencia($ausencia, $horasEscalaData));
+                    $resumo['compensacao'] += $horasCompensacao;
+                    $horasRestantesCompensacao = $horasCompensacao;
+
+                    foreach ($escalaData as $itemEscala) {
+                        if ($horasRestantesCompensacao <= 0) {
+                            break;
+                        }
+
+                        $periodo = (string) ($itemEscala['periodo'] ?? '');
+
+                        if ($periodo === '') {
+                            continue;
+                        }
+
+                        $horasPeriodo = (float) ($itemEscala['horas'] ?? 0);
+                        $horasOcupadas = (float) ($periodosComAula[$periodo] ?? 0);
+                        $horasAplicadas = min(max(0, $horasPeriodo - $horasOcupadas), $horasRestantesCompensacao);
+                        $periodosComAula[$periodo] = $horasOcupadas + $horasAplicadas;
+                        $horasRestantesCompensacao -= $horasAplicadas;
                     }
                 }
 
-                $data = date('Y-m-d', strtotime($data . ' +1 day'));
-                continue;
+                if ($temFerias) {
+                    $data = date('Y-m-d', strtotime($data . ' +1 day'));
+                    continue;
+                }
             }
 
             foreach ($this->paradasPedagogicasData($data) as $paradaPedagogica) {
@@ -973,6 +1006,18 @@ class Home
         }
 
         return $resumo;
+    }
+
+    private function horasCompensacaoAusencia(array $ausencia, float $horasPadrao): float
+    {
+        $inicio = strtotime((string) ($ausencia['hora_inicio'] ?? ''));
+        $fim = strtotime((string) ($ausencia['hora_fim'] ?? ''));
+
+        if ($inicio !== false && $fim !== false && $fim > $inicio) {
+            return round(($fim - $inicio) / 3600, 2);
+        }
+
+        return $horasPadrao;
     }
 
     private function horasDisponiveisPeriodo(array $escalaData, string $periodo, float $horasOcupadas, float $horasEvento): float
@@ -1190,7 +1235,7 @@ class Home
     private function ausenciasDocentePeriodo(int $docenteId, string $inicio, string $fim): array
     {
         $stmt = $this->conn->prepare("
-            SELECT data_inicio, data_fim, observacoes, 'ferias' AS tipo
+            SELECT data_inicio, data_fim, NULL AS hora_inicio, NULL AS hora_fim, observacoes, 'ferias' AS tipo
             FROM docente_ferias
             WHERE docente_id = :docente_ferias
               AND status = 'Ativo'
@@ -1199,7 +1244,7 @@ class Home
 
             UNION ALL
 
-            SELECT data_inicio, data_fim, observacoes, 'compensacao' AS tipo
+            SELECT data_inicio, data_fim, hora_inicio, hora_fim, observacoes, 'compensacao' AS tipo
             FROM docente_compensacoes
             WHERE docente_id = :docente_compensacao
               AND status = 'Ativo'

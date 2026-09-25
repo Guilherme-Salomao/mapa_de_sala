@@ -141,6 +141,8 @@ class DocenteCompensacaoController
             'data_inicio' => $dataInicio,
             'data_fim' => $dataFim !== '' ? $dataFim : $dataInicio,
             'observacoes' => trim($_POST['observacoes'] ?? ''),
+            'hora_inicio' => trim($_POST['hora_inicio'] ?? ''),
+            'hora_fim' => trim($_POST['hora_fim'] ?? ''),
             'status' => trim($_POST['status'] ?? 'Ativo'),
         ];
     }
@@ -153,6 +155,9 @@ class DocenteCompensacaoController
             || ! $this->dataValida($dados['data_fim'])
             || $dados['data_fim'] < $dados['data_inicio']
             || ! in_array($dados['status'], ['Ativo', 'Inativo'], true)
+            || ! $this->horaValida($dados['hora_inicio'])
+            || ! $this->horaValida($dados['hora_fim'])
+            || $dados['hora_fim'] <= $dados['hora_inicio']
         ) {
             $this->redirecionar('./?page=compensacao&tipo=erro&msg=' . urlencode('Preencha corretamente o docente e o período de compensação.'));
         }
@@ -171,6 +176,13 @@ class DocenteCompensacaoController
         return false;
     }
 
+    private function horaValida(string $hora): bool
+    {
+        $dt = DateTime::createFromFormat('H:i', $hora);
+
+        return $dt && $dt->format('H:i') === $hora;
+    }
+
     private function dataValida(string $data): bool
     {
         $dt = DateTime::createFromFormat('Y-m-d', $data);
@@ -178,7 +190,7 @@ class DocenteCompensacaoController
         return $dt && $dt->format('Y-m-d') === $data;
     }
 
-    private function anoValido(mixed $ano): bool
+    private function anoValido($ano): bool
     {
         if (! is_scalar($ano) || ! preg_match('/^\d{4}$/', (string) $ano)) {
             return false;
@@ -206,3 +218,4 @@ class DocenteCompensacaoController
         exit;
     }
 }
+

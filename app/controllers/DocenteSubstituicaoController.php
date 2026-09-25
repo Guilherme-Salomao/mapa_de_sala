@@ -159,7 +159,7 @@ class DocenteSubstituicaoController
             return 'Este docente esta de ferias nesta data.';
         }
 
-        if ($this->quadroModel->docenteEmCompensacao($docenteId, $dataAula)) {
+        if ($this->quadroModel->docenteEmCompensacao($docenteId, $dataAula, $horaInicio, $horaFim)) {
             return 'Este docente esta em compensacao nesta data.';
         }
 

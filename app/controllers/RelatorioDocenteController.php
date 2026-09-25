@@ -71,7 +71,8 @@ class RelatorioDocenteController
             $mes,
             $ano
         );
-        $resumoCarga = $this->calcularResumoCarga($eventosPorData);
+        $cargaHorariaMensal = $this->calcularCargaHorariaMensal($escala, $bloqueiosCalendario, $ausencias, $mes, $ano);
+        $resumoCarga = $this->calcularResumoCarga($eventosPorData, $cargaHorariaMensal);
         $periodosEscala = $this->periodosDaEscala($escala);
 
         require_once __DIR__ . '/../views/dashboard/relatorio_docente.php';
@@ -174,47 +175,54 @@ class RelatorioDocenteController
             $periodosComAula = [];
             $diaInteiroBloqueado = false;
             $temParadaPedagogica = false;
-            $horasParadaPedagogica = array_sum(array_map(
-                static fn(array $itemEscala): float => (float) ($itemEscala['horas'] ?? 0),
-                $escalaData
-            ));
 
             if (! empty($ausenciasPorData[$data])) {
+                $temFerias = false;
+
                 foreach ($ausenciasPorData[$data] as $ausencia) {
                     $tipoAusencia = (string) ($ausencia['tipo'] ?? '');
+                    $horasEscalaDia = array_sum(array_map(
+                        static fn(array $itemEscala): float => (float) ($itemEscala['horas'] ?? 0),
+                        $escalaData
+                    ));
                     $horasAusencia = $tipoAusencia === 'compensacao'
-                        ? array_sum(array_map(
-                            static fn(array $itemEscala): float => (float) ($itemEscala['horas'] ?? 0),
-                            $escalaData
-                        ))
+                        ? min($horasEscalaDia, $this->horasCompensacaoAusencia($ausencia, $horasEscalaDia))
                         : 0.0;
+                    $periodoCompensacao = $tipoAusencia === 'compensacao'
+                        ? $this->periodoPorHorario((string) ($ausencia['hora_inicio'] ?? ''), (string) ($ausencia['hora_fim'] ?? ''))
+                        : '';
                     $periodosAusencia = $tipoAusencia === 'compensacao'
-                        ? array_values(array_unique(array_column($escalaData, 'periodo')))
+                        ? $this->periodosCompensacaoAusencia($escalaData, $periodoCompensacao)
                         : [];
+
+                    if ($tipoAusencia === 'compensacao' && $horasAusencia > 0) {
+                        $this->aplicarCompensacaoNosPeriodos($periodosComAula, $escalaData, $horasAusencia, $periodoCompensacao);
+                    }
+
                     $eventosPorData[$data][] = [
                         'tipo' => $tipoAusencia,
                         'periodo' => implode(' / ', $periodosAusencia),
                         'periodo_key' => $tipoAusencia,
-                        'hora' => $tipoAusencia === 'compensacao' ? $this->formatarHoras($horasAusencia) : '',
+                        'hora' => $tipoAusencia === 'compensacao' ? $this->formatarHorarioCompensacao($ausencia, $horasAusencia) : '',
                         'horas_numero' => $horasAusencia,
                         'turma' => $tipoAusencia === 'compensacao' ? 'Compensação' : 'Férias',
                         'uc' => '',
                         'sala' => '',
                         'observacoes' => $ausencia['observacoes'] ?? '',
                     ];
+
+                    $temFerias = $temFerias || $tipoAusencia === 'ferias';
                 }
 
-                continue;
+                if ($temFerias) {
+                    continue;
+                }
             }
 
             foreach (($bloqueiosPorData[$data] ?? []) as $bloqueio) {
                 $horaInicioBloqueio = substr((string) ($bloqueio['hora_inicio'] ?? ''), 0, 5);
                 $horaFimBloqueio = substr((string) ($bloqueio['hora_fim'] ?? ''), 0, 5);
                 $isParadaPedagogica = (string) ($bloqueio['tipo'] ?? '') === 'Parada Pedagogica';
-
-                if ($isParadaPedagogica && $this->bloqueioConflitaComAula($bloqueio, $aulasData)) {
-                    continue;
-                }
 
                 $tituloBloqueio = (string) ($bloqueio['titulo'] ?? '');
                 $ocultarTipoBloqueio = stripos($tituloBloqueio, 'Ponte de Feriado') !== false;
@@ -224,7 +232,7 @@ class RelatorioDocenteController
                     'periodo' => '',
                     'periodo_key' => 'calendario',
                     'hora' => '',
-                    'horas_numero' => $isParadaPedagogica && ! $temParadaPedagogica ? $horasParadaPedagogica : 0,
+                    'horas_numero' => 0,
                     'turma' => $ocultarTipoBloqueio ? '' : $this->labelTipoBloqueio((string) ($bloqueio['tipo'] ?? 'Evento')),
                     'uc' => '',
                     'sala' => '',
@@ -239,61 +247,77 @@ class RelatorioDocenteController
                 $periodoKey = (string) ($aula['periodo_key'] ?? '');
                 $horasEventoAula = 0.0;
 
+                $horasLancadasAula = $this->horasEntre((string) $aula['hora_inicio'], (string) $aula['hora_fim']);
+
                 if ($periodoKey !== '') {
-                    $horasEventoAula = $this->horasDisponiveisPeriodo(
+                    $horasEventoAula = $this->horasDisponiveisHorarioPeriodo(
                         $escalaData,
                         $periodoKey,
                         (float) ($periodosComAula[$periodoKey] ?? 0),
-                        $this->horasEntre((string) $aula['hora_inicio'], (string) $aula['hora_fim'])
+                        (string) $aula['hora_inicio'],
+                        (string) $aula['hora_fim']
                     );
                     $periodosComAula[$periodoKey] = (float) ($periodosComAula[$periodoKey] ?? 0) + $horasEventoAula;
                 }
 
-                $eventosPorData[$data][] = [
-                    'tipo' => 'aula',
-                    'periodo' => $this->periodoLabel($periodoKey),
-                    'periodo_key' => $periodoKey,
-                    'hora' => substr((string) $aula['hora_inicio'], 0, 5) . ' - ' . substr((string) $aula['hora_fim'], 0, 5),
-                    'horas_numero' => $horasEventoAula,
-                    'turma' => $aula['turma_nome'] ?? '',
-                    'uc' => trim(($aula['uc_codigo'] ?? '') . ' - ' . ($aula['uc_nome'] ?? '')),
-                    'sala' => $aula['sala_nome'] ?? '',
-                ];
+                $horasBancoHorasAula = max(0.0, $horasLancadasAula - $horasEventoAula);
+
+                if ($horasEventoAula > 0 || $horasBancoHorasAula > 0) {
+                    $eventosPorData[$data][] = [
+                        'tipo' => 'aula',
+                        'periodo' => $this->periodoLabel($periodoKey),
+                        'periodo_key' => $periodoKey,
+                        'hora' => substr((string) $aula['hora_inicio'], 0, 5) . ' - ' . substr((string) $aula['hora_fim'], 0, 5),
+                        'horas_numero' => $horasEventoAula,
+                        'banco_horas_numero' => $horasBancoHorasAula,
+                        'turma' => $aula['turma_nome'] ?? '',
+                        'uc' => trim(($aula['uc_codigo'] ?? '') . ' - ' . ($aula['uc_nome'] ?? '')),
+                        'sala' => $aula['sala_nome'] ?? '',
+                    ];
+                }
             }
 
             foreach ($substituicoesData as $substituicao) {
                 $periodoKey = (string) ($substituicao['periodo_key'] ?? '');
                 $horasEventoAula = 0.0;
 
+                $horasLancadasSubstituicao = $this->horasEntre((string) $substituicao['hora_inicio'], (string) $substituicao['hora_fim']);
+
                 if ($periodoKey !== '') {
-                    $horasEventoAula = $this->horasDisponiveisPeriodo(
+                    $horasEventoAula = $this->horasDisponiveisHorarioPeriodo(
                         $escalaData,
                         $periodoKey,
                         (float) ($periodosComAula[$periodoKey] ?? 0),
-                        $this->horasEntre((string) $substituicao['hora_inicio'], (string) $substituicao['hora_fim'])
+                        (string) $substituicao['hora_inicio'],
+                        (string) $substituicao['hora_fim']
                     );
                     $periodosComAula[$periodoKey] = (float) ($periodosComAula[$periodoKey] ?? 0) + $horasEventoAula;
                 }
 
-                $eventosPorData[$data][] = [
-                    'tipo' => 'aula',
-                    'periodo' => $this->periodoLabel($periodoKey),
-                    'periodo_key' => $periodoKey,
-                    'hora' => substr((string) $substituicao['hora_inicio'], 0, 5) . ' - ' . substr((string) $substituicao['hora_fim'], 0, 5),
-                    'horas_numero' => $horasEventoAula,
-                    'turma' => 'Substituição: ' . ($substituicao['turma'] ?? ''),
-                    'uc' => $substituicao['unidade_curricular'] ?? '',
-                    'sala' => $substituicao['sala_nome'] ?? '',
-                    'observacoes' => $substituicao['motivo'] ?? '',
-                ];
+                $horasBancoHorasSubstituicao = max(0.0, $horasLancadasSubstituicao - $horasEventoAula);
+
+                if ($horasEventoAula > 0 || $horasBancoHorasSubstituicao > 0) {
+                    $eventosPorData[$data][] = [
+                        'tipo' => 'aula',
+                        'periodo' => $this->periodoLabel($periodoKey),
+                        'periodo_key' => $periodoKey,
+                        'hora' => substr((string) $substituicao['hora_inicio'], 0, 5) . ' - ' . substr((string) $substituicao['hora_fim'], 0, 5),
+                        'horas_numero' => $horasEventoAula,
+                        'banco_horas_numero' => $horasBancoHorasSubstituicao,
+                        'turma' => 'Substituição: ' . ($substituicao['turma'] ?? ''),
+                        'uc' => $substituicao['unidade_curricular'] ?? '',
+                        'sala' => $substituicao['sala_nome'] ?? '',
+                        'observacoes' => $substituicao['motivo'] ?? '',
+                    ];
+                }
             }
 
             foreach ($cursosData as $cursoData) {
-                $diaInteiroCurso = (int) ($cursoData['dia_inteiro'] ?? 1) === 1
-                    || empty($cursoData['hora_inicio'])
-                    || empty($cursoData['hora_fim']);
+                $cursoTemHorarioLancado = ! empty($cursoData['hora_inicio']) && ! empty($cursoData['hora_fim']);
+                $diaInteiroCurso = ! $cursoTemHorarioLancado;
                 $periodosCurso = [];
                 $horasCurso = 0.0;
+                $horasCursoLancadas = 0.0;
                 $horaCurso = '';
 
                 if ($diaInteiroCurso) {
@@ -309,15 +333,20 @@ class RelatorioDocenteController
                         (string) $cursoData['hora_fim']
                     );
                     $periodosCurso[] = $this->periodoLabel($periodoCursoKey);
-                    $horasCurso = $this->horasEntre(
+                    $horasCursoLancadas = $this->horasEntre(
                         (string) $cursoData['hora_inicio'],
                         (string) $cursoData['hora_fim']
                     );
+                    $horasCurso = $horasCursoLancadas;
                     if ($periodoCursoKey !== '') {
-                        $periodosComAula[$periodoCursoKey] = min(
-                            (float) ($escalaData[$periodoCursoKey]['horas'] ?? $horasCurso),
-                            (float) ($periodosComAula[$periodoCursoKey] ?? 0) + $horasCurso
+                        $horasCurso = $this->horasDisponiveisHorarioPeriodo(
+                            $escalaData,
+                            $periodoCursoKey,
+                            (float) ($periodosComAula[$periodoCursoKey] ?? 0),
+                            (string) $cursoData['hora_inicio'],
+                            (string) $cursoData['hora_fim']
                         );
+                        $periodosComAula[$periodoCursoKey] = (float) ($periodosComAula[$periodoCursoKey] ?? 0) + $horasCurso;
                     }
 
                     $horaCurso = substr((string) $cursoData['hora_inicio'], 0, 5)
@@ -325,19 +354,42 @@ class RelatorioDocenteController
                         . substr((string) $cursoData['hora_fim'], 0, 5);
                 }
 
-                $eventosPorData[$data][] = [
-                    'tipo' => 'curso',
-                    'periodo' => implode(' / ', array_unique($periodosCurso)),
-                    'periodo_key' => 'curso',
-                    'hora' => $horaCurso !== '' ? $horaCurso : $this->formatarHoras($horasCurso),
-                    'horas_numero' => $horasCurso,
-                    'turma' => 'Curso: ' . ($cursoData['titulo'] ?? ''),
-                    'uc' => '',
-                    'sala' => '',
-                ];
+                $cursoSemEscala = empty($escalaData);
+                $cursoSemEscalaSemHorario = $cursoSemEscala && ! $cursoTemHorarioLancado;
+                $horasBancoHorasCurso = $cursoSemEscalaSemHorario ? 0.0 : max(0.0, $horasCursoLancadas - $horasCurso);
+                $marcarCurso = $cursoSemEscala || $horasBancoHorasCurso > 0;
+
+                if ($horasCurso > 0 || $horasBancoHorasCurso > 0 || $cursoSemEscala) {
+                    $eventosPorData[$data][] = [
+                        'tipo' => 'curso',
+                        'periodo' => implode(' / ', array_unique(array_filter($periodosCurso))) ?: 'Curso',
+                        'periodo_key' => 'curso',
+                        'hora' => $horaCurso !== '' ? $horaCurso : ($horasCurso > 0 ? $this->formatarHoras($horasCurso) : 'Dia todo'),
+                        'horas_numero' => $cursoSemEscala ? 0.0 : $horasCurso,
+                        'banco_horas_numero' => $horasBancoHorasCurso,
+                        'marcar_asterisco' => $marcarCurso,
+                        'turma' => 'Curso: ' . ($cursoData['titulo'] ?? ''),
+                        'uc' => '',
+                        'sala' => '',
+                    ];
+                }
             }
 
-            if ($diaInteiroBloqueado || $temParadaPedagogica) {
+            if ($temParadaPedagogica) {
+                $horasParadaPedagogicaDisponiveis = $this->horasDisponiveisEscala($escalaData, $periodosComAula);
+
+                foreach ($eventosPorData[$data] as &$evento) {
+                    if (($evento['tipo'] ?? '') === 'calendario' && ($evento['subtipo_calendario'] ?? '') === 'Parada Pedagogica') {
+                        $evento['horas_numero'] = $horasParadaPedagogicaDisponiveis;
+                        break;
+                    }
+                }
+                unset($evento);
+
+                continue;
+            }
+
+            if ($diaInteiroBloqueado) {
                 continue;
             }
 
@@ -366,11 +418,158 @@ class RelatorioDocenteController
         return $eventosPorData;
     }
 
+
+    private function periodosCompensacaoAusencia(array $escalaData, string $periodoCompensacao): array
+    {
+        if ($periodoCompensacao !== '' && isset($escalaData[$periodoCompensacao])) {
+            return [(string) ($escalaData[$periodoCompensacao]['periodo'] ?? $this->periodoLabel($periodoCompensacao))];
+        }
+
+        return array_values(array_unique(array_column($escalaData, 'periodo')));
+    }
+
+    private function aplicarCompensacaoNosPeriodos(
+        array &$periodosComAula,
+        array $escalaData,
+        float $horasCompensacao,
+        string $periodoCompensacao
+    ): void {
+        if ($periodoCompensacao !== '' && isset($escalaData[$periodoCompensacao])) {
+            $horasPeriodo = (float) ($escalaData[$periodoCompensacao]['horas'] ?? 0);
+            $horasOcupadas = (float) ($periodosComAula[$periodoCompensacao] ?? 0);
+            $periodosComAula[$periodoCompensacao] = $horasOcupadas + min(
+                max(0, $horasPeriodo - $horasOcupadas),
+                $horasCompensacao
+            );
+
+            return;
+        }
+
+        $horasRestantesCompensacao = $horasCompensacao;
+
+        foreach ($escalaData as $periodoKey => $itemEscala) {
+            if ($horasRestantesCompensacao <= 0) {
+                break;
+            }
+
+            $horasPeriodo = (float) ($itemEscala['horas'] ?? 0);
+            $horasOcupadas = (float) ($periodosComAula[$periodoKey] ?? 0);
+            $horasAplicadas = min(max(0, $horasPeriodo - $horasOcupadas), $horasRestantesCompensacao);
+            $periodosComAula[$periodoKey] = $horasOcupadas + $horasAplicadas;
+            $horasRestantesCompensacao -= $horasAplicadas;
+        }
+    }
+
+    private function formatarHorarioCompensacao(array $ausencia, float $horas): string
+    {
+        $horaInicio = substr((string) ($ausencia['hora_inicio'] ?? ''), 0, 5);
+        $horaFim = substr((string) ($ausencia['hora_fim'] ?? ''), 0, 5);
+
+        if ($horaInicio !== '' && $horaFim !== '') {
+            return $horaInicio . ' - ' . $horaFim;
+        }
+
+        return $this->formatarHoras($horas);
+    }
+
+    private function horasCompensacaoAusencia(array $ausencia, float $horasPadrao): float
+    {
+        $inicio = strtotime((string) ($ausencia['hora_inicio'] ?? ''));
+        $fim = strtotime((string) ($ausencia['hora_fim'] ?? ''));
+
+        if ($inicio !== false && $fim !== false && $fim > $inicio) {
+            return round(($fim - $inicio) / 3600, 2);
+        }
+
+        return $horasPadrao;
+    }
+
+    private function horasDisponiveisEscala(array $escalaData, array $periodosComAula): float
+    {
+        $horasDisponiveis = 0.0;
+
+        foreach ($escalaData as $periodoKey => $itemEscala) {
+            $horasPeriodo = (float) ($itemEscala['horas'] ?? 0);
+            $horasOcupadas = (float) ($periodosComAula[$periodoKey] ?? 0);
+            $horasDisponiveis += max(0.0, $horasPeriodo - $horasOcupadas);
+        }
+
+        return round($horasDisponiveis, 2);
+    }
+
+    private function horasDisponiveisHorarioPeriodo(
+        array $escalaData,
+        string $periodoKey,
+        float $horasOcupadas,
+        string $horaInicio,
+        string $horaFim
+    ): float {
+        if (! isset($escalaData[$periodoKey])) {
+            return 0.0;
+        }
+
+        $intervaloEscala = $this->intervaloEscalaPeriodo($periodoKey, (float) ($escalaData[$periodoKey]['horas'] ?? 0));
+
+        if ($intervaloEscala === null) {
+            return 0.0;
+        }
+
+        $inicioEvento = $this->minutosHorario($horaInicio);
+        $fimEvento = $this->minutosHorario($horaFim);
+
+        if ($inicioEvento === null || $fimEvento === null || $fimEvento <= $inicioEvento) {
+            return 0.0;
+        }
+
+        $inicioValido = max($inicioEvento, $intervaloEscala['inicio']);
+        $fimValido = min($fimEvento, $intervaloEscala['fim']);
+        $horasDentroEscala = max(0.0, ($fimValido - $inicioValido) / 60);
+
+        return $this->horasDisponiveisPeriodo($escalaData, $periodoKey, $horasOcupadas, $horasDentroEscala);
+    }
+
+    private function intervaloEscalaPeriodo(string $periodoKey, float $horas): ?array
+    {
+        if ($horas <= 0) {
+            return null;
+        }
+
+        $minutos = (int) round($horas * 60);
+
+        if ($periodoKey === 'manha') {
+            $fim = 12 * 60;
+            return ['inicio' => max(0, $fim - $minutos), 'fim' => $fim];
+        }
+
+        if ($periodoKey === 'tarde') {
+            $fim = (17 * 60) + 30;
+            return ['inicio' => max(12 * 60, $fim - $minutos), 'fim' => $fim];
+        }
+
+        if ($periodoKey === 'noite') {
+            $inicio = 19 * 60;
+            return ['inicio' => $inicio, 'fim' => min((24 * 60) - 1, $inicio + $minutos)];
+        }
+
+        return null;
+    }
+
+    private function minutosHorario(string $hora): ?int
+    {
+        $hora = substr(trim($hora), 0, 5);
+
+        if (! preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $hora, $matches)) {
+            return null;
+        }
+
+        return ((int) $matches[1] * 60) + (int) $matches[2];
+    }
+
     private function horasDisponiveisPeriodo(array $escalaData, string $periodoKey, float $horasOcupadas, float $horasEvento): float
     {
         $limitePeriodo = isset($escalaData[$periodoKey])
             ? (float) ($escalaData[$periodoKey]['horas'] ?? 0)
-            : $horasOcupadas + $horasEvento;
+            : 0.0;
 
         return max(0, min($horasEvento, $limitePeriodo - $horasOcupadas));
     }
@@ -418,34 +617,69 @@ class RelatorioDocenteController
         ][$evento['tipo'] ?? ''] ?? 3;
     }
 
-    private function bloqueioConflitaComAula(array $bloqueio, array $aulas): bool
-    {
-        if (empty($aulas)) {
-            return false;
-        }
 
-        $horaInicioBloqueio = substr((string) ($bloqueio['hora_inicio'] ?? ''), 0, 5);
-        $horaFimBloqueio = substr((string) ($bloqueio['hora_fim'] ?? ''), 0, 5);
+    private function calcularCargaHorariaMensal(
+        array $escala,
+        array $bloqueiosCalendario,
+        array $ausencias,
+        int $mes,
+        int $ano
+    ): float {
+        $horasPorDiaSemana = [];
 
-        if ($horaInicioBloqueio === '' || $horaFimBloqueio === '') {
-            return true;
-        }
+        foreach ($escala as $item) {
+            $diaKey = $this->normalizarDiaSemana((string) ($item['dia_semana'] ?? ''));
 
-        foreach ($aulas as $aula) {
-            $horaInicioAula = substr((string) ($aula['hora_inicio'] ?? ''), 0, 5);
-            $horaFimAula = substr((string) ($aula['hora_fim'] ?? ''), 0, 5);
-
-            if (
-                $horaInicioAula !== ''
-                && $horaFimAula !== ''
-                && $horaInicioAula < $horaFimBloqueio
-                && $horaFimAula > $horaInicioBloqueio
-            ) {
-                return true;
+            if ($diaKey !== '') {
+                $horasPorDiaSemana[$diaKey] = (float) ($horasPorDiaSemana[$diaKey] ?? 0) + (float) ($item['horas'] ?? 0);
             }
         }
 
-        return false;
+        $inicio = sprintf('%04d-%02d-01', $ano, $mes);
+        $fim = date('Y-m-t', strtotime($inicio));
+        $datasBloqueadas = [];
+        $datasFerias = [];
+
+        foreach ($bloqueiosCalendario as $bloqueio) {
+            if (! empty($bloqueio['hora_inicio']) || ! empty($bloqueio['hora_fim'])) {
+                continue;
+            }
+
+            $dataAtual = max($inicio, (string) ($bloqueio['data'] ?? ''));
+            $dataFim = min($fim, (string) ($bloqueio['data_fim'] ?? $dataAtual));
+
+            while ($dataAtual !== '' && $dataAtual <= $dataFim) {
+                $datasBloqueadas[$dataAtual] = true;
+                $dataAtual = date('Y-m-d', strtotime($dataAtual . ' +1 day'));
+            }
+        }
+
+        foreach ($ausencias as $ausencia) {
+            if ((string) ($ausencia['tipo'] ?? '') !== 'ferias') {
+                continue;
+            }
+
+            $dataAtual = max($inicio, (string) ($ausencia['data_inicio'] ?? ''));
+            $dataFim = min($fim, (string) ($ausencia['data_fim'] ?? $dataAtual));
+
+            while ($dataAtual !== '' && $dataAtual <= $dataFim) {
+                $datasFerias[$dataAtual] = true;
+                $dataAtual = date('Y-m-d', strtotime($dataAtual . ' +1 day'));
+            }
+        }
+
+        $horas = 0.0;
+
+        for ($data = $inicio; $data <= $fim; $data = date('Y-m-d', strtotime($data . ' +1 day'))) {
+            if (isset($datasBloqueadas[$data]) || isset($datasFerias[$data])) {
+                continue;
+            }
+
+            $diaKey = $this->diaSemanaPorData($data);
+            $horas += (float) ($horasPorDiaSemana[$diaKey] ?? 0);
+        }
+
+        return round($horas, 2);
     }
 
     private function labelTipoBloqueio(string $tipo): string
@@ -453,17 +687,19 @@ class RelatorioDocenteController
         return $tipo === 'Parada Pedagogica' ? 'Parada Pedagógica' : $tipo;
     }
 
-    private function calcularResumoCarga(array $eventosPorData): array
+    private function calcularResumoCarga(array $eventosPorData, float $cargaHorariaMensal = 0.0): array
     {
         $horasAula = 0.0;
         $horasPlanejamento = 0.0;
         $horasCurso = 0.0;
         $horasParadaPedagogica = 0.0;
         $horasCompensacao = 0.0;
+        $horasBancoHoras = 0.0;
 
         foreach ($eventosPorData as $eventos) {
             foreach ($eventos as $evento) {
                 $horas = (float) ($evento['horas_numero'] ?? 0);
+                $horasBancoHoras += (float) ($evento['banco_horas_numero'] ?? 0);
 
                 if (($evento['tipo'] ?? '') === 'aula') {
                     $horasAula += $horas;
@@ -485,6 +721,7 @@ class RelatorioDocenteController
                     continue;
                 }
 
+
                 if (
                     ($evento['tipo'] ?? '') === 'calendario'
                     && ($evento['subtipo_calendario'] ?? '') === 'Parada Pedagogica'
@@ -494,19 +731,23 @@ class RelatorioDocenteController
             }
         }
 
-        $total = $horasAula + $horasPlanejamento + $horasCurso + $horasParadaPedagogica + $horasCompensacao;
-        $percentualAula = $total > 0 ? round(($horasAula / $total) * 100, 1) : 0;
-        $percentualPlanejamento = $total > 0 ? round(($horasPlanejamento / $total) * 100, 1) : 0;
-        $percentualCurso = $total > 0 ? round(($horasCurso / $total) * 100, 1) : 0;
-        $percentualParada = $total > 0 ? round(($horasParadaPedagogica / $total) * 100, 1) : 0;
-        $percentualCompensacao = $total > 0 ? round(($horasCompensacao / $total) * 100, 1) : 0;
+        $totalCalculado = $horasAula + $horasPlanejamento + $horasCurso + $horasParadaPedagogica + $horasCompensacao;
 
-        if ($horasCompensacao > 0) {
-            $percentualCompensacao = max(
-                0,
-                round(100 - $percentualAula - $percentualPlanejamento - $percentualCurso - $percentualParada, 1)
-            );
+        if ($cargaHorariaMensal > 0) {
+            $totalOutrasCategorias = $horasAula + $horasCurso + $horasParadaPedagogica + $horasCompensacao;
+            $horasPlanejamento = max(0.0, min($horasPlanejamento, $cargaHorariaMensal - $totalOutrasCategorias));
         }
+
+        $total = $cargaHorariaMensal > 0
+            ? $horasAula + $horasPlanejamento + $horasCurso + $horasParadaPedagogica + $horasCompensacao
+            : $totalCalculado;
+        $percentuais = $this->calcularPercentuaisCarga([
+            'aula' => $horasAula,
+            'planejamento' => $horasPlanejamento,
+            'curso' => $horasCurso,
+            'parada_pedagogica' => $horasParadaPedagogica,
+            'compensacao' => $horasCompensacao,
+        ], $total);
 
         return [
             'horas_aula' => $horasAula,
@@ -514,13 +755,49 @@ class RelatorioDocenteController
             'horas_curso' => $horasCurso,
             'horas_parada_pedagogica' => $horasParadaPedagogica,
             'horas_compensacao' => $horasCompensacao,
+            'horas_banco_horas' => $horasBancoHoras,
             'total_horas' => $total,
-            'percentual_aula' => $percentualAula,
-            'percentual_planejamento' => $percentualPlanejamento,
-            'percentual_curso' => $percentualCurso,
-            'percentual_parada_pedagogica' => $percentualParada,
-            'percentual_compensacao' => $percentualCompensacao,
+            'percentual_aula' => $percentuais['aula'],
+            'percentual_planejamento' => $percentuais['planejamento'],
+            'percentual_curso' => $percentuais['curso'],
+            'percentual_parada_pedagogica' => $percentuais['parada_pedagogica'],
+            'percentual_compensacao' => $percentuais['compensacao'],
         ];
+    }
+
+    private function calcularPercentuaisCarga(array $horasPorCategoria, float $total): array
+    {
+        $percentuais = [];
+
+        foreach ($horasPorCategoria as $categoria => $horas) {
+            $percentuais[$categoria] = $total > 0 ? round(((float) $horas / $total) * 100, 1) : 0.0;
+        }
+
+        if ($total <= 0) {
+            return $percentuais;
+        }
+
+        $categoriaAjuste = null;
+
+        foreach ($horasPorCategoria as $categoria => $horas) {
+            if ((float) $horas > 0) {
+                $categoriaAjuste = $categoria;
+            }
+        }
+
+        if ($categoriaAjuste !== null) {
+            $somaSemAjuste = 0.0;
+
+            foreach ($percentuais as $categoria => $percentual) {
+                if ($categoria !== $categoriaAjuste) {
+                    $somaSemAjuste += $percentual;
+                }
+            }
+
+            $percentuais[$categoriaAjuste] = max(0.0, round(100 - $somaSemAjuste, 1));
+        }
+
+        return $percentuais;
     }
 
     private function periodosDaEscala(array $escala): array
@@ -694,3 +971,9 @@ class RelatorioDocenteController
     }
 
 }
+
+
+
+
+
+

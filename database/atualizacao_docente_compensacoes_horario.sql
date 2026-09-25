@@ -1,0 +1,5 @@
+SET NAMES utf8mb4;
+
+ALTER TABLE docente_compensacoes
+  ADD COLUMN IF NOT EXISTS hora_inicio TIME NULL DEFAULT NULL AFTER data_fim,
+  ADD COLUMN IF NOT EXISTS hora_fim TIME NULL DEFAULT NULL AFTER hora_inicio;

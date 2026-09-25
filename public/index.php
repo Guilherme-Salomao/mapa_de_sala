@@ -11,6 +11,13 @@ if (! headers_sent()) {
     header('Content-Type: text/html; charset=UTF-8');
 }
 
+if (! function_exists('str_contains')) {
+    function str_contains(string $haystack, string $needle): bool
+    {
+        return $needle === '' || strpos($haystack, $needle) !== false;
+    }
+}
+
 $logDir = __DIR__ . '/../app/logs';
 
 if (! is_dir($logDir)) {
@@ -62,3 +69,4 @@ register_shutdown_function(function () use ($logFile): void {
 });
 
 require_once __DIR__ . '/../routes/web.php';
+

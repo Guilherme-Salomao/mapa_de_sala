@@ -320,6 +320,8 @@ CREATE TABLE IF NOT EXISTS docente_compensacoes (
   docente_id INT NOT NULL,
   data_inicio DATE NOT NULL,
   data_fim DATE NOT NULL,
+    hora_inicio TIME NULL DEFAULT NULL,
+  hora_fim TIME NULL DEFAULT NULL,
   observacoes TEXT DEFAULT NULL,
   status ENUM('Ativo','Inativo') NOT NULL DEFAULT 'Ativo',
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -427,3 +429,6 @@ ON DUPLICATE KEY UPDATE
   status = VALUES(status);
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+
+

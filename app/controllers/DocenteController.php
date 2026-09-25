@@ -194,7 +194,7 @@ class DocenteController
             $this->redirecionar('./?page=docentes&tipo=sucesso&msg=' . urlencode('Docente excluído com sucesso.'));
         }
 
-        $this->redirecionar('./?page=docentes&tipo=erro&msg=' . urlencode('Não foi possível excluir o docente.'));
+        $this->redirecionar('./?page=docentes&tipo=erro&msg=' . urlencode('Não foi possível excluir o docente. Remova vínculos com aulas e turmas antes; sem esses vínculos, o sistema limpa as dependências automaticamente.'));
     }
 
     private function exigirLogin(): void
@@ -407,3 +407,4 @@ class DocenteController
         exit;
     }
 }
+

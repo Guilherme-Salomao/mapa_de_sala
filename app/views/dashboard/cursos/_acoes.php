@@ -26,6 +26,12 @@
     Gerar
   </button>
 
+  <button type="button" class="btn btn-sm btn-outline-warning app-action-btn" data-bs-toggle="modal"
+    data-bs-target="#excluirAulas_<?php echo $cursoId; ?>" title="Excluir aulas por UC e período">
+    <i class="bi bi-calendar-x"></i>
+    Excluir aulas
+  </button>
+
   <form method="POST" action="./?page=turmas&action=excluir" class="d-inline"
     onsubmit="return confirm('Deseja realmente excluir esta turma');">
     <input type="hidden" name="id" value="<?php echo $cursoId; ?>">
@@ -174,6 +180,68 @@
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="submit" class="btn app-btn-primary">
             <i class="bi bi-calendar-plus"></i> Gerar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="excluirAulas_<?php echo $cursoId; ?>" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="./?page=turmas&action=excluir_aulas_periodo" class="js-excluir-aulas-periodo-form">
+        <div class="modal-header">
+          <h5 class="modal-title">Excluir aulas por período</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id" value="<?php echo $cursoId; ?>">
+
+          <div class="alert alert-warning text-start">
+            Esta ação remove aulas ativas da turma dentro do período. A UC e o docente são filtros opcionais: deixe em branco para excluir todas as UCs ou todos os docentes.
+          </div>
+
+          <div class="mb-3 text-start">
+            <label class="form-label" for="excluir_uc_<?php echo $cursoId; ?>">Unidade Curricular</label>
+            <select class="form-select js-excluir-aulas-uc" id="excluir_uc_<?php echo $cursoId; ?>" name="unidade_curricular_id">
+              <option value="">Todas as UCs</option>
+              <?php foreach ($ucsTurma as $ucTurma): ?>
+              <option value="<?php echo (int) ($ucTurma['id'] ?? 0); ?>">
+                <?php echo htmlspecialchars(($ucTurma['codigo'] ?? '') . ' - ' . ($ucTurma['nome'] ?? '')); ?>
+              </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+
+          <div class="mb-3 text-start">
+            <label class="form-label" for="excluir_docente_<?php echo $cursoId; ?>">Docente</label>
+            <select class="form-select js-excluir-aulas-docente" id="excluir_docente_<?php echo $cursoId; ?>" name="docente_id">
+              <option value="">Todos os docentes</option>
+              <?php foreach ($docentesGeracaoTurma as $docenteGeracao): ?>
+              <option value="<?php echo (int) ($docenteGeracao['id'] ?? 0); ?>">
+                <?php echo htmlspecialchars($docenteGeracao['nome'] ?? ''); ?>
+              </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-12 col-sm-6 text-start">
+              <label class="form-label" for="excluir_data_inicio_<?php echo $cursoId; ?>">Data inicial</label>
+              <input type="date" class="form-control js-excluir-aulas-inicio" id="excluir_data_inicio_<?php echo $cursoId; ?>" name="data_inicio" required>
+            </div>
+
+            <div class="col-12 col-sm-6 text-start">
+              <label class="form-label" for="excluir_data_fim_<?php echo $cursoId; ?>">Data final</label>
+              <input type="date" class="form-control js-excluir-aulas-fim" id="excluir_data_fim_<?php echo $cursoId; ?>" name="data_fim" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-outline-danger">
+            <i class="bi bi-calendar-x"></i> Excluir aulas
           </button>
         </div>
       </form>

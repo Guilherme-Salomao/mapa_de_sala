@@ -40,6 +40,9 @@ CALL sigha_add_column_if_missing('cursos_ofertas', 'hora_inicio_tarde', 'TIME DE
 CALL sigha_add_column_if_missing('cursos_ofertas', 'hora_fim_tarde', 'TIME DEFAULT NULL', 'hora_inicio_tarde');
 CALL sigha_add_column_if_missing('cursos_ofertas', 'participa_parada_pedagogica', 'TINYINT(1) NOT NULL DEFAULT 1', 'hora_fim_tarde');
 CALL sigha_add_column_if_missing('calendario_bloqueios', 'data_fim', 'DATE DEFAULT NULL', 'data');
+CALL sigha_add_column_if_missing('docente_compensacoes', 'hora_inicio', 'TIME NULL DEFAULT NULL', 'data_fim');
+CALL sigha_add_column_if_missing('docente_compensacoes', 'hora_fim', 'TIME NULL DEFAULT NULL', 'hora_inicio');
+CALL sigha_add_column_if_missing('docente_compensacoes', 'horas', 'DECIMAL(5,2) NULL DEFAULT NULL', 'hora_fim');
 
 DROP PROCEDURE IF EXISTS sigha_add_column_if_missing;
 
@@ -59,3 +62,4 @@ INSERT INTO areas (nome, status, criado_em, atualizado_em) VALUES
 ON DUPLICATE KEY UPDATE status = VALUES(status), atualizado_em = CURRENT_TIMESTAMP;
 
 SET FOREIGN_KEY_CHECKS = 1;
+

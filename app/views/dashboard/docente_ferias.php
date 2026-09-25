@@ -31,6 +31,8 @@
     $formDataInicio = $registroForm['data_inicio'] ?? '';
     $formDataFim = $registroForm['data_fim'] ?? '';
     $formObservacoes = $registroForm['observacoes'] ?? '';
+    $formHoraInicio = ! empty($registroForm['hora_inicio']) ? substr((string) $registroForm['hora_inicio'], 0, 5) : '';
+    $formHoraFim = ! empty($registroForm['hora_fim']) ? substr((string) $registroForm['hora_fim'], 0, 5) : '';
     $formStatus = $registroForm['status'] ?? 'Ativo';
     $tituloPagina = $nomePeriodo;
     $subtituloPagina = $subtituloPeriodo;
@@ -108,6 +110,20 @@
                   <?php echo $paginaPeriodo === 'compensacao' ? '' : 'required'; ?>>
               </div>
 
+              <?php if ($paginaPeriodo === 'compensacao'): ?>
+              <div class="col-12 col-md-3 col-lg-2">
+                <label class="form-label">Hora inicial</label>
+                <input type="time" name="hora_inicio" class="form-control"
+                  value="<?php echo htmlspecialchars($formHoraInicio); ?>" required>
+              </div>
+
+              <div class="col-12 col-md-3 col-lg-2">
+                <label class="form-label">Hora final</label>
+                <input type="time" name="hora_fim" class="form-control"
+                  value="<?php echo htmlspecialchars($formHoraFim); ?>" required>
+              </div>
+              <?php endif; ?>
+
               <div class="col-12 col-md-3 col-lg-2">
                 <label class="form-label">Status</label>
                 <select name="status" class="form-select" required>
@@ -174,6 +190,9 @@
                     <th>Data inicial</th>
                     <th>Data final</th>
                     <th>Dias</th>
+                    <?php if ($paginaPeriodo === 'compensacao'): ?>
+                    <th>Horário</th>
+                    <?php endif; ?>
                     <th>Status</th>
                     <th class="text-end">Ações</th>
                   </tr>
@@ -192,6 +211,11 @@
                     <td><?php echo htmlspecialchars(date('d/m/Y', strtotime($registro['data_inicio']))); ?></td>
                     <td><?php echo htmlspecialchars(date('d/m/Y', strtotime($registro['data_fim']))); ?></td>
                     <td class="fw-semibold"><?php echo (int) ($registro['quantidade_dias'] ?? 0); ?></td>
+                    <?php if ($paginaPeriodo === 'compensacao'): ?>
+                    <td class="fw-semibold">
+                      <?php echo ! empty($registro['hora_inicio']) && ! empty($registro['hora_fim']) ? htmlspecialchars(substr((string) $registro['hora_inicio'], 0, 5) . ' - ' . substr((string) $registro['hora_fim'], 0, 5)) : 'Dia inteiro'; ?>
+                    </td>
+                    <?php endif; ?>
                     <td>
                       <span class="badge <?php echo ($registro['status'] ?? '') === 'Ativo' ? 'text-bg-success' : 'text-bg-secondary'; ?>">
                         <?php echo htmlspecialchars($registro['status'] ?? ''); ?>
@@ -215,7 +239,7 @@
                   <?php endforeach; ?>
                   <?php else: ?>
                   <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
+                    <td colspan="<?php echo $paginaPeriodo === 'compensacao' ? 8 : 7; ?>" class="text-center text-muted py-4">
                       Nenhum período de <?php echo htmlspecialchars($nomePeriodoMinusculo); ?> encontrado.
                     </td>
                   </tr>

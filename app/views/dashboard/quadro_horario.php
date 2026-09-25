@@ -156,11 +156,18 @@
         return implode(', ', array_filter($primeirosNomes));
     }
 
-    function codigoUcImpressaoQuadro(array $aula): string
+    function ucAbreviadaImpressaoQuadro(array $aula): string
     {
-        $codigo = trim((string) ($aula['uc_codigo'] ?? ''));
+        $codigo = strtoupper(str_replace(' ', '', trim((string) ($aula['uc_codigo'] ?? ''))));
+        $nome = preg_replace('/\s+/', ' ', trim((string) ($aula['uc_nome'] ?? '')));
+        $nomeCurto = function_exists('mb_substr') ? mb_substr($nome, 0, 20, 'UTF-8') : substr($nome, 0, 20);
+        $nomeCurto = trim((string) $nomeCurto);
 
-        return $codigo !== '' ? strtoupper(str_replace(' ', '', $codigo)) : trim((string) ($aula['uc_nome'] ?? ''));
+        if ($codigo !== '' && $nomeCurto !== '') {
+            return $codigo . ' ' . $nomeCurto;
+        }
+
+        return $codigo !== '' ? $codigo : $nomeCurto;
     }
 
     function salaImpressaoQuadro(?string $sala): string
@@ -297,6 +304,22 @@
     foreach ($aulas as $aula) {
         $aulasPorData[$aula['data_aula']][] = $aula;
     }
+
+    $nomesMesesQuadro = [
+        1 => 'Janeiro',
+        2 => 'Fevereiro',
+        3 => 'Marco',
+        4 => 'Abril',
+        5 => 'Maio',
+        6 => 'Junho',
+        7 => 'Julho',
+        8 => 'Agosto',
+        9 => 'Setembro',
+        10 => 'Outubro',
+        11 => 'Novembro',
+        12 => 'Dezembro',
+    ];
+    $mesAnoImpressao = ($nomesMesesQuadro[$mes] ?? sprintf('%02d', $mes)) . ' ' . $ano;
 
     $primeiroDia = sprintf('%04d-%02d-01', $ano, $mes);
     $diasNoMes = (int) date('t', strtotime($primeiroDia));
@@ -715,11 +738,11 @@
                           }
                       ?>
                       <div class="border rounded p-2 mb-2 small">
-                        <div class="fw-semibold">
+                        <div class="fw-semibold quadro-print-horario">
                           <?php echo htmlspecialchars(substr($aula['hora_inicio'], 0, 5) . ' - ' . substr($aula['hora_fim'], 0, 5)); ?>
                         </div>
-                        <div class="quadro-print-text"
-                          data-print-text="<?php echo htmlspecialchars(codigoUcImpressaoQuadro($aula)); ?>">
+                        <div class="quadro-print-text quadro-print-uc"
+                          data-print-text="<?php echo htmlspecialchars(ucAbreviadaImpressaoQuadro($aula)); ?>">
                           <?php echo htmlspecialchars(($aula['uc_codigo'] ?? '') . ' - ' . ($aula['uc_nome'] ?? '')); ?>
                         </div>
                         <?php if ((int) ($aula['visita_tecnica'] ?? 0) === 1): ?>
@@ -737,12 +760,12 @@
                           <span class="badge text-bg-warning">Aceleração</span>
                         </div>
                         <?php endif; ?>
-                        <div class="text-muted quadro-print-text"
+                        <div class="text-muted quadro-print-text quadro-print-sala"
                           data-print-text="<?php echo htmlspecialchars(salaImpressaoQuadro($aula['sala_nome'] ?? null)); ?>">
                           <?php echo ! empty($aula['sala_nome']) ? 'Sala ' . htmlspecialchars($aula['sala_nome']) : 'Sala em aberto'; ?>
                         </div>
                         <?php if (! empty($aula['docentes'])): ?>
-                        <div class="text-muted quadro-print-text"
+                        <div class="text-muted quadro-print-text quadro-print-docente"
                           data-print-text="<?php echo htmlspecialchars(docentesImpressaoQuadro($aula['docentes'])); ?>">
                           <?php echo htmlspecialchars(implode(', ', array_map(fn($docente) => $docente['nome'], $aula['docentes']))); ?>
                         </div>
@@ -1184,50 +1207,104 @@
         return;
       }
 
+      const docenteImpressao = <?php echo json_encode($usuarioLogado, JSON_UNESCAPED_UNICODE); ?>;
+      const mesAnoQuadro = <?php echo json_encode($mesAnoImpressao, JSON_UNESCAPED_UNICODE); ?>;
+      const turmaImpressao = <?php echo json_encode($ofertaSelecionada['nome'] ?? 'Turma', JSON_UNESCAPED_UNICODE); ?>;
+      const mesImpressao = <?php echo json_encode($nomesMesesQuadro[$mes] ?? sprintf('%02d', $mes), JSON_UNESCAPED_UNICODE); ?>;
+      const anoImpressao = <?php echo json_encode((string) $ano, JSON_UNESCAPED_UNICODE); ?>;
+      const nomeArquivoImpressao = `Quadro Horário - ${turmaImpressao} - ${mesImpressao} - ${anoImpressao}`
+        .replace(/[\\/:*?"<>|]+/g, "-")
+        .replace(/\s+/g, " ")
+        .trim();
+      const horarioImpressao = new Date().toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+
       janelaImpressao.document.write(`
         <!doctype html>
         <html lang="pt-br">
         <head>
           <meta charset="UTF-8">
-          <title>Quadro Horário - SIGHA</title>
+          <title>${nomeArquivoImpressao}</title>
           <style>
             @page { size: A4 landscape; margin: 5mm; }
-            * { box-sizing: border-box; }
-            body { color: #111827; font-family: Arial, sans-serif; margin: 0; }
-            h1 { font-size: 17px; margin: 0 0 4px; text-align: center; }
-            .app-card { border: 0; box-shadow: none; margin: 0 0 4px; padding: 0; }
+            * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            html, body { height: 200mm; width: 287mm; }
+            body { background: #fff; color: #111827; font-family: Arial, sans-serif; margin: 0; overflow: hidden; }
+            .quadro-print-page { break-after: avoid; break-inside: avoid; display: flex; flex-direction: column; gap: 2mm; height: 200mm; overflow: hidden; page-break-after: avoid; page-break-inside: avoid; width: 287mm; }
+            .quadro-print-topo { align-items: center; background: linear-gradient(90deg, #004a8d, #002e5c) !important; border-radius: 5px; color: #fff !important; display: flex; justify-content: space-between; min-height: 12mm; padding: 3mm 4mm; }
+            .quadro-print-titulo { font-size: 15px; font-weight: 800; line-height: 1.1; }
+            .quadro-print-meta { font-size: 9px; line-height: 1.25; opacity: 0.95; text-align: right; }
+            .app-card { background: transparent !important; border: 0; box-shadow: none; margin: 0; padding: 0; }
             .d-flex { display: flex; }
             .flex-wrap { flex-wrap: wrap; }
             .justify-content-between { justify-content: space-between; }
             .gap-2 { gap: 4px; }
             .fw-bold, .fw-semibold { font-weight: 700; }
-            .small, small { font-size: 10px; }
-            .text-muted { color: #4b5563; }
+            .small, small { font-size: 9px; }
+            .text-muted { color: #31556a !important; }
             .text-center { text-align: center; }
-            .mb-1 { margin-bottom: 2px; }
-            .mb-2 { margin-bottom: 3px; }
-            .my-1 { margin: 2px 0; }
-            .mt-2 { margin-top: 3px; }
-            .p-2 { padding: 3px; }
+            .mb-1, .mb-2, .my-1, .mt-2 { margin: 0; }
+            .p-2 { padding: 2px; }
             .p-3 { padding: 0; }
-            .border { border: 1px solid #d1d5db; }
-            .rounded { border-radius: 3px; }
-            .table-responsive { overflow: visible; }
-            #quadroResumoImpressao .fw-bold { font-size: 13px; }
-            #quadroResumoImpressao .small { font-size: 11px; }
-            table { border-collapse: collapse; font-size: 10px; table-layout: fixed; width: 100%; }
-            th, td { border: 1px solid #9ca3af; padding: 2px; vertical-align: top; }
-            th { background: #0d6efd !important; color: #fff; font-size: 10px; font-weight: 700; text-align: center; }
-            td { height: 24mm !important; min-width: 0 !important; text-align: center; }
+            .border { border: 1px solid #bdd7e7 !important; }
+            .rounded { border-radius: 4px; }
+            .table-responsive { flex: 1 1 auto; overflow: visible; }
+            #quadroResumoImpressao { background: #f4f9ff !important; border: 1px solid #c7d7ea !important; border-radius: 5px; padding: 1.2mm 2.5mm !important; }
+            #quadroResumoImpressao > .d-flex { align-items: center; flex-wrap: nowrap !important; min-height: 7mm; }
+            #quadroResumoImpressao > .d-flex > div:first-child { align-items: baseline; display: flex; flex: 1 1 auto; gap: 3mm; min-width: 0; overflow: hidden; white-space: nowrap; }
+            #quadroResumoImpressao .fw-bold { color: #004a8d; flex: 0 1 auto; font-size: 15px; line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            #quadroResumoImpressao .small { color: #31556a !important; flex: 0 0 auto; font-size: 13px; font-weight: 700; line-height: 1; white-space: nowrap; }
+            #quadroResumoImpressao > .d-flex > div:last-child { background: #fff3df !important; border-radius: 4px; color: #7a4300 !important; flex: 0 0 auto; font-size: 10px; font-weight: 700; padding: 0.8mm 1.5mm; white-space: nowrap; }
+            #quadroCalendarioImpressao { border-bottom: 1px solid #9cb3cf !important; display: flex; flex: 1 1 0; min-height: 0; overflow: hidden; }
+            #quadroCalendarioImpressao .table-responsive { display: flex; overflow: hidden; width: 100%; }
+            table { border: 1px solid #9cb3cf; border-collapse: collapse; font-size: 10px; table-layout: fixed; width: 100%; }
+            th, td { border: 1px solid #9cb3cf; padding: 1.2mm; vertical-align: top; }
+            th { background: #004a8d !important; color: #fff !important; font-size: 10px; font-weight: 800; height: 6mm; text-align: center; }
+            td { background: #f8fbff !important; min-width: 0 !important; overflow: hidden; text-align: center; }
+            tbody tr:nth-child(even) td { background: #f4f9ff !important; }
+            tbody tr:last-child td { border-bottom: 1px solid #9cb3cf !important; }
+            .weeks-4 td { height: 32mm !important; }
+            .weeks-5 td { height: 24mm !important; }
+            .weeks-6 td { height: 19mm !important; }
             td > * { text-align: center !important; }
-            .badge { border: 1px solid #9ca3af; border-radius: 3px; display: inline-block; font-size: 8px; padding: 1px 2px; }
+            .quadro-dia-header { margin-bottom: 0 !important; }
+            .quadro-dia-header > span:first-child { align-items: center; background: #fff3df !important; border-radius: 999px; color: #7a4300 !important; display: inline-flex; font-size: 12px; font-weight: 900; height: 5.2mm; justify-content: center; min-width: 5.2mm; padding: 0 1.1mm; text-align: center !important; }
+            td > .border.rounded { align-items: center; background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; display: flex; flex-direction: column; justify-content: flex-start; line-height: 1.04; margin: 0 auto; min-height: 0; padding: 0.6mm 0 1.4mm !important; width: 96%; }
+            td > .border.rounded .quadro-print-horario { color: #004a8d !important; font-size: 15px; font-weight: 900; order: 2; }
+            td > .border.rounded .quadro-print-uc { color: #111827 !important; font-size: 14px; font-weight: 900; order: 3; }
+            td > .border.rounded .quadro-print-sala { color: #334155 !important; font-size: 12px; font-weight: 900; margin-bottom: 0.6mm; order: 1; }
+            td > .border.rounded .quadro-print-docente { color: #f7941d !important; font-size: 13px; font-weight: 900; order: 6; }
+            td > .border.rounded .quadro-print-text { overflow-wrap: anywhere; }
+            .bg-warning-subtle { background: #fff3cd !important; border-color: #fbbf24 !important; color: #7c2d12 !important; font-size: 13px !important; font-weight: 900; line-height: 1.15; }
+            .badge { border-radius: 3px; display: inline-block; font-size: 6px; font-weight: 700; padding: 1px 2px; }
+            .text-bg-info { background: #cffafe !important; color: #155e75 !important; }
+            .text-bg-secondary { background: #e5e7eb !important; color: #374151 !important; }
+            .text-bg-warning { background: #fef3c7 !important; color: #92400e !important; }
+            .quadro-print-footer { align-items: center; background: #fff !important; color: #31556a !important; display: flex; flex: 0 0 4mm; font-size: 6.5px; gap: 8px; justify-content: space-between; line-height: 1; margin-top: 1.2mm; min-height: 4mm; padding: 0.6mm 0 0; position: relative; z-index: 5; }
+            .quadro-print-footer div:first-child { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .quadro-print-footer div:last-child { flex: 0 0 auto; white-space: nowrap; }
+            .quadro-print-footer strong { color: #004a8d !important; }
             button, form, .collapse, .app-calendar-actions { display: none !important; }
           </style>
         </head>
         <body>
-          <h1>Quadro Horário</h1>
-          ${resumo.outerHTML}
-          ${calendario.outerHTML}
+          <div class="quadro-print-page">
+            <div class="quadro-print-topo">
+              <div class="quadro-print-titulo">Quadro Horário - ${mesAnoQuadro}</div>
+
+            </div>
+            ${resumo.outerHTML}
+            ${calendario.outerHTML}
+            <div class="quadro-print-footer">
+              <div><strong>Docente:</strong> ${docenteImpressao}</div>
+              <div><strong>Impresso em:</strong> ${horarioImpressao}</div>
+            </div>
+          </div>
           <script>
             document.querySelectorAll("table").forEach(function(table) {
               const cabecalhoDomingo = table.querySelector("thead tr th:first-child");
@@ -1241,13 +1318,24 @@
                   row.children[0].remove();
                 }
               });
+
+              const semanas = table.querySelectorAll("tbody tr").length;
+              table.classList.add("weeks-" + Math.min(Math.max(semanas, 4), 6));
             });
 
             document.querySelectorAll(".quadro-print-text[data-print-text]").forEach(function(elemento) {
               elemento.textContent = elemento.dataset.printText || "";
             });
 
+            window.addEventListener("afterprint", function() {
+              window.close();
+              if (window.opener && !window.opener.closed) {
+                window.opener.focus();
+              }
+            });
+
             window.addEventListener("load", function() {
+              window.focus();
               window.print();
             });
           <\/script>
@@ -1261,4 +1349,18 @@
 </body>
 
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

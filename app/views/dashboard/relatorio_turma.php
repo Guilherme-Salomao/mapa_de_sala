@@ -1,4 +1,4 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -66,6 +66,42 @@
     $formatarDataTurma = static function (?string $data): string {
         return ! empty($data) ? date('d/m/Y', strtotime($data)) : '-';
     };
+
+    $nomesMesesRelatorioTurma = [
+        1 => 'Janeiro',
+        2 => 'Fevereiro',
+        3 => 'Março',
+        4 => 'Abril',
+        5 => 'Maio',
+        6 => 'Junho',
+        7 => 'Julho',
+        8 => 'Agosto',
+        9 => 'Setembro',
+        10 => 'Outubro',
+        11 => 'Novembro',
+        12 => 'Dezembro',
+    ];
+    $mesRelatorioTurma = (int) date('n');
+    $anoRelatorioTurma = (string) date('Y');
+    $formatarDocentesTurma = static function (array $docentes): string {
+        if (empty($docentes)) {
+            return '<span class="text-muted">-</span>';
+        }
+
+        $itens = [];
+
+        foreach ($docentes as $docente) {
+            $nome = htmlspecialchars((string) ($docente['docente_nome'] ?? $docente['nome'] ?? ''));
+            $totalAulas = (int) ($docente['total_aulas'] ?? 0);
+            $sufixo = $totalAulas > 0 ? ' <span class="text-muted">(' . $totalAulas . ' aula' . ($totalAulas === 1 ? '' : 's') . ')</span>' : '';
+            $principal = (int) ($docente['principal'] ?? 0) === 1
+                ? ' <span class="badge bg-success-subtle text-success border border-success-subtle">Principal</span>'
+                : '';
+            $itens[] = '<div class="docente-relatorio-item">' . $nome . $sufixo . $principal . '</div>';
+        }
+
+        return implode('', $itens);
+    };
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -84,7 +120,8 @@
   .relatorio-turma-table th {
     background: #0d6efd;
     color: #fff;
-    font-size: 1rem;
+    font-size: 0.94rem;
+    line-height: 1.15;
     white-space: nowrap;
   }
 
@@ -93,9 +130,190 @@
     vertical-align: middle;
   }
 
+  .relatorio-turma-table .col-uc { width: 35%; }
+  .relatorio-turma-table .col-docente { width: 20%; }
+  .relatorio-turma-table .col-carga { width: 8.5%; }
+  .relatorio-turma-table .col-a-lancar { width: 7.5%; }
+  .relatorio-turma-table .col-lancadas { width: 9.5%; }
+  .relatorio-turma-table .col-dadas { width: 8.5%; }
+  .relatorio-turma-table .col-data { width: 5.5%; }
+
   .relatorio-turma-table .col-numero {
     text-align: center;
     white-space: nowrap;
+  }
+
+  .docente-relatorio-item {
+    font-size: 0.92rem;
+    line-height: 1.25;
+    margin-bottom: 0.25rem;
+  }
+
+  .docente-relatorio-item:last-child {
+    margin-bottom: 0;
+  }
+
+
+  .relatorio-print-header,
+  .relatorio-print-footer {
+    display: none;
+  }
+
+  @media print {
+    @page {
+      size: A4 landscape;
+      margin: 8mm;
+    }
+
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body {
+      background: #fff !important;
+    }
+
+    header,
+    footer,
+    .app-sidebar,
+    .relatorio-no-print,
+    .page-header,
+    .app-content > .app-card:not(.relatorio-print-area) {
+      display: none !important;
+    }
+
+    .container-fluid,
+    .row,
+    .app-content {
+      display: block !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      max-width: none !important;
+    }
+
+    .relatorio-print-area {
+      border: 0 !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+    }
+
+    .relatorio-print-header {
+      align-items: center;
+      background: #0d6efd !important;
+      border-radius: 6px;
+      color: #fff !important;
+      display: flex !important;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      padding: 8px 10px;
+      text-align: left;
+    }
+
+    .relatorio-print-header .relatorio-print-oferta,
+    .relatorio-print-header .relatorio-print-turma {
+      color: #fff !important;
+      font-size: 11px;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .relatorio-print-header .relatorio-print-oferta {
+      flex: 1 1 auto;
+    }
+
+    .relatorio-print-header .relatorio-print-turma {
+      flex: 0 0 auto;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .relatorio-print-header .relatorio-print-oferta {
+      text-align: right;
+    }
+
+    .relatorio-turma-table thead th {
+      background: #0d6efd !important;
+      color: #fff !important;
+      font-size: 8.5px !important;
+      line-height: 1.1;
+      padding-left: 4px !important;
+      padding-right: 4px !important;
+      white-space: nowrap;
+    }
+
+    .relatorio-turma-table tbody tr:nth-child(even) td {
+      background: #f4f9ff !important;
+    }
+
+    .relatorio-turma-table tbody tr.fw-bold td {
+      background: #fff !important;
+    }
+
+    .table-responsive {
+      overflow: visible !important;
+    }
+
+    .relatorio-print-footer {
+      align-items: center;
+      background: #fff !important;
+      color: #31556a !important;
+      display: flex !important;
+      font-size: 6.5px;
+      gap: 8px;
+      justify-content: space-between;
+      line-height: 1;
+      margin-top: 1.2mm;
+      min-height: 4mm;
+      padding: 0.6mm 0 0;
+    }
+
+    .relatorio-print-footer div:first-child {
+      flex: 1 1 auto;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .relatorio-print-footer div:last-child {
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+
+    .relatorio-print-footer strong {
+      color: #004a8d !important;
+    }
+
+    .relatorio-turma-table {
+      font-size: 10px;
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    .relatorio-turma-table th,
+    .relatorio-turma-table td {
+      font-size: 10px;
+      padding: 6px 7px;
+    }
+
+    .relatorio-turma-table th:nth-child(1),
+    .relatorio-turma-table td:nth-child(1) {
+      width: 36%;
+    }
+
+    .relatorio-turma-table th:nth-child(2),
+    .relatorio-turma-table td:nth-child(2) {
+      width: 21%;
+    }
+
+    .docente-relatorio-item {
+      font-size: 9px;
+    }
   }
 
   .horas-ok {
@@ -154,7 +372,9 @@
         ?>
 
         <section class="col-12 col-md-9 col-lg-10 p-3 p-md-4 app-content">
-          <?php require_once __DIR__ . '/../components/page_header.php'; ?>
+          <div class="relatorio-no-print">
+            <?php require_once __DIR__ . '/../components/page_header.php'; ?>
+          </div>
 
           <div class="app-card p-3 mb-3">
             <div class="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-3">
@@ -231,6 +451,7 @@
                 </tbody>
               </table>
             </div>
+
           </div>
 
           <div class="app-card p-3 mb-3">
@@ -260,8 +481,9 @@
 
           <?php if (! empty($turmaSelecionada)): ?>
           <div class="app-card p-3 mb-3">
-            <div class="d-flex flex-nowrap align-items-center gap-3 overflow-auto">
-              <div class="fw-bold flex-shrink-0"><?php echo htmlspecialchars($turmaSelecionada['nome'] ?? ''); ?></div>
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+              <div class="d-flex flex-nowrap align-items-center gap-3 overflow-auto">
+                <div class="fw-bold flex-shrink-0"><?php echo htmlspecialchars($turmaSelecionada['nome'] ?? ''); ?></div>
               <div class="small text-muted flex-shrink-0">
                 Oferta <?php echo htmlspecialchars($turmaSelecionada['codigo_oferta'] ?? ''); ?>
                 <?php if (! empty($turmaSelecionada['curso_nome'])): ?>
@@ -280,10 +502,27 @@
                   <?php echo $turmaConcluida && ! empty($datasTurma['data_final']) ? htmlspecialchars(date('d/m/Y', strtotime($datasTurma['data_final'])))  : '-'; ?>
                 </strong>
               </div>
+              </div>
+              <button type="button" class="btn btn-sm app-btn-primary flex-shrink-0 relatorio-no-print" id="btnImprimirRelatorioTurma">
+                <i class="bi bi-printer"></i> Imprimir
+              </button>
             </div>
           </div>
 
-          <div class="app-card p-3">
+          <div class="app-card p-3 relatorio-print-area" id="relatorioTurmaImpressao">
+            <div class="relatorio-print-header">
+              <div class="relatorio-print-turma">
+                Relatório da Turma: <?php echo htmlspecialchars($turmaSelecionada['nome'] ?? ''); ?>
+              </div>
+              <div class="relatorio-print-oferta">
+                Oferta <?php echo htmlspecialchars($turmaSelecionada['codigo_oferta'] ?? ''); ?>
+                <?php if (! empty($turmaSelecionada['curso_nome'])): ?>
+                · <?php echo htmlspecialchars($turmaSelecionada['curso_nome']); ?>
+                <?php endif; ?>
+                · Inicial: <?php echo ! empty($datasTurma['data_inicial']) ? htmlspecialchars(date('d/m/Y', strtotime($datasTurma['data_inicial'])))  : '-'; ?>
+                · Final: <?php echo $turmaConcluida && ! empty($datasTurma['data_final']) ? htmlspecialchars(date('d/m/Y', strtotime($datasTurma['data_final'])))  : '-'; ?>
+              </div>
+            </div>
             <?php if ($turmaConcluida && $uc12Pendente): ?>
             <div class="alert alert-warning py-2 mb-3 text-center fw-semibold">
               Carga principal atingida. Falta concluir a UC12.
@@ -293,13 +532,14 @@
               <table class="table table-bordered relatorio-turma-table mb-0">
                 <thead>
                   <tr>
-                    <th>Unidade Curricular</th>
-                    <th class="text-center">Carga Horária</th>
-                    <th class="text-center">A Lançar</th>
-                    <th class="text-center">Horas Lançadas</th>
-                    <th class="text-center">Horas Dadas</th>
-                    <th class="text-center">Data Inicial</th>
-                    <th class="text-center">Data Final</th>
+                    <th class="col-uc">Unidade Curricular</th>
+                    <th class="col-docente">Docente</th>
+                    <th class="text-center col-carga">Carga Horária</th>
+                    <th class="text-center col-a-lancar">A Lançar</th>
+                    <th class="text-center col-lancadas">Horas Lançadas</th>
+                    <th class="text-center col-dadas">Horas Dadas</th>
+                    <th class="text-center col-data">Data Inicial</th>
+                    <th class="text-center col-data">Data Final</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -315,38 +555,44 @@
                           : ($horasLancadasMinutos > $cargaHorariaMinutos ? 'horas-acima' : 'horas-pendente');
                   ?>
                   <tr>
-                    <td><?php echo htmlspecialchars(($linha['codigo'] ?? '') . '-' . ($linha['nome'] ?? '')); ?></td>
-                    <td class="col-numero"><?php echo htmlspecialchars($formatarMinutosTurma($cargaHorariaMinutos)); ?></td>
-                    <td class="col-numero"><?php echo htmlspecialchars($formatarMinutosTurma($aLancarMinutos)); ?></td>
-                    <td class="col-numero <?php echo $classeHoras; ?>"><?php echo htmlspecialchars($formatarMinutosTurma($horasLancadasMinutos)); ?></td>
-                    <td class="col-numero <?php echo $horasDadasMinutos > $cargaHorariaMinutos ? 'horas-dadas-acima' : ''; ?>">
+                    <td class="col-uc"><?php echo htmlspecialchars(($linha['codigo'] ?? '') . '-' . ($linha['nome'] ?? '')); ?></td>
+                    <td class="col-docente"><?php echo $formatarDocentesTurma($linha['docentes'] ?? []); ?></td>
+                    <td class="col-numero col-carga"><?php echo htmlspecialchars($formatarMinutosTurma($cargaHorariaMinutos)); ?></td>
+                    <td class="col-numero col-a-lancar"><?php echo htmlspecialchars($formatarMinutosTurma($aLancarMinutos)); ?></td>
+                    <td class="col-numero col-lancadas <?php echo $classeHoras; ?>"><?php echo htmlspecialchars($formatarMinutosTurma($horasLancadasMinutos)); ?></td>
+                    <td class="col-numero col-dadas <?php echo $horasDadasMinutos > $cargaHorariaMinutos ? 'horas-dadas-acima' : ''; ?>">
                       <?php echo htmlspecialchars($formatarMinutosTurma($horasDadasMinutos)); ?>
                     </td>
-                    <td class="col-numero">
+                    <td class="col-numero col-data">
                       <?php echo ! empty($linha['data_inicial']) ? htmlspecialchars(date('d/m/y', strtotime($linha['data_inicial'])))  : '-'; ?>
                     </td>
-                    <td class="col-numero">
+                    <td class="col-numero col-data">
                       <?php echo ! empty($linha['data_final']) ? htmlspecialchars(date('d/m/y', strtotime($linha['data_final'])))  : '-'; ?>
                     </td>
                   </tr>
                   <?php endforeach; ?>
                   <tr class="fw-bold">
-                    <td>Total</td>
-                    <td class="col-numero"><?php echo htmlspecialchars($formatarMinutosTurma($totalCargaMinutos)); ?></td>
-                    <td class="col-numero"><?php echo htmlspecialchars($formatarMinutosTurma($totalCargaMinutos - $totalLancadasMinutos)); ?></td>
-                    <td class="col-numero"><?php echo htmlspecialchars($formatarMinutosTurma($totalLancadasMinutos)); ?></td>
-                    <td class="col-numero"><?php echo htmlspecialchars($formatarMinutosTurma($totalDadasMinutos)); ?></td>
+                    <td class="col-uc">Total</td>
+                    <td class="col-docente"></td>
+                    <td class="col-numero col-carga"><?php echo htmlspecialchars($formatarMinutosTurma($totalCargaMinutos)); ?></td>
+                    <td class="col-numero col-a-lancar"><?php echo htmlspecialchars($formatarMinutosTurma($totalCargaMinutos - $totalLancadasMinutos)); ?></td>
+                    <td class="col-numero col-lancadas"><?php echo htmlspecialchars($formatarMinutosTurma($totalLancadasMinutos)); ?></td>
+                    <td class="col-numero col-dadas"><?php echo htmlspecialchars($formatarMinutosTurma($totalDadasMinutos)); ?></td>
                     <td colspan="2"></td>
                   </tr>
                   <?php else: ?>
                   <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
+                    <td colspan="8" class="text-center text-muted py-4">
                       Nenhuma unidade curricular encontrada para esta turma.
                     </td>
                   </tr>
                   <?php endif; ?>
                 </tbody>
               </table>
+            </div>
+            <div class="relatorio-print-footer">
+              <div><strong>Usuário:</strong> <span id="relatorioTurmaUsuarioImpressao"></span></div>
+              <div><strong>Impresso em:</strong> <span id="relatorioTurmaHorarioImpressao"></span></div>
             </div>
           </div>
           <?php else: ?>
@@ -374,8 +620,54 @@
       window.location.href = "./?page=logout";
     }
   });
+
+  const btnImprimirRelatorioTurma = document.getElementById("btnImprimirRelatorioTurma");
+  const relatorioTurmaUsuarioImpressao = document.getElementById("relatorioTurmaUsuarioImpressao");
+  const relatorioTurmaHorarioImpressao = document.getElementById("relatorioTurmaHorarioImpressao");
+  const usuarioRelatorioTurma = <?php echo json_encode($usuarioLogado, JSON_UNESCAPED_UNICODE); ?>;
+
+  function atualizarRodapeRelatorioTurma() {
+    const agora = new Date();
+    const horario = agora.toLocaleDateString("pt-BR") + ", " + agora.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
+    if (relatorioTurmaUsuarioImpressao) relatorioTurmaUsuarioImpressao.textContent = usuarioRelatorioTurma;
+    if (relatorioTurmaHorarioImpressao) relatorioTurmaHorarioImpressao.textContent = horario;
+  }
+
+  window.addEventListener("beforeprint", atualizarRodapeRelatorioTurma);
+
+  if (btnImprimirRelatorioTurma) {
+    btnImprimirRelatorioTurma.addEventListener("click", function() {
+      atualizarRodapeRelatorioTurma();
+      const tituloOriginal = document.title;
+      const turmaRelatorio = <?php echo json_encode($turmaSelecionada['nome'] ?? 'Turma', JSON_UNESCAPED_UNICODE); ?>;
+      const mesRelatorio = <?php echo json_encode($nomesMesesRelatorioTurma[$mesRelatorioTurma] ?? date('m'), JSON_UNESCAPED_UNICODE); ?>;
+      const anoRelatorio = <?php echo json_encode($anoRelatorioTurma, JSON_UNESCAPED_UNICODE); ?>;
+      const tituloImpressao = `Relatório da Turma - ${turmaRelatorio} - ${mesRelatorio} - ${anoRelatorio}`
+        .replace(/[\\/:*?"<>|]+/g, "-")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const restaurarTitulo = function() {
+        document.title = tituloOriginal;
+        window.removeEventListener("afterprint", restaurarTitulo);
+      };
+
+      document.title = tituloImpressao;
+      window.addEventListener("afterprint", restaurarTitulo);
+      window.print();
+    });
+  }
   </script>
 </body>
 
 </html>
+
+
+
+
+
 

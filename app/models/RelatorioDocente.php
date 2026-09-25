@@ -139,7 +139,7 @@ class RelatorioDocente
         $fim = date('Y-m-t', strtotime($inicio));
 
         $sql = "
-            SELECT data_inicio, data_fim, observacoes, 'ferias' AS tipo
+            SELECT data_inicio, data_fim, NULL AS hora_inicio, NULL AS hora_fim, observacoes, 'ferias' AS tipo
             FROM docente_ferias
             WHERE docente_id = :docente_ferias
               AND status = 'Ativo'
@@ -148,7 +148,7 @@ class RelatorioDocente
 
             UNION ALL
 
-            SELECT data_inicio, data_fim, observacoes, 'compensacao' AS tipo
+            SELECT data_inicio, data_fim, hora_inicio, hora_fim, observacoes, 'compensacao' AS tipo
             FROM docente_compensacoes
             WHERE docente_id = :docente_compensacao
               AND status = 'Ativo'

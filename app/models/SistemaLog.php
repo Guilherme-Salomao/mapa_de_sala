@@ -69,6 +69,24 @@ class SistemaLog
         return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'pagina');
     }
 
+    public function excluirMaisAntigosQue(int $dias): int
+    {
+        if ($dias <= 0) {
+            return 0;
+        }
+
+        $dataLimite = date('Y-m-d H:i:s', strtotime('-' . $dias . ' days'));
+        $sql = "
+            DELETE FROM sistema_logs
+            WHERE criado_em < :data_limite
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':data_limite' => $dataLimite]);
+
+        return $stmt->rowCount();
+    }
+
     public function salvar(array $dados): bool
     {
         try {

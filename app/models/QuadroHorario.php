@@ -699,23 +699,36 @@ class QuadroHorario
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function docenteEmCompensacao(int $docenteId, string $dataAula): bool
+    public function docenteEmCompensacao(int $docenteId, string $dataAula, ?string $horaInicio = null, ?string $horaFim = null): bool
     {
         $stmt = $this->conn->prepare("
-            SELECT id
+            SELECT hora_inicio, hora_fim
             FROM docente_compensacoes
             WHERE docente_id = :docente_id
               AND status = 'Ativo'
               AND data_inicio <= :data_aula
               AND data_fim >= :data_aula
-            LIMIT 1
+            ORDER BY hora_inicio ASC
         ");
         $stmt->execute([
             ':docente_id' => $docenteId,
             ':data_aula' => $dataAula,
         ]);
 
-        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $compensacao) {
+            $inicioCompensacao = substr((string) ($compensacao['hora_inicio'] ?? ''), 0, 5);
+            $fimCompensacao = substr((string) ($compensacao['hora_fim'] ?? ''), 0, 5);
+
+            if ($inicioCompensacao === '' || $fimCompensacao === '' || $horaInicio === null || $horaFim === null) {
+                return true;
+            }
+
+            if ($horaInicio < $fimCompensacao && $horaFim > $inicioCompensacao) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function diaSemanaPortugues(string $data): string

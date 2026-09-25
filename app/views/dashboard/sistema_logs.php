@@ -1,4 +1,4 @@
-﻿<?php
+<?php
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -15,6 +15,8 @@
     $pagina = $pagina ?? ($_GET['pagina_log'] ?? 'todos');
     $dataInicio = $dataInicio ?? ($_GET['data_inicio'] ?? '');
     $dataFim = $dataFim ?? ($_GET['data_fim'] ?? '');
+    $mensagem = $_GET['msg'] ?? '';
+    $tipo = $_GET['tipo'] ?? '';
 
     $tituloPagina = 'Logs do Sistema';
     $subtituloPagina = 'Acompanhe as acoes realizadas pelos usuarios';
@@ -56,6 +58,7 @@
 
         <section class="col-12 col-md-9 col-lg-10 p-3 p-md-4 app-content">
           <?php require_once __DIR__ . '/../components/page_header.php'; ?>
+          <?php require_once __DIR__ . '/../components/alert.php'; ?>
 
           <div class="app-card p-3 mb-3">
             <form method="GET" action="./" class="row g-2 align-items-end">
@@ -106,6 +109,30 @@
                 </a>
               </div>
             </form>
+          </div>
+
+          <div class="app-card p-3 mb-3 border-danger-subtle">
+            <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-3">
+              <div>
+                <div class="fw-bold text-danger">Limpeza de logs</div>
+                <div class="small text-muted">Exclua registros antigos para evitar crescimento excessivo do banco.</div>
+              </div>
+              <form method="POST" action="./?page=logs&action=limpar" class="d-flex flex-column flex-sm-row gap-2 align-items-sm-end" id="formLimparLogs">
+                <div>
+                  <label class="form-label small mb-1" for="diasLogs">Excluir logs com mais de</label>
+                  <select class="form-select form-select-sm" id="diasLogs" name="dias" required>
+                    <option value="30">30 dias</option>
+                    <option value="60">60 dias</option>
+                    <option value="90" selected>90 dias</option>
+                    <option value="180">180 dias</option>
+                    <option value="365">1 ano</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-danger flex-shrink-0">
+                  <i class="bi bi-trash"></i> Excluir logs antigos
+                </button>
+              </form>
+            </div>
           </div>
 
           <div class="app-card p-3">
@@ -180,6 +207,20 @@
       window.location.href = "./?page=logout";
     }
   });
+
+  const formLimparLogs = document.getElementById("formLimparLogs");
+
+  if (formLimparLogs) {
+    formLimparLogs.addEventListener("submit", function(e) {
+      const select = document.getElementById("diasLogs");
+      const prazo = select?.selectedOptions[0]?.textContent || "o periodo selecionado";
+      const confirmado = window.confirm("Excluir definitivamente os logs com mais de " + prazo + "?");
+
+      if (!confirmado) {
+        e.preventDefault();
+      }
+    });
+  }
   </script>
 </body>
 

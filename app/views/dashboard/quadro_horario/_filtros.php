@@ -34,7 +34,7 @@
       value="<?php echo (int) ($ano ?? date('Y')); ?>">
   </div>
 
-  <div class="col-12 col-md-6">
+  <div class="col-12 col-md-8">
     <label class="form-label small text-muted mb-1" for="curso_oferta_id">Turma/oferta</label>
     <select class="form-select" id="curso_oferta_id" name="curso_oferta_id" required>
       <option value="0" <?php echo empty($cursoOfertaId) ? 'selected' : ''; ?>>Selecione...</option>
@@ -53,9 +53,5 @@
     </select>
   </div>
 
-  <div class="col-12 col-md-2 d-flex gap-2 align-self-end">
-    <button type="submit" class="btn app-btn-primary w-100">
-      <i class="bi bi-calendar-check"></i> Ver
-    </button>
-  </div>
 </form>
+

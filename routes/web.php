@@ -152,6 +152,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($page === 'turmas' && $action === 'excluir_aulas_periodo') {
+        $controller = new CursoController();
+        $controller->excluirAulasPeriodo();
+        exit;
+    }
+
     if ($page === 'cursos' && $action === 'salvar') {
         $controller = new CursoModeloController();
         $controller->salvar();
@@ -305,6 +311,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (in_array($page, ['aprendizagem', 'aceleracao'], true) && $action === 'excluir') {
         $controller = new AprendizagemQuadroController();
         $controller->excluir();
+        exit;
+    }
+
+    if ($page === 'logs' && $action === 'limpar') {
+        $controller = new SistemaLogController();
+        $controller->limpar();
         exit;
     }
 

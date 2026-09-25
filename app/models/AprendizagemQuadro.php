@@ -213,7 +213,7 @@ class AprendizagemQuadro
                     && ! $this->docenteOcupado($docenteId, $data, $horaInicio, $horaFim)
                     && ! $this->docenteEmEducacaoCorporativa($docenteId, $data, $horaInicio, $horaFim)
                     && ! $this->docenteEmFerias($docenteId, $data)
-                    && ! $this->docenteEmCompensacao($docenteId, $data)
+                    && ! $this->docenteEmCompensacao($docenteId, $data, $horaInicio, $horaFim)
                         ? $docenteId
                         : null;
 
@@ -673,23 +673,36 @@ class AprendizagemQuadro
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    private function docenteEmCompensacao(int $docenteId, string $data): bool
+    private function docenteEmCompensacao(int $docenteId, string $data, string $horaInicio, string $horaFim): bool
     {
         $stmt = $this->conn->prepare("
-            SELECT id
+            SELECT hora_inicio, hora_fim
             FROM docente_compensacoes
             WHERE docente_id = :docente_id
               AND status = 'Ativo'
               AND data_inicio <= :data
               AND data_fim >= :data
-            LIMIT 1
+            ORDER BY hora_inicio ASC
         ");
         $stmt->execute([
             ':docente_id' => $docenteId,
             ':data' => $data,
         ]);
 
-        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $compensacao) {
+            $inicioCompensacao = substr((string) ($compensacao['hora_inicio'] ?? ''), 0, 5);
+            $fimCompensacao = substr((string) ($compensacao['hora_fim'] ?? ''), 0, 5);
+
+            if ($inicioCompensacao === '' || $fimCompensacao === '') {
+                return true;
+            }
+
+            if ($horaInicio < $fimCompensacao && $horaFim > $inicioCompensacao) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function docenteVinculadoUc(int $docenteId, int $ucId): bool

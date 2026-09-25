@@ -152,7 +152,7 @@ class DocenteFeriasController
         return $dt && $dt->format('Y-m-d') === $data;
     }
 
-    private function anoValido(mixed $ano): bool
+    private function anoValido($ano): bool
     {
         if (! is_scalar($ano) || ! preg_match('/^\d{4}$/', (string) $ano)) {
             return false;
@@ -180,3 +180,4 @@ class DocenteFeriasController
         exit;
     }
 }
+

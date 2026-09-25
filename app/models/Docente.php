@@ -326,11 +326,70 @@ class Docente
     public function excluir(int $id): bool
     {
         try {
-            $sql = "DELETE FROM docentes WHERE id = :id";
-            $stmt = $this->conn->prepare($sql);
+            $this->conn->beginTransaction();
 
-            return $stmt->execute([':id' => $id]);
+            $stmtAulas = $this->conn->prepare("SELECT COUNT(*) FROM quadro_horario_docentes WHERE docente_id = :id");
+            $stmtAulas->execute([':id' => $id]);
+
+            if ((int) $stmtAulas->fetchColumn() > 0) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            $stmtAulasAprendizagem = $this->conn->prepare("
+                SELECT COUNT(*)
+                FROM quadro_horario qh
+                INNER JOIN aprendizagem_quadros aq ON aq.id = qh.aprendizagem_quadro_id
+                WHERE aq.docente_id = :id
+            ");
+            $stmtAulasAprendizagem->execute([':id' => $id]);
+
+            if ((int) $stmtAulasAprendizagem->fetchColumn() > 0) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            $stmtTurmas = $this->conn->prepare("SELECT COUNT(*) FROM docente_cursos WHERE docente_id = :id");
+            $stmtTurmas->execute([':id' => $id]);
+
+            if ((int) $stmtTurmas->fetchColumn() > 0) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            $tabelasAuxiliares = [
+                'educacao_corporativa_docentes',
+                'docente_substituicoes',
+                'docente_compensacoes',
+                'docente_ferias',
+                'docente_escala',
+                'docente_unidades_curriculares',
+                'docente_areas',
+                'aprendizagem_quadros',
+            ];
+
+            foreach ($tabelasAuxiliares as $tabela) {
+                $stmt = $this->conn->prepare("DELETE FROM {$tabela} WHERE docente_id = :id");
+                $stmt->execute([':id' => $id]);
+            }
+
+            $stmtDocente = $this->conn->prepare("DELETE FROM docentes WHERE id = :id");
+            $stmtDocente->execute([':id' => $id]);
+            $excluiuDocente = $stmtDocente->rowCount() > 0;
+
+            if (! $excluiuDocente) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            $this->conn->commit();
+
+            return true;
         } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+
             return false;
         }
     }
@@ -637,3 +696,4 @@ class Docente
         $sql .= " AND id IN (" . implode(',', $placeholders) . ")";
     }
 }
+

@@ -34,4 +34,16 @@
 #1 D:\xampp\htdocs\mapa_de_sala\app\controllers\RelatorioDocenteController.php(65): RelatorioDocenteController->montarEventos(Array, Array, Array, Array, Array, Array, 8, 2026)
 #2 D:\xampp\htdocs\mapa_de_sala\routes\web.php(486): RelatorioDocenteController->index()
 #3 D:\xampp\htdocs\mapa_de_sala\public\index.php(64): require_once('D:\\xampp\\htdocs...')
-#4 {main}
+#4 {main}[2026-09-11 20:09:59] Uncaught Error: Call to undefined function codigoUcImpressaoQuadro() in D:\xampp\htdocs\mapa_de_sala\app\views\dashboard\quadro_horario.php:745
+#0 D:\xampp\htdocs\mapa_de_sala\app\controllers\QuadroHorarioController.php(60): require_once()
+#1 D:\xampp\htdocs\mapa_de_sala\routes\web.php(462): QuadroHorarioController->index()
+#2 D:\xampp\htdocs\mapa_de_sala\public\index.php(64): require_once('D:\\xampp\\htdocs...')
+#3 {main}[2026-09-11 20:10:56] Uncaught Error: Call to undefined function codigoUcImpressaoQuadro() in D:\xampp\htdocs\mapa_de_sala\app\views\dashboard\quadro_horario.php:745
+#0 D:\xampp\htdocs\mapa_de_sala\app\controllers\QuadroHorarioController.php(60): require_once()
+#1 D:\xampp\htdocs\mapa_de_sala\routes\web.php(462): QuadroHorarioController->index()
+#2 D:\xampp\htdocs\mapa_de_sala\public\index.php(64): require_once('D:\\xampp\\htdocs...')
+#3 {main}[2026-09-11 20:11:24] Uncaught Error: Call to undefined function codigoUcImpressaoQuadro() in D:\xampp\htdocs\mapa_de_sala\app\views\dashboard\quadro_horario.php:745
+#0 D:\xampp\htdocs\mapa_de_sala\app\controllers\QuadroHorarioController.php(60): require_once()
+#1 D:\xampp\htdocs\mapa_de_sala\routes\web.php(462): QuadroHorarioController->index()
+#2 D:\xampp\htdocs\mapa_de_sala\public\index.php(64): require_once('D:\\xampp\\htdocs...')
+#3 {main}

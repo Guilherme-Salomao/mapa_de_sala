@@ -222,7 +222,60 @@ class RelatorioTurma
             ':turma_id_matriz' => $turmaId,
         ]);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $linhas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $docentesPorUc = $this->docentesPorUc($turmaId);
+
+        foreach ($linhas as &$linha) {
+            $ucId = (int) ($linha['id'] ?? 0);
+            $linha['docentes'] = $docentesPorUc[$ucId] ?? [];
+        }
+
+        unset($linha);
+
+        return $linhas;
+    }
+
+    private function docentesPorUc(int $turmaId): array
+    {
+        $sql = "
+            SELECT
+                qh.unidade_curricular_id,
+                d.id AS docente_id,
+                u.nome AS docente_nome,
+                COUNT(DISTINCT qh.id) AS total_aulas,
+                COALESCE(SUM(TIMESTAMPDIFF(MINUTE, qh.hora_inicio, qh.hora_fim)), 0) AS total_minutos
+            FROM quadro_horario qh
+            INNER JOIN quadro_horario_docentes qhd ON qhd.quadro_horario_id = qh.id
+            INNER JOIN docentes d ON d.id = qhd.docente_id
+            INNER JOIN usuarios u ON u.id = d.usuario_id
+            WHERE qh.curso_oferta_id = :turma_id
+              AND qh.status = 'Ativa'
+            GROUP BY qh.unidade_curricular_id, d.id, u.nome
+            ORDER BY qh.unidade_curricular_id ASC, total_aulas DESC, total_minutos DESC, u.nome ASC
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':turma_id' => $turmaId]);
+        $docentesPorUc = [];
+
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $docente) {
+            $ucId = (int) ($docente['unidade_curricular_id'] ?? 0);
+
+            if ($ucId <= 0) {
+                continue;
+            }
+
+            if (! isset($docentesPorUc[$ucId])) {
+                $docente['principal'] = 1;
+                $docentesPorUc[$ucId] = [];
+            } else {
+                $docente['principal'] = 0;
+            }
+
+            $docentesPorUc[$ucId][] = $docente;
+        }
+
+        return $docentesPorUc;
     }
 
     public function datasTurma(int $turmaId): array
